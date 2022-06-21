@@ -159,7 +159,39 @@ mymax <- function(...,def= NA,na.rm=FALSE)
 
 mymin <- function(...,def=NA,na.rm=FALSE)
   if(!is.infinite(x<-suppressWarnings(min(...,na.rm=na.rm)))) x else def
-
+diff.var <- function(name.test){
+  if(name.test == "gps.gps"){
+    varname = c("GPS.x", "GPS.y")
+  }
+  if(name.test == "gps.era"){
+    varname = c("GPS.x", "ERAI.x")
+  }
+  if(name.test == "gps1.era"){
+    varname = c("GPS.y", "ERAI.x")
+  }
+  if(name.test == "gps.era1"){
+    varname = c("GPS.x", "ERAI.y")
+  }
+  if(name.test == "gps1.era1"){
+    varname = c("GPS.y", "ERAI.y")
+  }
+  if(name.test == "era.era"){
+    varname = c("ERAI.x", "ERAI.y")
+  }
+  return(varname)
+}
+check.sig <- function(x, sig.level){
+  if (is.na(x) == TRUE){
+    sig = NA
+  }else{
+    if (abs(x)<= sig.level){
+      sig = 1
+    } else{
+      sig = 0
+    } 
+  }
+  return(sig)
+}
 # form 6 series of differences --------------------------------------------
 
 # find the homogeneous for all breakpoints withou screening 
@@ -565,7 +597,7 @@ significance.test.weighted.indi = function(homo.nearby, path_series_ref,  path_s
                                             nearby.ver = nearby.ver,
                                             limit.type = "superposed",
                                             screen_value = screen_value, ".RData")))
-  list.param = read.table(file =  paste0(path_results,"attribution/", "param.all_var_est_",  "_arima_alpha",alpha = 0.01,"2.txt"), 
+  list.param = read.table(file =  paste0(path_results,"attribution/", "param.all_var_est_",  "_arima_alpha",alpha = significant.level,nb_test = nb_test.ref,"-",screen_value,tolerance_noise,".txt"), 
                           header = TRUE)
   nb.t.test <- nrow(homo.nearby)
   monthly.variance = list()
@@ -672,7 +704,7 @@ significance.test.weighted.indi = function(homo.nearby, path_series_ref,  path_s
       rho[p] <- rhoMaG
     }else if(check_correlation == 5){
       
-      list.ratio = read.table(file =  paste0(path_results,"attribution/", "ratio_correct_",  "_arima_alpha",alpha = 0.01,"2.txt"), 
+      list.ratio = read.table(file =  paste0(path_results,"attribution/", "ratio_correct_", "_arima_alpha",alpha = significant.level,nb_test = nb_test.ref,"-",screen_value,tolerance_noise,".txt"), 
                               header = TRUE)
       ratio_cor = list.ratio[p,name.test]
       var.eff2 = sigma.est.month*ratio_cor

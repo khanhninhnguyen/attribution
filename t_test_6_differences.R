@@ -122,7 +122,8 @@ for (i in 1:nrow(data.last)) {
 }
 
 write.table( data.last, file = paste0(path_results, 
-                                      "attribution/attribution.segment.200km.500m.",version_name,nb_test.ref,nearby_ver,limit.type, screen_value,".additional.txt"), 
+                                      "attribution/attribution.segment.200km.500m.",version_name,
+                                      nb_test.ref,nearby_ver,limit.type, screen_value, tolerance_noise, ".additional.txt"), 
              sep = "\t", quote = FALSE, col.names = TRUE)
 
 
