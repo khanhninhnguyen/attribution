@@ -66,7 +66,7 @@ data_test <- get(load(paste0(path_results,"attribution/data_test_",version_name,
 list.print <- get(load(file = paste0(path_results, "attribution/", "list.nearby.station.homo", nb_test = nb_test.near,"-",
                       screen_value, tolerance_noise, ".RData")))
 # model identification ----------------------------------------------------
-segment.or = "after" # need to change in the sigmal when compute the difference too in the loop
+segment.or = "before" # need to change in the sigmal when compute the difference too in the loop
 order.init <- data.frame(matrix(NA, ncol = 18, nrow = nrow(list.print)))
 coef.init <- data.frame(matrix(NA, ncol = 24, nrow = nrow(list.print)))
 pval.init <- data.frame(matrix(NA, ncol = 24, nrow = nrow(list.print)))
@@ -120,7 +120,7 @@ for (testi in 1:6) {
     
     # 2. 3. fit initial arima param and its significance level
     
-    refit0 = last_signif(signal = signal.test, pq, alpha)
+    refit0 = last_signif(signal = signal.test, pq, alpha = significant.level)
     
     coef.init[k, c((testi*4-3): (testi*4))] <-  refit0$pandcoef$coef
     pval.init[k, c((testi*4-3): (testi*4))] <-  refit0$pandcoef$p.value
@@ -134,7 +134,7 @@ for (testi in 1:6) {
       pq = arimaorder(fit.b)
     }
     
-    refit1 = last_signif(signal = signal.test, pq, alpha)
+    refit1 = last_signif(signal = signal.test, pq, alpha = significant.level)
     
     pq = refit1$pq
     order.sig[k, c((testi*3-2): (testi*3))] <- pq
@@ -155,23 +155,26 @@ colnames(pval.sig) <- col.names
 colnames(order.init) <- col.names1
 colnames(order.sig) <- col.names1
 
-write.table(order.init,  file = paste0(path_results,"attribution/", "order_init_", segment.or, "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+file.name.model = paste0(segment.or, "_arima_alpha",alpha = significant.level, nb_test = nb_test.ref, "-", screen_value, ".txt")
+
+
+write.table(order.init,  file = paste0(path_results,"attribution/", "order_init_", file.name.model),
             sep = "\t", quote = FALSE, col.names = TRUE)
-write.table(order.sig,  file = paste0(path_results,"attribution/", "order_sig_pmax1_", segment.or, "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(order.sig,  file = paste0(path_results,"attribution/", "order_sig_pmax1_", file.name.model),
             sep = "\t", quote = FALSE, col.names = TRUE)
-write.table(coef.init,  file = paste0(path_results,"attribution/", "coef_init_", segment.or, "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(coef.init,  file = paste0(path_results,"attribution/", "coef_init_", file.name.model),
             sep = "\t", quote = FALSE, col.names = TRUE)
-write.table(coef.sig,  file = paste0(path_results,"attribution/", "coef_sig_pmax1_", segment.or, "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(coef.sig,  file = paste0(path_results,"attribution/", "coef_sig_pmax1_", file.name.model),
             sep = "\t", quote = FALSE, col.names = TRUE)
-write.table(pval.init,  file = paste0(path_results,"attribution/", "p.value_init_", segment.or, "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(pval.init,  file = paste0(path_results,"attribution/", "p.value_init_", file.name.model),
             sep = "\t", quote = FALSE, col.names = TRUE)
-write.table(pval.sig,  file = paste0(path_results,"attribution/", "p.value_sig_pmax1_", segment.or, "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(pval.sig,  file = paste0(path_results,"attribution/", "p.value_sig_pmax1_", file.name.model),
             sep = "\t", quote = FALSE, col.names = TRUE)
 
 # decide the last model to correct t-test ---------------------------------
 
-order.sig.bef = read.table(file = paste0(path_results,"attribution/", "order_sig_pmax1_before_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"))
-order.sig.aft = read.table(file = paste0(path_results,"attribution/", "order_sig_pmax1_after_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"))
+order.sig.bef = read.table(file = paste0(path_results,"attribution/", "order_sig_pmax1_before_arima_alpha",alpha = significant.level, nb_test = nb_test.ref,"-",screen_value,".txt"))
+order.sig.aft = read.table(file = paste0(path_results,"attribution/", "order_sig_pmax1_after_arima_alpha",alpha = significant.level, nb_test = nb_test.ref,"-",screen_value,".txt"))
 
 model.iden <- function(order){
   model = c()
@@ -230,7 +233,7 @@ for (i in 1:6) {
   last.all.model[,i] <- unlist(last.model)
 }
 
-write.table(last.all.model,  file = paste0(path_results,"attribution/", "last.model", "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(last.all.model,  file = paste0(path_results,"attribution/", "last.model", "_arima_alpha", alpha = significant.level, nb_test = nb_test.ref,"-",screen_value,tolerance_noise,".txt"),
             sep = "\t", quote = FALSE, col.names = TRUE)
 
 # from the last model, estimate the parameter and effective ratio ----------------------------
@@ -241,7 +244,7 @@ model.order <- function(name.model){
   if(name.model == "white"){ order = c(0,0,0)}
   return(order)
 }
-model.all = read.table(file = paste0(path_results,"attribution/", "last.model", "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"))
+model.all = read.table(file = paste0(path_results,"attribution/", "last.model", "_arima_alpha",alpha = significant.level, nb_test = nb_test.ref,"-",screen_value,tolerance_noise,".txt"))
 ratio.cor <- data.frame(matrix(NA, ncol = 6, nrow = nrow(list.order.bef)))
 param.all <- data.frame(matrix(NA, ncol = 6, nrow = nrow(list.order.bef)))
 for (testi in 1:6) {
@@ -294,8 +297,8 @@ for (testi in 1:6) {
 colnames(ratio.cor) <- list.test
 colnames(param.all) <- list.test
 
-write.table(ratio.cor,  file = paste0(path_results,"attribution/", "ratio_correct_",  "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(ratio.cor,  file = paste0(path_results,"attribution/", "ratio_correct_",  "_arima_alpha",alpha = significant.level,nb_test = nb_test.ref,"-",screen_value,tolerance_noise,".txt"),
             sep = "\t", quote = FALSE, col.names = TRUE)
-write.table(param.all,  file = paste0(path_results,"attribution/", "param.all_var_est_",  "_arima_alpha",alpha,nb_test = nb_test.ref,"-",screen_value,".txt"),
+write.table(param.all,  file = paste0(path_results,"attribution/", "param.all_var_est_",  "_arima_alpha",alpha = significant.level,nb_test = nb_test.ref,"-",screen_value,tolerance_noise,".txt"),
             sep = "\t", quote = FALSE, col.names = TRUE)
 
