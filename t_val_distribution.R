@@ -12,4 +12,5 @@ additional = read.table( file = paste0(path_results,
 x = data$t
 hist(x,breaks = 100)
 lines(density(x))
-data.last[which(abs(x)>10),]
+a = data[which(abs(x)>10),]
+additional[which(abs(x)>10),]
