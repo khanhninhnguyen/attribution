@@ -10,7 +10,7 @@ library(lmtest)
 # main paths  --------------------------------------------------------------
 
 path_main="/home/knguyen/Documents/PhD/"
-setwd(path_main)
+# setwd(path_main)
 path_code_seg = paste0(path_main,"Code/segment/segmentation/")
 path_code_att = paste0(path_main,"Code/attribution/")
 path_data = paste0(path_main,"Data/IWV-ERA/")
