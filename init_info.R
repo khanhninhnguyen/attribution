@@ -6,7 +6,9 @@ library("dplyr")
 library("ggplot2")
 library("grid")
 library("forecast")
-library(lmtest)
+library("gitcreds")
+library("usethis")
+library("lmtest")
 # main paths  --------------------------------------------------------------
 
 path_main="/home/knguyen/Documents/PhD/"
