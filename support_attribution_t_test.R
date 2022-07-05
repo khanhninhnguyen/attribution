@@ -379,7 +379,7 @@ homogeneous.nearby.segment.multiple.all = function( name.station, valid.file.ref
     
   }   
   save(data.test, file = paste0(path_results, "attribution/data_test_",version.name,nb_test,nearby.ver,limit.type,screen_value,"multiple.RData" ))
-  out= data.frame(list.sta,list.detec[-1],validation,homo.code,near.name,possible, np.bef, np.aft)
+  out = data.frame(list.sta,list.detec[-1],validation,homo.code,near.name,possible, np.bef, np.aft)
   colnames(out) <- c("ref.station","detected","validated","homo", "nearby.station","possible", "np.bef", "np.aft" )
   out <- out[which( out$possible>0),]
   rownames(out) <- NULL
@@ -557,7 +557,7 @@ homogeneous.nearby.segment.multiple = function( name.station, valid.file.ref, va
     }
     
   }
-  save(data.test, file = paste0(path_results, "attribution/data_test_",version.name,nb_test,nearby.ver,limit.type,screen_value,"multiple.RData" ))
+  # save(data.test, file = paste0(path_results, "attribution/data_test_",version.name,nb_test,nearby.ver,limit.type,screen_value,"multiple.RData" ))
   out= data.frame(list.sta,list.detec[-1],validation,homo.code,near.name,possible, np.bef, np.aft)
   colnames(out) <- c("ref.station","detected","validated","homo", "nearby.station","possible", "np.bef", "np.aft" )
   out <- out[which( out$possible>0),]
