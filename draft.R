@@ -83,7 +83,7 @@ for (k in 1:length(gaps.list)) {
   for (i in 1:nb.sim) {
     # sim.ar <- arima.sim(model = list(ar = 0.3), n = n0, sd = sdv)
     # sim.ma <- arima.sim(model = list(ma = 0.3), n = n0, sd = sdv)
-    sim.arma <- arima.sim(model = list(ar = 0.5, ma = 0), n = n0, sd = sdv)
+    sim.arma <- arima.sim(model = list(ar = 0.3, ma = 0), n = n0, sd = sdv)
     gaps =  rbinom(n0, 1, gaps.list[k]/100)
     ind.gaps = which(gaps != 0)
     # sim.ar[ind.gaps] <- NA
@@ -117,7 +117,7 @@ ggplot(b, aes(x = gaps, col = gaps, y =value))+
   geom_boxplot(outlier.colour="red", outlier.shape=8,
                outlier.size=4)  +
 # scale_x_continuous(breaks = seq(0, 1, 0.1), limits = c(0,1))+
-  geom_hline(yintercept =0.5) +
+  geom_hline(yintercept =0.3) +
   labs(y = "phi", x = "Gaps percentage(%)")+ 
   theme_bw()
 dev.off()
