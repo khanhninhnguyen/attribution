@@ -54,7 +54,7 @@ limit.type = "superposed"
 check_correlation = 5
 
 thres_period = 365
-no.day.per = 100/365
+no.day.per = 30/365
 significant.level = 0.05 
 screening.data.gps = 2
 vertical.correction = 1
