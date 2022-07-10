@@ -73,3 +73,9 @@ list.test = c( "gps.gps", "gps.era1", "gps1.era", "era.era", "gps.era", "gps1.er
 list.station = read.table(paste0(path_data_support,"list-cross-stations.txt"),header = TRUE)
 name_main = as.character(list.station[,1])
 
+# List of breakpoints 
+
+list.brp <- get(load(file = paste0(path.validation, nb_test.ref, "-", criterion, "metacompa", screen_value = 1, ".RData")))
+
+
+
