@@ -34,6 +34,7 @@ source(paste0(path_code_seg,"read.meta.R"))
 # from Proj Attribution
 source(paste0(path_code,"attribution-seg-support.R"))
 source(paste0(path_code,"ar_coef_estimation.R"))
+source(paste0(path_code_att,"support_attribution_t_test.R"))
 
 
 # parameters --------------------------------------------------------------
@@ -66,7 +67,7 @@ validation.file.ref = paste0(path.validation,nb_test = nb_test.ref,"-",screen_va
 validation.file.near = paste0(path.validation,nb_test = nb_test.near,"-",screen_value,
                               criterion,tolerance_noise, tolerance_valid,".txt")
 
-list.test = c( "gps.gps", "gps.era1", "gps1.era", "era.era", "gps.era", "gps1.era1")
+list.test = c("gps.era", "gps.gps", "gps.era1", "era.era", "gps1.era1", "gps1.era")
 
 # list of 81 stations -----------------------------------------------------
 
