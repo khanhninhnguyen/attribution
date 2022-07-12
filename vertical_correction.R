@@ -70,5 +70,6 @@ for (j in c(1:nrow(nearby_list1))){
 }
 
 save(four.series, file = paste0(path_results,"attribution/four_main_series_1year_", nearby_ver,".RData"))
+save(six.series, file = paste0(path_results,"attribution/six_diff_series_1year_", nearby_ver,".RData"))
 
 

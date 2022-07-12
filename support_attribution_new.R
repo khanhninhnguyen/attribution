@@ -20,6 +20,11 @@ check_cluster <- function(list.cluster, station, list.ind.cluster, breakpoint.c)
 }
 
 # new code use the meta_compare file, read only the cluster 
-meeta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref = 34,"-",criterion,"metacompa",screen.value="",".RData")))
 
-## continue!!!!!
+
+
+
+
+
+
+
