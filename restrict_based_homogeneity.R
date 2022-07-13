@@ -55,10 +55,8 @@ save(data, file = paste0(path_results,"attribution/six_diff_series_1year_rm_cren
 meta.compare.near =  get(load(file = paste0(path_results,"validation/",nb_test.near,"-",criterion,"metacompa",screen.value="",".RData")))
 data.cr <- get(load(file = paste0(path_results,"attribution/six_diff_series_1year_rm_crenel_", nearby_ver,".RData")))
 
-list.cluster.removed <- data.frame(matrix(NA, ncol = 3, nrow = 0))
-colnames(list.cluster.removed) = c("station","start", "end")
-list.sim.brp <- data.frame(matrix(NA, ncol = 2, nrow = 0))
-colnames(list.sim.brp) = c("case","sim.detected")
+list.sim.brp <- data.frame(matrix(NA, ncol = 4, nrow = 0))
+colnames(list.sim.brp) = c("case","sim.detected", "near.left", "near.right")
 
 for (i in c(1:length(data.cr))) {
   case.name = names(data.cr)[i]
@@ -75,27 +73,50 @@ for (i in c(1:length(data.cr))) {
   list.brp.main = station.seg$detected[which(station.seg$detected > begin & station.seg$detected < fin & station.seg$noise ==0)]
   list.brp.near = nearby.seg$detected[which(nearby.seg$detected > begin & nearby.seg$detected < fin)]
   
-  list.all.brp <- c(list.brp.main[-which(list.brp.main == breakpoint)], list.brp.near)
+  list.all.brp <- c(list.brp.main, list.brp.near)
   station.data = as.data.frame(data.cr[[i]])
   # check to remove the data in nearby breaks very closed
   con = 0
   if(length(list.brp.near) > 0){
     diff.nb = list.brp.near - breakpoint
     con = length(which(abs(diff.nb) < 10))
-    if(con>1){
+    if(con>0){
       ind.remove = which(abs(diff.nb) < 10)
-      list.sim.brp[(nrow(list.sim.brp)+1),] <- c(i,list.brp.near[ind.remove])
+      list.point.rm = list.brp.near[ind.remove]
+      point.rm.ind = which.max(abs(list.point.rm - breakpoint))
+      point.rm = list.point.rm[point.rm.ind]
+      list.sim.brp[(nrow(list.sim.brp)+1),c(1:2)] <- c(i, as.character(point.rm))
       list.all.brp <- c(list.brp.main, list.brp.near[-ind.remove])
-      period.rm <- c( breakpoint, list.brp.near[ind.remove])
+      period.rm <- c( breakpoint,point.rm)
       station.data[which(station.data$date < max(period.rm) & station.data$date > min(period.rm)), -7] <- NA
     }
   }
   # check to remove all other breaks 
   list.others = list.all.brp[which(list.all.brp > begin & list.all.brp < fin)]
-  if(length(list.others)>1){ 
-    diff.others = list.others - breakpoint
-   # !!!!! continue 
+  list.others.ord = sort(unique(list.others), decreasing = FALSE)
+  if(length(list.others.ord )>1){ 
+    ind.brp = which(list.others.ord == breakpoint)
+    close.left = list.others.ord[ind.brp-1]
+    close.right = list.others.ord[ind.brp+1]
+    if(length(close.left) > 0){ # may create NA because the point does not exist
+      station.data[which(station.data$date < close.left), -7] <- NA
+      list.sim.brp[(nrow(list.sim.brp)+1),c(1,3)] <- c(i, as.character(close.left))
     }
-  
+    if(length(close.right) > 0){ # may create NA because the point does not exist
+      station.data[which(station.data$date > close.right), -7] <- NA
+      list.sim.brp[(nrow(list.sim.brp)+1),c(1,4)] <- c(i, as.character(close.right))
+    }
+  }
+  data.cr[[i]] <- station.data
 }
-i= 141
+
+last.list.remove = list.sim.brp[rowSums(is.na(list.sim.brp)) != (ncol(list.sim.brp)-1), ]
+
+
+save(last.list.remove, file = paste0(path_results,"attribution/restricted_by_closed_brp_", nearby_ver,".RData"))
+save(data.cr, file = paste0(path_results,"attribution/six_diff_series_1year_rm_crenel_restricted_closed_brp_", nearby_ver,".RData"))
+
+
+
+
+
