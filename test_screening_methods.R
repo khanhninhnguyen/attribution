@@ -3,7 +3,7 @@ source(paste0(path_code_att,"support_test_screening_methods.R"))
 
 gaps.list <- c(5,10,15)
 k = 1
-n0 = 720
+n0 = 730
 screen.out <- function(x) {
   y = na.omit(x)
   Q1 <- quantile(x, .25, na.rm = TRUE)
@@ -107,26 +107,16 @@ abline(h = 0.95)
 
 # Monthly variance --------------------------------------------------------
 
-x = c(1:365)
-list.std = list()
-list.range = seq(0, 0.9, 0.1)*2
-for (k in 1:length(list.range)) {
-  first.mean = list.range[k] * sin(2*pi*x/L-pi/2)/2 +1
-  second.mean = list.range[k] * sin(2*pi*x/L+pi/2)/2 +1 
-  list.std[[2*k-1]] <- first.mean[c(seq(1,length(first.mean), 35), 365)]
-  list.std[[2*k]] <- second.mean[c(seq(1,length(second.mean), 35), 365)]
-}
-
 res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
 L = 365
-t = c(1:720)
+t = c(1:730)
 std.t = 1.2*sin(2*pi*t/L-pi/2)/2 +1
 std = std.t[seq(1,365,length.out = 12)]
 length.month1 = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 for (i in c(1:nb.sim)) {
   sim.ar <- simulate.series.2(mean.1 = 0, sigma.1 = std,
-                              N = n0, c(0.5, 0), length.month = length.month1)
+                              N = n0,  arma.model = c(0.5, 0), length.month = length.month1)
   ind.out = 3*rbinom(n0, 1, gaps.list[k]/100)
   sim.ar <- sim.ar + ind.out*sign(sim.ar)
   scr1 = screen.out(sim.ar)
@@ -166,8 +156,8 @@ abline(h = 0.95)
 
 # sliding window ----------------------------------------------------------
 
-for (i in c(1:(nrow(da)-59))) {
-  ind.test = c(i:(i+59))
+for (i in c(1:(nrow(da)-60))) {
+  ind.test = c(i:(i+60))
   samp = da[ind.test,2]
   list.point.rm <- c()
   if (all(is.na(samp$x))){
@@ -221,30 +211,27 @@ for (k in c(1:length(list.p))) {
   }
 }
 
-sliding <- function(x){
-  res <- data.frame(matrix(NA, ncol = 3, nrow = length(x)))
+sliding <- function(series){
+  res <- data.frame(matrix(NA, ncol = 3, nrow = length(series)))
   colnames(res) <- c("scr", "up", "down")
   list.point.rm <- c()
+  n0 = length(series)
   
-  for (i in c(1:(length(x)-59))) {
+  for (i in c(1:(n0-59))) {
     ind.test = c(i:(i+59))
-    samp = x[ind.test]
+    samp = series[ind.test]
     if (all(is.na(samp))){
       res$scr[i+30] <- NA
     }else{
       y = samp
       con = length(na.omit(y))
       if( con >= 30){
-        up = screen.out(y)$up
-        down =  screen.out(y)$down
-        res$up[i+30] <- up
-        res$down[i+30] <- down
         x = diff(y)
-        x.scr <- screen.out(x)$data
         rm <- screen.out(x)$point.rm
         if(length(rm) > 0){
-          res$scr[i] <- 1
+          res$scr[i+30] <- 1
           list.point.rm <- c(list.point.rm, (rm+i))
+          print(i)
         }else{
           res$scr[i+30] <- 0
         } 
@@ -253,10 +240,49 @@ sliding <- function(x){
       }
     }
   }
-  
-  ind <- which(da$date %in% list.rm.n)
   list.rm = list.point.rm[!duplicated(list.point.rm)]
-  
+  # this step is to distinguish the first or second point in the difference is outlier - need to be studied more 
+  for (j in c(1:length(list.rm))){
+    ind = list.rm[j]
+    if(ind<10){ 
+      subset <- series[c(1 : (ind+10))]
+    }else if (ind>(n0-10)){
+      subset <- series[c((ind-10): (ind))]
+    }else{
+      subset <- series[c((ind-10): (ind+10))]
+    }
+    dist = abs(series[c(ind:(ind+1))] - mean(subset, na.rm = TRUE))
+    ind.n = which.max(dist)
+    if(ind.n != 1){
+      list.rm[j] <- list.rm[j]+1
+    }
+  }
+}
+
+series =  simulate.series.2(mean.1 = 0, sigma.1 = std,
+                       N = n0,  arma.model = c(0.5, 0), length.month = length.month1)
+plot(x)
+
+
+
+
+# compare with other screening method -------------------------------------
+
+screen.iqr <- function(x, dif){
+  y = na.omit(x)
+  if(dif == 1){
+    y = diff(x)
+  }
+  Q1 <- quantile(x, .25, na.rm = TRUE)
+  Q3 <- quantile(x, .75, na.rm = TRUE)
+  IQR <- IQR(x, na.rm = TRUE)
+  up = Q3+IQR*1.5
+  down = Q1-IQR*1.5
+  removed <- which(x<down | x>up)
+  if (length(removed) >0){
+    x.screened = x[-removed]
+  }else{ x.screened = x}
+  return(list(data = x.screened, point.rm = removed, up = up, down = down))
 }
 
 
