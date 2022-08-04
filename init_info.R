@@ -1,4 +1,7 @@
 rm(list = ls())
+# github reset
+# library(gitcreds)
+# gitcreds_set()
 # Main program to read all data and its path 
 library("gridExtra")
 library("dplyr") 

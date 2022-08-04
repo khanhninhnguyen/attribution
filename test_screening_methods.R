@@ -285,8 +285,7 @@ screen.iqr <- function(x, dif){
   return(list(data = x.screened, point.rm = removed, up = up, down = down))
 }
 
-library(gitcreds)
-gitcreds_set()
+
 
 
 
