@@ -285,7 +285,7 @@ screen.iqr <- function(x, dif){
   return(list(data = x.screened, point.rm = removed, up = up, down = down))
 }
 
-
+# replace the difference by the mean of absolute difference bw the tested points with the point before and after 
 
 
 
