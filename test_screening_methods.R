@@ -3,7 +3,7 @@ source(paste0(path_code_att,"support_test_screening_methods.R"))
 
 gaps.list <- c(5,10,15)
 k = 1
-n0 = 60
+n0 = 100
 screen.iqr <- function(x) {
   y = na.omit(x)
   Q1 <- quantile(x, .25, na.rm = TRUE)
@@ -63,7 +63,7 @@ screen.mad <- function(x) {
   return(list(data = x.screened, point.rm = removed))
 }
 
-nb.sim = 1000
+nb.sim = 10000
 
 # AR(1) -------------------------------------------------------------------
 res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
@@ -544,4 +544,34 @@ ggplot(data = plot.d1 , aes( x = amp, y = mean, col = methods))+
   geom_errorbar(aes(ymin=mean-std, ymax=mean+std), width=.04)+
   ylab("Per. outlier corrected detection(%)")+
   labs(subtitle = "imposed 5% outliers")
+
+# simplest simulation -----------------------------------------------------
+res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
+for (i in c(1:nb.sim)) {
+  sim.ar <- rnorm(n0, sd = 1, mean = 0)
+  sim.ar1 <- arima.sim(model = list(ar = 0.5), n = n0, sd = 1)
+  
+  # ind.out = 10*rbinom(n0, 1, gaps.list[k]/100)
+  # sim.ar <- sim.ar + ind.out*sign(sim.ar)
+  scr1 = screen.mad(sim.ar)
+  up1 = 2.69792
+  down1 = -2.69792
+  removed1 <- which(sim.ar<down1 | sim.ar>up1)
+  
+  scr2 = screen.mad(sim.ar1)
+  up2 = 2.69792/(sqrt(1-0.5**2))
+  down2 = -2.69792/(sqrt(1-0.5**2))
+  removed2 <- which(sim.ar1<down2 | sim.ar1>up2)
+  
+  nb.rm1 = length(removed1 )
+  nb.rm2 = length(scr1$point.rm )
+  nb.rm3 = length(removed2 )
+  nb.rm4 = length(scr2$point.rm )
+  # list.out = which(ind.out!=0)
+  res[i,] <- c(nb.rm1, nb.rm2, nb.rm3, nb.rm4)
+}
+summary(res)
+boxplot(res/n0)
+abline(h = 0.007)
+
 
