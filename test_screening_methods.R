@@ -3,7 +3,7 @@ source(paste0(path_code_att,"support_test_screening_methods.R"))
 
 gaps.list <- c(5,10,15)
 k = 1
-n0 = 100
+n0 = 60
 screen.iqr <- function(x) {
   y = na.omit(x)
   Q1 <- quantile(x, .25, na.rm = TRUE)
@@ -56,6 +56,22 @@ screen.diff <- function(x, dif){
 }
 screen.mad <- function(x) {
   y = abs(x - median(x))/mad(x)
+  removed <- which(y>2.7)
+  if (length(removed) >0){
+    x.screened = x[-removed]
+  }else{ x.screened = x}
+  return(list(data = x.screened, point.rm = removed))
+}
+screen.sca <- function(x) {
+  y = abs(x - median(x))/(robustbase::scaleTau2	(x))
+  removed <- which(y>2.7)
+  if (length(removed) >0){
+    x.screened = x[-removed]
+  }else{ x.screened = x}
+  return(list(data = x.screened, point.rm = removed))
+}
+screen.qn <- function(x) {
+  y = abs(x - median(x))/(robustbase::Qn(x))
   removed <- which(y>2.7)
   if (length(removed) >0){
     x.screened = x[-removed]
@@ -546,32 +562,51 @@ ggplot(data = plot.d1 , aes( x = amp, y = mean, col = methods))+
   labs(subtitle = "imposed 5% outliers")
 
 # simplest simulation -----------------------------------------------------
-res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
+res = data.frame(matrix(NA, ncol = 5, nrow = nb.sim))
 for (i in c(1:nb.sim)) {
-  sim.ar <- rnorm(n0, sd = 1, mean = 0)
-  sim.ar1 <- arima.sim(model = list(ar = 0.5), n = n0, sd = 1)
+  # sim.ar <- rnorm(n0, sd = 1, mean = 0)
+  sim.ar <- arima.sim(model = list(ar = 0.8), n = n0, sd = 1)
   
   # ind.out = 10*rbinom(n0, 1, gaps.list[k]/100)
   # sim.ar <- sim.ar + ind.out*sign(sim.ar)
-  scr1 = screen.mad(sim.ar)
-  up1 = 2.69792
-  down1 = -2.69792
+  scr1 = screen.iqr(sim.ar)
+  up1 = 2.69792/(sqrt(1-0.5**2))
+  down1 = -2.69792/(sqrt(1-0.5**2))
   removed1 <- which(sim.ar<down1 | sim.ar>up1)
   
-  scr2 = screen.mad(sim.ar1)
-  up2 = 2.69792/(sqrt(1-0.5**2))
-  down2 = -2.69792/(sqrt(1-0.5**2))
-  removed2 <- which(sim.ar1<down2 | sim.ar1>up2)
+  # scr2 = screen.sca(sim.ar1)
+  # up2 = 2.69792/(sqrt(1-0.5**2))
+  # down2 = -2.69792/(sqrt(1-0.5**2))
+  # removed2 <- which(sim.ar1<down2 | sim.ar1>up2)
+  
+  scr2 = screen.mad(sim.ar)
+  scr3 = screen.sca(sim.ar)
+  scr4 = screen.qn(sim.ar)
   
   nb.rm1 = length(removed1 )
   nb.rm2 = length(scr1$point.rm )
-  nb.rm3 = length(removed2 )
-  nb.rm4 = length(scr2$point.rm )
+  nb.rm3 = length(scr2$point.rm  )
+  nb.rm4 = length(scr3$point.rm )
+  nb.rm5 = length(scr4$point.rm )
+  
   # list.out = which(ind.out!=0)
-  res[i,] <- c(nb.rm1, nb.rm2, nb.rm3, nb.rm4)
+  res[i,] <- c(true = nb.rm1, IQR = nb.rm2, MAD = nb.rm3, Sca = nb.rm4, Qn = nb.rm5)
 }
-summary(res)
+summary(res/n0)
 boxplot(res/n0)
 abline(h = 0.007)
+
+plot.d = data.frame(method = rep(c("true", "IQR", "MAD", "Sca", "Qn"), each = nb.sim), variable = unlist(res)/n0)
+
+plot <- ggplot(data = plot.d, aes(y = variable, x = method)) + 
+  theme_bw()+
+  geom_boxplot(fatten = NULL) +
+  stat_summary(fun.y = mean, geom = "errorbar", aes(ymax = ..y.., ymin = ..y..),
+               width = 0.75, size = 1, linetype = "solid")+
+  geom_hline(yintercept = 0.007)+
+  ylab("outlier percentage")+
+  labs(subtitle = "Normal distribution, mean = 0, sd =1, n = 100, phi = 0.5")
+print(plot)
+
 
 
