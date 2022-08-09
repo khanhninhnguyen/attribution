@@ -35,8 +35,8 @@ path_NGL_v2_R = paste0(path_data_era5,"NGL.v2R/") #43 is the old data( missing f
 source(paste0(path_code_seg,"read.series.segment.R")) 
 source(paste0(path_code_seg,"read.meta.R"))
 # from Proj Attribution
-source(paste0(path_code,"attribution-seg-support.R"))
-source(paste0(path_code,"ar_coef_estimation.R"))
+# source(paste0(path_code_att,"attribution-seg-support.R"))
+# source(paste0(path_code_att,"ar_coef_estimation.R"))
 source(paste0(path_code_att,"support_attribution_t_test.R"))
 
 

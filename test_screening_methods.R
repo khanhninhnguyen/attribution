@@ -565,7 +565,7 @@ ggplot(data = plot.d1 , aes( x = amp, y = mean, col = methods))+
 res = data.frame(matrix(NA, ncol = 5, nrow = nb.sim))
 for (i in c(1:nb.sim)) {
   # sim.ar <- rnorm(n0, sd = 1, mean = 0)
-  sim.ar <- arima.sim(model = list(ar = 0.8), n = n0, sd = 1)
+  sim.ar <- arima.sim(model = list(ar = 0.8), n = n0, sd = 1, n.start = 1000)
   
   # ind.out = 10*rbinom(n0, 1, gaps.list[k]/100)
   # sim.ar <- sim.ar + ind.out*sign(sim.ar)
@@ -608,5 +608,12 @@ plot <- ggplot(data = plot.d, aes(y = variable, x = method)) +
   labs(subtitle = "Normal distribution, mean = 0, sd =1, n = 100, phi = 0.5")
 print(plot)
 
-
+library(tseries)
+adf.test(sim.ar)
+set.seed(123)
+x <- arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
+set.seed(122)
+x1 <- arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
+set.seed(122)
+sim.ar2 <-  arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
 
