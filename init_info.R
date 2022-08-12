@@ -1,7 +1,7 @@
 rm(list = ls())
-# github reset
-# library(gitcreds)
-# gitcreds_set()
+#github reset
+library(gitcreds)
+# gitcreds_set() to reset the token
 # Main program to read all data and its path 
 library("gridExtra")
 library("dplyr") 
@@ -13,6 +13,8 @@ library("gitcreds")
 library("usethis")
 library("lmtest")
 library("lubridate")
+library(usethis)
+
 # main paths  --------------------------------------------------------------
 
 path_main="/home/knguyen/Documents/PhD/"
