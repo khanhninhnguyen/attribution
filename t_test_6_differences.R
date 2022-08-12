@@ -10,7 +10,7 @@ list.nearby.ngl = nearby_list_ngl(path_results,
                                   version_name, 
                                   name_main = name_main)
 
-save(list.nearby.ngl,  file = paste0("list_nearby", nearby_ver, ".RData"))
+save(list.nearby.ngl,  file = paste0(path_results, "attribution/", "list_nearby", nearby_ver, ".RData"))
 
 # form 6 series of differences --------------------------------------------
 
