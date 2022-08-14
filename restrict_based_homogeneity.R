@@ -1,10 +1,10 @@
 library("lubridate")       # Install & load lubridate package
-
+window.thres <- 2 # window period
 # we use the breakpoints from segmentation directly, with flag validation or outlier (80 days)
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
 # remove data in cluster of breakpoint or breakpoint from the ne --------
 
-data <- get(load(file = paste0(path_results,"attribution/six_diff_series_1year_", nearby_ver,".RData")))
+data <- get(load(file = paste0(path_results,"attribution/six_diff_series_",window.thres,"year_", nearby_ver,".RData")))
 
 list.cluster.removed <- data.frame(matrix(NA, ncol = 3, nrow = 0))
 colnames(list.cluster.removed) = c("station","start", "end")
@@ -44,8 +44,8 @@ for (i in c(1:length(data))) {
 
 short.list = list.cluster.removed[!duplicated(list.cluster.removed),]
 
-save(short.list, file = paste0(path_results,"attribution/removed_possible_crenel_", nearby_ver,".RData"))
-save(data, file = paste0(path_results,"attribution/six_diff_series_1year_rm_crenel_", nearby_ver,".RData"))
+save(short.list, file = paste0(path_results,"attribution/removed_possible_crenel_",window.thres,"year_", nearby_ver,".RData"))
+save(data, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_", window.thres,"year_",nearby_ver,".RData"))
 
 
 
@@ -53,7 +53,7 @@ save(data, file = paste0(path_results,"attribution/six_diff_series_1year_rm_cren
 
 # Remove all breakpoint in +/- 1 year excluding the crenel ----------------
 meta.compare.near =  get(load(file = paste0(path_results,"validation/",nb_test.near,"-",criterion,"metacompa",screen.value="",".RData")))
-data.cr <- get(load(file = paste0(path_results,"attribution/six_diff_series_1year_rm_crenel_", nearby_ver,".RData")))
+data.cr <- get(load(file = paste0(path_results,"attribution/six_diff_series_rm_crenel_",window.thres,"year_", nearby_ver,".RData")))
 
 list.sim.brp <- data.frame(matrix(NA, ncol = 4, nrow = 0))
 colnames(list.sim.brp) = c("case","sim.detected", "near.left", "near.right")
@@ -67,8 +67,8 @@ for (i in c(1:length(data.cr))) {
   nearby.seg = meta.compare.near[which(meta.compare.near$name == station.near),]
   
   # list breakpoints in the period
-  begin = breakpoint %m+% years(-1)   
-  fin = breakpoint %m+% years(1)
+  begin = breakpoint %m+% years(-window.thres)   
+  fin = breakpoint %m+% years(window.thres)
   
   list.brp.main = station.seg$detected[which(station.seg$detected > begin & station.seg$detected < fin & station.seg$noise ==0)]
   list.brp.near = nearby.seg$detected[which(nearby.seg$detected > begin & nearby.seg$detected < fin)]
@@ -113,8 +113,8 @@ for (i in c(1:length(data.cr))) {
 last.list.remove = list.sim.brp[rowSums(is.na(list.sim.brp)) != (ncol(list.sim.brp)-1), ]
 
 
-save(last.list.remove, file = paste0(path_results,"attribution/restricted_by_closed_brp_", nearby_ver,".RData"))
-save(data.cr, file = paste0(path_results,"attribution/six_diff_series_1year_rm_crenel_restricted_closed_brp_", nearby_ver,".RData"))
+save(last.list.remove, file = paste0(path_results,"attribution/restricted_by_closed_brp_",window.thres,"year_", nearby_ver,".RData"))
+save(data.cr, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",window.thres,"year_", nearby_ver,".RData"))
 
 
 

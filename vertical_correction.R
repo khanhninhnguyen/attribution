@@ -6,6 +6,7 @@ six.series <- list()
 distances <- get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData")))
 nearby_list <- get(load(file = paste0("list_nearby", nearby_ver, ".RData")))
 nearby_list1 <- nearby_list[which(is.na(nearby_list$Level1) == FALSE),]
+window.thres <- 2
 
 # Read list nearby 
 for (j in c(1:nrow(nearby_list1))){
@@ -16,8 +17,8 @@ for (j in c(1:nrow(nearby_list1))){
   
   for (k in c(1:nrow(seg.ref))) {
     breakpoint <- seg.ref$detected[k]
-    begin.point <- breakpoint %m+% years(-1)   
-    end.point <- breakpoint %m+% years(1)
+    begin.point <- breakpoint %m+% years(-window.thres)   
+    end.point <- breakpoint %m+% years(window.thres)
     
     for (l in c(1:length(nearby.list.j))) {
       series.near <- read.series(path_series = path_series_nearby, station = nearby.list.j[l], na.rm = 1, add.full = 0)
@@ -46,7 +47,7 @@ for (j in c(1:nrow(nearby_list1))){
                                         GPS1 = both$GPS.y,
                                         ERA1 = both$ERAI.y)
         write.table(four_series_frame, 
-                    file = paste0(path_results, "attribution/four_series/", station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], ".txt"),
+                    file = paste0(path_results, "attribution/four_series/", station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yrs.txt"),
                     sep = "\t", quote = FALSE)
         
         six.diff <- list()
@@ -63,14 +64,14 @@ for (j in c(1:nrow(nearby_list1))){
         six.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- six.diff
 
         write.table(six_series_frame, 
-                    file = paste0(path_results, "attribution/six_series/",station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], ".txt"),
+                    file = paste0(path_results, "attribution/six_series/",station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yrs.txt"),
                     sep = "\t", quote = FALSE)
       }
     }
   }
 }
 
-save(four.series, file = paste0(path_results,"attribution/four_main_series_1year_", nearby_ver,".RData"))
-save(six.series, file = paste0(path_results,"attribution/six_diff_series_1year_", nearby_ver,".RData"))
+save(four.series, file = paste0(path_results,"attribution/four_main_series_",window.thres,"year_", nearby_ver,".RData"))
+save(six.series, file = paste0(path_results,"attribution/six_diff_series_",window.thres,"year_", nearby_ver,".RData"))
 
 

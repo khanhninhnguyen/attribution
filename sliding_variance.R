@@ -18,7 +18,7 @@ RobEstiMonthlyVariance.diff.S30 <- function(Y, name.var, alpha){
   return(sigma.est)
 }
  
-RobEstiSlidingVariance.S<- function(Y, name.var, alpha){# require date in the dataset 
+RobEstiSlidingVariance.S <- function(Y, name.var, alpha){# require date in the dataset, return std at time t
   Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
   x = unlist(Y1[name.var], use.names = FALSE)
   n = nrow(Y1)
@@ -40,21 +40,50 @@ RobEstiSlidingVariance.S<- function(Y, name.var, alpha){# require date in the da
   # linear regression of the variance for gaps  MAYBE REPLACE BY INTERPOLATION FUNCTION
   s = sigma.est1
   if (sum(is.na(s)) != 0){
-    na.x = as.numeric(is.na(s[-length(s)]))
-    diff.nax = diff(na.x)
-    start.na = which(diff.nax==1)
-    for (k in c(1:length(start.na))) {
-      n.na = min(which(diff.nax[start.na[k]:(n-1)] == -1))
-      x1 = s[start.na[k]]
-      x2 = s[start.na[k] +  n.na]
-      slope = (x2-x1)/n.na
-      s[c((start.na[k]+1):(start.na[k]+n.na-1))] <- s[start.na[k]]+c(1:(n.na-1))*slope
-    }
+    ts.s = c(1:n)
+    na.ind = which(is.na(s))
+    s[na.ind] <- approx(ts.s, s, xout=na.ind)$y
   }
-  
-  
- 
-  sigma.est = sigma.est1[which(Y1$date %in% Y$date)]
+  sigma.est = s[which(Y1$date %in% Y$date)]
   return(sigma.est)
 }
+
+sliding.median <- function(Y, name.var){
+  Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
+  x = unlist(Y1[name.var], use.names = FALSE)
+  n = length(x)
+  slide.med <- rep(NA, n)
+  for (i in c(1:n)) {
+    begin = max(i-30,1)
+    end = min(n, i+30)
+    x.i = x[begin:end]
+    slide.med[i] <- median(x.i, na.rm = TRUE)
+  }
+  slide.med = slide.med[which(Y1$date %in% Y$date)]
+  return(slide.med)
+}
+  
+sliding.IQR <- function(Y, name.var){
+  Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
+  x = unlist(Y1[name.var], use.names = FALSE)
+  n = length(x)
+  slide.med <- rep(NA, n)
+  for (i in c(1:n)) {
+    begin = max(i-30,1)
+    end = min(n, i+30)
+    x.i = x[begin:end]
+    slide.med[i] <- median(x.i, na.rm = TRUE)
+  }
+  slide.med = slide.med[which(Y1$date %in% Y$date)]
+  return(slide.med)
+}
+
+
+
+
+
+
+
+
+
 

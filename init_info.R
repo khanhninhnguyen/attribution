@@ -1,7 +1,7 @@
 rm(list = ls())
 #github reset
 library(gitcreds)
-# gitcreds_set() to reset the token
+# gitcreds_set() to reset the token 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
 # Main program to read all data and its path 
 library("gridExtra")
 library("dplyr") 
@@ -82,7 +82,7 @@ name_main = as.character(list.station[,1])
 
 # List of breakpoints 
 
-list.brp <- get(load(file = paste0(path.validation, nb_test.ref, "-", criterion, "metacompa", screen_value = 1, ".RData")))
+list.brp <- get(load(file = paste0(path.validation, nb_test.ref, "-", criterion, "metacompa", screen_value = "", ".RData")))
 
 
 
