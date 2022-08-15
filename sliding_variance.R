@@ -39,9 +39,17 @@ RobEstiSlidingVariance.S <- function(Y, name.var, alpha){# require date in the d
   }
   # linear regression of the variance for gaps  MAYBE REPLACE BY INTERPOLATION FUNCTION
   s = sigma.est1
-  if (sum(is.na(s)) != 0){
+  if (sum(is.na(s)) != 0 & sum(is.na(s)) != length(s)){
     ts.s = c(1:n)
     na.ind = which(is.na(s))
+    if(na.ind[1] == 1){
+      ind.stop = which(is.na(s)==FALSE)[1]-1
+      na.ind <- na.ind[-c(1:ind.stop)]
+    }else if (is.na(s[n]) == 1){
+      m = which(is.na(s)==FALSE)
+      ind.start = m[length(m)]
+      na.ind <- na.ind[-which(na.ind %in% c(ind.start:n))]
+    }
     s[na.ind] <- approx(ts.s, s, xout=na.ind)$y
   }
   sigma.est = s[which(Y1$date %in% Y$date)]
@@ -78,9 +86,16 @@ sliding.IQR <- function(Y, name.var){
   return(slide.med)
 }
 
-
-
-
+two.step.norm <- function(Y, name.var){
+  std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0)
+  slide.med <- sliding.median(Y, name.var)
+  # step 1: normalize by std and median
+  norm1 <- (Y[name.var] - slide.med)/std.t
+  # step 2: avoid impact of constant in AR(1) by taking the IQR
+  norm1 <- na.omit(unlist(norm1,use.names = FALSE))
+  norm2 <- (norm1 - median(norm1))/IQR(norm1)
+  return(norm2)  
+}
 
 
 
