@@ -160,7 +160,7 @@ for (i in c(217)) {
     aft.norm = two.step.norm(Y = after, name.var)
     data.a = data.frame(date = after$date, val = aft.norm)
     Y1 <- tidyr::complete(data.a, date = seq(min(data.a$date), max(data.a$date), by = "day"))
-    p <- ggplot(data = Y1, aes(x = date, y= val))+
+    p <- ggplot(data = Y1, aes(x = date, y = val))+
       geom_line()+theme_bw()+labs(subtitle = paste0("case", coun))
     jpeg(paste0(path_results,"attribution/",station.ref,".",as.character( breakpoint), ".", station.near, "a.jpeg"), width = 3000, height = 1800,res = 300) # change name
     print(p)
