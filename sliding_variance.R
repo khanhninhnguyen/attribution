@@ -87,13 +87,17 @@ sliding.IQR <- function(Y, name.var){
 }
 
 two.step.norm <- function(Y, name.var){
+  norm2 = rep(NA, nrow(Y))
   std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0)
   slide.med <- sliding.median(Y, name.var)
   # step 1: normalize by std and median
-  norm1 <- (Y[name.var] - slide.med)/std.t
+  norm1 <- unlist((Y[name.var] - slide.med)/std.t)
   # step 2: avoid impact of constant in AR(1) by taking the IQR
+  ind.na = which(is.na(norm1))
   norm1 <- na.omit(unlist(norm1,use.names = FALSE))
-  norm2 <- (norm1 - median(norm1))/IQR(norm1)
+  if(length(ind.na) ==0){
+    norm2<- (norm1 - median(norm1))/IQR(norm1)
+  }else{  norm2[-ind.na] <- (norm1 - median(norm1))/IQR(norm1)}
   return(norm2)  
 }
 
