@@ -17,8 +17,8 @@ for (i in c(1:length(data.cr))) {
   breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
   before =  data.i[which(data.i$date <= breakpoint),]
   after =  data.i[which(data.i$date > breakpoint),]
-  if(nrow(na.omit(before)) > 31){
-    bef.norm = two.step.norm(Y = before, list.test[1])
+  if(nrow(na.omit(before)) > 30){
+    bef.norm = one.step.norm(Y = before, list.test[1])
     if(length(bef.norm)>30){
       bef.norm.all <- list()
       for (k in c(1:6)) {
@@ -30,8 +30,8 @@ for (i in c(1:length(data.cr))) {
       data.all[[paste0(station.ref,".",as.character( breakpoint), ".", station.near)]]$bef <- bef.norm.all
     }
   }
-  if(nrow(na.omit(after)) > 31){
-    aft.norm = two.step.norm(Y = after, list.test[1])
+  if(nrow(na.omit(after)) > 30){
+    aft.norm = one.step.norm(Y = after, list.test[1])
     if(length(aft.norm) > 30){
       aft.norm.all <- list()
       for (k in c(1:6)) {
@@ -45,12 +45,12 @@ for (i in c(1:length(data.cr))) {
   }
 }
 # save(dist.mean, file = paste0(path_results,"attribution/dist.mean_2years_", nearby_ver,".RData"))
-save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,".RData"))
+save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"onestep.RData"))
 
 # test for station GOPE
-case.name = "gope.2006-09-07.wtzt"
-d <- data.frame(Group = rep(c("raw","norm"), each = length(data.all[[case.name]]$bef$gps.gps)), 
-                Sample =c(rnorm(236,0,1), data.all[[case.name]]$bef$gps.gps))
+case.name = names(data.cr)[i]
+d <- data.frame(Group = rep(c("raw","norm"), each = length(data.all[[case.name]]$bef$gps.era1)), 
+                Sample =c(before$gps.era1, data.all[[case.name]]$bef$gps.era1))
 d$Group <- as.factor(d$Group)
 ggplot(d, aes(x = Sample, colour = Group)) + 
   geom_density()+scale_x_continuous(breaks=seq(-6,7,1))+  theme_bw()

@@ -170,9 +170,3 @@ screen.diff.o <- function(x, dif, thres, sdt){
   }else{ x.screened = x}
   return(list(data = x.screened, point.rm = removed, up = up, down = down))
 }
-
-list.r = c()
-for (i in c(1:1000)) {
-  x = rnorm(n = 1000, mean = 0, sd = 1)
-  list.r = c(list.r, length(screen.qn.o(x, thres = 3, sdt = 1)$point.rm))
-}
