@@ -617,3 +617,14 @@ x1 <- arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
 set.seed(122)
 sim.ar2 <-  arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
 
+
+
+
+
+
+
+
+
+
+
+
