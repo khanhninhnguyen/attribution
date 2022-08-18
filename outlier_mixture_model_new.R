@@ -46,8 +46,9 @@ for (i in c(1:length(data.cr))) {
 }
 # save(dist.mean, file = paste0(path_results,"attribution/dist.mean_2years_", nearby_ver,".RData"))
 save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"onestep.RData"))
+dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"onestep.RData")))
 
-# test for station GOPE
+# test for station GOPE --------------------------------------------
 case.name = names(data.cr)[i]
 d <- data.frame(Group = rep(c("raw","norm"), each = length(data.all[[case.name]]$bef$gps.era1)), 
                 Sample =c(before$gps.era1, data.all[[case.name]]$bef$gps.era1))
@@ -55,38 +56,6 @@ d$Group <- as.factor(d$Group)
 ggplot(d, aes(x = Sample, colour = Group)) + 
   geom_density()+scale_x_continuous(breaks=seq(-6,7,1))+  theme_bw()
 
-n1 = 1552
-res <- data.frame(matrix(NA, nrow = 1552, ncol = 3))
-length.rm = data.frame(matrix(NA, nrow = 1552, ncol = 2))
-for (i in seq(1,n1,100)) {
-  x = data.all[[i]]$bef$gps.gps
-  date1 = data.all[[i]]$bef$date
-  if(is.null(x)==FALSE & sum(is.na(x))!= length(x) ){
-    a = screen.qn.o(x, thres = 2, sdt = 1/1.349)
-    b = screen.diff.o(x, dif = 1, thres = 2, sdt = 1/1.349)
-    s1 = rep(0, length(x))
-    s1[a$point.rm] <- 1
-    s2 = rep(0, length(x))
-    s2[b$point.rm] <- 2
-    x1 <- x
-    x1[a$point.rm] <- NA
-    x2 <- x
-    x2[b$point.rm] <- NA
-    res[i,] <- c(shapiro.test(x)$p.value, shapiro.test(x1)$p.value, shapiro.test(x2)$p.value)
-    length.rm[i,] <- c(length(a$point.rm), length(b$point.rm))
-    Y = data.frame( date = date1, val = x, s = as.factor(s1+s2))
-    Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
-    p <- ggplot(data = Y1, aes(x = date, y= val))+
-      geom_line()+theme_bw()+geom_point( aes(col = s), size = 0.7)+
-      scale_color_manual(values=c("black","green","red","blue"))+
-      labs(subtitle = names(data.all)[i])+
-      theme(axis.text = element_text(face="bold",size=14))
-    jpeg(paste0(path_results,"attribution/test.scr/",names(data.all)[i], "b.jpeg"),
-         width = 3000, height = 1800,res = 300) # change name
-    print(p)
-    dev.off()
-  }
-}
 
 plot(x, type = "l")
 points(x = a$point.rm, y = x[a$point.rm], col = "red", cex=2)
@@ -101,3 +70,87 @@ qplot(sample=Sample, data=d, color=as.factor(Group))+theme_bw()
                 
                 
                 
+
+
+# see the qqplot of all cases ---------------------------
+name.var = list.test[2]
+
+res.x = list()
+res.y = list()
+for (i in c(1:length(dat))) {
+  x = dat[[i]]$bef[[name.var]]
+  if(is.null(x)==FALSE & sum(is.na(x))!= length(x) ){
+    a = qqnorm(x, plot.it = FALSE)
+    res.x[[i]] <- a$x
+    res.y[[i]] <- a$y
+  }
+}
+all.x= unlist(res.x, use.names = FALSE)
+lim = seq(-3.2,3.2,0.01)
+limy = rep(NA, length(lim))
+for (r in c(2:length(lim))) {
+  mini = lim[r-1]
+  maxi = lim[r]
+  y <- c()
+  for (l in c(1: length(res.y))) {
+    ind = which(res.x[[i]] > mini & res.x[[i]] < maxi)
+    if(length(ind)!=0){ y = c(y,res.y[[i]][ind])}
+  }
+  limy[r] <- mean(y, na.rm = TRUE)
+}
+
+
+
+
+# screening all data ------------------------------------------------------
+
+n1 = length(dat)
+res <- data.frame(matrix(NA, nrow = n1, ncol = 3))
+length.rm = data.frame(matrix(NA, nrow = n1, ncol = 2))
+for (i in seq(1,n1,1)) {
+  x = dat[[i]]$bef$gps.gps
+  date1 = dat[[i]]$bef$date
+  if(is.null(x)==FALSE & sum(is.na(x))!= length(x) ){
+    a = screen.qn.o(x, thres = 3, sdt = 1)
+    b = screen.diff.o(x, dif = 1, thres1 = 3/(sqrt(2)), thres2 = 3,sdt = 1)
+    s1 = rep(0, length(x))
+    s1[a$point.rm] <- 1
+    s2 = rep(0, length(x))
+    s2[b$point.rm] <- 2
+    x1 <- x
+    x1[a$point.rm] <- NA
+    x2 <- x
+    x2[b$point.rm] <- NA
+    res[i,] <- c(shapiro.test(x)$p.value, shapiro.test(x1)$p.value, shapiro.test(x2)$p.value)
+    length.rm[i,] <- c(length(a$point.rm), length(b$point.rm))
+    Y = data.frame( date = date1, val = x, s = as.factor(s1+s2))
+    Y$s <- sapply(Y$s, function(x) {
+      if(x==0){y = "n"
+      }else if (x ==1) {y="s1"
+      }else if(x==2){y="s2"
+      }else{y="both"}} )
+    
+    Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
+    p <- ggplot(data = Y1, aes(x = date, y= val))+
+      geom_line()+theme_bw()+geom_point( aes(col = s), size = 0.7)+
+      scale_color_manual(values=c("n"= "black", "s1"= " green", "s2" = "red", "both" ="blue"))+
+      labs(subtitle = paste0(names(data.all)[i], "    P.val = ", paste(round( res[i,], digits = 3), collapse  = ",  ")))+
+      theme(axis.text = element_text(face="bold",size=14))
+    jpeg(paste0(path_results,"attribution/test.scr/",names(data.all)[i], "b.jpeg"),
+         width = 4000, height = 1800,res = 300) # change name
+    print(p)
+    dev.off()
+  }
+}
+
+colnames(res) <- c("raw", "scr1", "scr2")
+boxplot(res, main = "boxplot of p-value")
+save(res, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"p.val.RData"))
+
+r = which(res$scr1<0.01)
+which(names(dat) == "medi.2006-05-19.rovi")
+
+d <- data.frame(Group= rep(c("raw","scr1","scr2"), each = length(bef.norm)), Sample=c(before$gps.era1, bef.norm))
+qplot(sample=Sample, data=d, color=as.factor(Group))
+
+

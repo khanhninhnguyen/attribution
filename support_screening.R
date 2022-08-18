@@ -75,7 +75,7 @@ screen.qn <- function(x, thres) {
   return(list(data = x.screened, point.rm = removed))
 }
 screen.qn.o <- function(x, thres, sdt) {
-  n = length(x)
+  n = length(na.omit(x))
   # y = abs(x - median(x))/(robustbase::Qn(x))
   removed <- which(abs(x)>thres)
   last.rm <- c()
@@ -107,66 +107,58 @@ screen.qn.o <- function(x, thres, sdt) {
   return(list(data = x.screened, point.rm = removed))
 }
 
-screen.diff.o <- function(x, dif, thres, sdt){
-  n0 = length(x)
+screen.diff.o <- function(x, dif, thres1, thres2, sdt){
+  n0 = length(na.omit(x))
   if(dif == 1){
     y = diff(x)
   }
-  Q1 <- quantile(y, .25, na.rm = TRUE)
-  Q3 <- quantile(y, .75, na.rm = TRUE)
-  IQR <- IQR(y, na.rm = TRUE)
-  up = Q3+IQR*1.67
-  down = Q1-IQR*1.67
+  # Q1 <- quantile(y, .25, na.rm = TRUE)
+  # Q3 <- quantile(y, .75, na.rm = TRUE)
+  # IQR <- IQR(y, na.rm = TRUE)
+  up = thres1
+  down =-thres1
   removed <- which(y<down | y>up)
   list.rm <- removed
   if (length(list.rm) >0){
     for (j in c(1:length(removed))){
       ind = removed[j]
-      ind.n = 11
-      if(ind<10){ 
-        subset <-  x[c(1 : (ind+10))]
-        ind.n = ind
-      }else if (ind>(n0-10)){
-        subset <-  x[c((ind-10): n0)]
-      }else{
-        subset <- x[c((ind-10): (ind+10))]
-      }
       std.2 <- c()
       for (k in c(1:2)) {
-        std.2[k] <- sd(subset[-(ind.n+k-1)], na.rm = TRUE)
+        std.2[k] <- x[ind+k-1] - median(x, na.rm = TRUE)
       }
-      ind.new = which.min(std.2)
+      ind.new = which.max(abs(std.2))
       if(ind.new != 1){
         list.rm[j] <- list.rm[j]+1
       }
     }
     # x.screened = x[-list.rm]
     list.rm = list.rm[!duplicated(list.rm)]
-    # check probability 
-    detect.val = abs(x[list.rm ])
-    removed <- removed[order(detect.val, decreasing = TRUE)]
-    detect.val <- abs(x[list.rm])
-    limit = max(detect.val)
-    last.rm <- c()
-    for (i in seq(max(limit,thres), min(limit,thres),-0.1)) {
-      detect = which(detect.val > i)
-      E = n0*2*pnorm(-i, mean = 0, sd = sdt)
-      npj = round(length(detect)-E)
-      if(npj >0){
-        detect.rm = detect[1:npj]
-        last.rm <- c(last.rm, list.rm[detect.rm])
-        removed <- removed[-detect.rm]
-        detect.val <- detect.val[-detect.rm]
+    list.rm  <- list.rm[which(x[list.rm]<(-thres2)| x[list.rm]>thres2)]
+    if(length(list.rm) !=0){
+      # check probability 
+      detect.val = abs(x[list.rm ])
+      removed <- removed[order(detect.val, decreasing = TRUE)]
+      detect.val <- abs(x[list.rm])
+      limit = max(detect.val)
+      last.rm <- c()
+      for (i in seq(max(limit,thres2), min(limit,thres2),-0.1)) {
+        detect = which(detect.val > i)
+        E = n0*2*pnorm(-i, mean = 0, sd = sdt)
+        npj = round(length(detect)-E)
+        if(npj >0){
+          detect.rm = detect[1:npj]
+          last.rm <- c(last.rm, list.rm[detect.rm])
+          removed <- removed[-detect.rm]
+          detect.val <- detect.val[-detect.rm]
+        }
       }
-    }
-    removed =  last.rm[!duplicated(last.rm)]
-    if(is.null(removed) == TRUE){
+      removed = last.rm[!duplicated(last.rm)]
+    }else {
       removed <- c()
-      x.screened = x
-    }else{
-      x.screened = x[-removed]
     }
-    
-  }else{ x.screened = x}
+  }
+  if(length(removed) != 0){  x.screened = x[-removed]}
+  else{removed <- c()
+  x.screened = x}
   return(list(data = x.screened, point.rm = removed, up = up, down = down))
 }
