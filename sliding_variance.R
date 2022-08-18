@@ -157,7 +157,7 @@ sliding.mean <- function(Y, name.var){
 one.step.norm <- function(Y, name.var){
   norm2 = rep(NA, nrow(Y))
   std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0)
-  slide.mean <- sliding.mean(Y, name.var)
+  slide.mean <- sliding.median(Y, name.var)
   # step 1: normalize by std and median
   norm1 <- unlist((Y[name.var] - slide.mean)/std.t)
   return(norm1)  

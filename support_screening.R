@@ -74,39 +74,6 @@ screen.qn <- function(x, thres) {
   }else{ x.screened = x}
   return(list(data = x.screened, point.rm = removed))
 }
-screen.qn.o <- function(x, thres, sdt) {
-  n = length(na.omit(x))
-  # y = abs(x - median(x))/(robustbase::Qn(x))
-  removed <- which(abs(x)>thres)
-  last.rm <- c()
-  if (length(removed) >0){
-    # reorder ind of removal 
-    detect.val = abs(x[removed])
-    removed <- removed[order(detect.val, decreasing = TRUE)]
-    detect.val <- abs(x[removed])
-    limit = max(detect.val)
-    for (i in seq(limit,thres,-0.1)) {
-      detect = which(detect.val > i)
-      E = n*2*pnorm(-i, mean = 0, sd = sdt)
-      npj = round(length(detect)-E)
-      if(npj >0){
-        detect.rm = detect[1:npj]
-        last.rm <- c(last.rm, removed[detect.rm])
-        removed <- removed[-detect.rm]
-        detect.val <- detect.val[-detect.rm]
-      }
-    }
-    removed = unique(last.rm)
-    if(is.null(removed) == TRUE){
-      removed <- c()
-      x.screened = x
-    }else{
-      x.screened = x[-removed]
-    }
-  }else{ x.screened = x}
-  return(list(data = x.screened, point.rm = removed))
-}
-
 screen.diff.o <- function(x, dif, thres1, thres2, sdt){
   n0 = length(na.omit(x))
   if(dif == 1){
@@ -162,3 +129,72 @@ screen.diff.o <- function(x, dif, thres1, thres2, sdt){
   x.screened = x}
   return(list(data = x.screened, point.rm = removed, up = up, down = down))
 }
+screen.qn.o <- function(x, thres, sdt) {
+  n = length(na.omit(x))
+  # y = abs(x - median(x))/(robustbase::Qn(x))
+  removed <- which(abs(x)>thres)
+  last.rm <- c()
+  if (length(removed) >0){
+    # reorder ind of removal 
+    detect.val = abs(x[removed])
+    removed <- removed[order(detect.val, decreasing = TRUE)]
+    detect.val <- abs(x[removed])
+    limit = max(detect.val)
+    for (i in seq(limit,thres,-0.1)) {
+      detect = which(detect.val > i)
+      E = n*2*pnorm(-i, mean = 0, sd = sdt)
+      npj = round(length(detect)-E)
+      if(npj >0){
+        detect.rm = detect[1:npj]
+        last.rm <- c(last.rm, removed[detect.rm])
+        removed <- removed[-detect.rm]
+        detect.val <- detect.val[-detect.rm]
+      }
+    }
+    removed = unique(last.rm)
+    if(is.null(removed) == TRUE){
+      removed <- c()
+      x.screened = x
+    }else{
+      x.screened = x[-removed]
+    }
+  }else{ x.screened = x}
+  return(list(data = x.screened, point.rm = removed))
+}
+
+scr.O <- function(x, candidate, thres){
+  n = length(x)
+  if (length(candidate) >0){
+    # reorder ind of removal 
+    detect.val = abs(x[candidate])
+    removed <- candidate[order(detect.val, decreasing = TRUE)]
+    detect.val <- abs(x[removed])
+    limit = max(detect.val)
+    last.rm <- c()
+    for (i in seq(limit,thres,-0.1)) {
+      detect = which(detect.val > i)
+      E = n*2*pnorm(-i, mean = 0, sd = sdt)
+      npj = round(length(detect)-E)
+      if(npj >0){
+        detect.rm = detect[1:npj]
+        last.rm <- c(last.rm, removed[detect.rm])
+        removed <- removed[-detect.rm]
+        detect.val <- detect.val[-detect.rm]
+      }
+    }
+    removed = unique(last.rm)
+    if(is.null(removed) == TRUE){
+      removed <- c()
+    }
+    candidate.out <- removed
+  }else{ candidate.out <- c()}
+  if( length(candidate.out) >0 ){ 
+    x.out <- x[-candidate.out]
+  }else{
+    x.out <- x
+  }
+  return(list(x.out = x.out, candidate.out = candidate.out))
+}
+
+# make some iteration with this block 
+
