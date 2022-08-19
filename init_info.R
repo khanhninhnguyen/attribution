@@ -16,7 +16,6 @@ library("lubridate")
 library(usethis)
 
 # main paths  --------------------------------------------------------------
-
 path_main="/home/knguyen/Documents/PhD/"
 # setwd(path_main)
 path_code_seg = paste0(path_main,"Code/segment/segmentation/")
