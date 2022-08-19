@@ -4,8 +4,8 @@ screen.iqr <- function(x) {
   Q1 <- quantile(x, .25, na.rm = TRUE)
   Q3 <- quantile(x, .75, na.rm = TRUE)
   IQR <- IQR(x, na.rm = TRUE)
-  up = Q3+IQR*1.5
-  down = Q1-IQR*1.5
+  up = Q3+IQR*1.723869
+  down = Q1-IQR*1.723869
   removed <- which(x<down | x>up)
   if (length(removed) >0){
     x.screened = x[-removed]
@@ -162,8 +162,14 @@ screen.qn.o <- function(x, thres, sdt) {
   return(list(data = x.screened, point.rm = removed))
 }
 
-scr.O <- function(x, candidate, thres){
+scr.O <- function(x){
   n = length(x)
+  Q1 <- quantile(x, .25, na.rm = TRUE)
+  Q3 <- quantile(x, .75, na.rm = TRUE)
+  IQR <- IQR(x, na.rm = TRUE)
+  up = Q3+IQR*1.723869
+  down = Q1-IQR*1.723869
+  candidate <- which(x<down | x>up)
   if (length(candidate) >0){
     # reorder ind of removal 
     detect.val = abs(x[candidate])
@@ -171,9 +177,10 @@ scr.O <- function(x, candidate, thres){
     detect.val <- abs(x[removed])
     limit = max(detect.val)
     last.rm <- c()
+    thres <- min(abs(c(up,down)))
     for (i in seq(limit,thres,-0.1)) {
       detect = which(detect.val > i)
-      E = n*2*pnorm(-i, mean = 0, sd = sdt)
+      E = n*2*pnorm(-i, mean = median(x, na.rm = TRUE), sd = robustbase::scaleTau2(x, na.rm = TRUE))
       npj = round(length(detect)-E)
       if(npj >0){
         detect.rm = detect[1:npj]
@@ -189,12 +196,32 @@ scr.O <- function(x, candidate, thres){
     candidate.out <- removed
   }else{ candidate.out <- c()}
   if( length(candidate.out) >0 ){ 
-    x.out <- x[-candidate.out]
+    x.out <- x
+    x.out[candidate.out] <- NA
   }else{
     x.out <- x
   }
   return(list(x.out = x.out, candidate.out = candidate.out))
 }
-
+screen.O <- function(Y, name.var){
+  last.rm <- c()
+  removed <- 1
+  y <- Y[ name.var]
+  while(length(removed) > 0){
+    x <- one.step.norm()
+    r = scr.O(x)
+    x <- r$x.out
+    last.rm <- c(last.rm,r$candidate.out)
+    removed <- r$candidate.out
+  }
+  if(length(last.rm) != 0){
+    x.screened = x[-last.rm]
+  } else{
+    x.screened = x
+  }
+  return(list(data = x.screened, point.rm = last.rm))
+}
 # make some iteration with this block 
+
+
 

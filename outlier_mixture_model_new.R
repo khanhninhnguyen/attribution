@@ -111,7 +111,7 @@ for (i in seq(1,n1,1)) {
   x = dat[[i]]$bef$gps.gps
   date1 = dat[[i]]$bef$date
   if(is.null(x)==FALSE & sum(is.na(x))!= length(x) ){
-    a = screen.qn.o(x, thres = 3, sdt = 1)
+    a = screen.O(x)
     b = screen.diff.o(x, dif = 1, thres1 = 3/(sqrt(2)), thres2 = 3,sdt = 1)
     s1 = rep(0, length(x))
     s1[a$point.rm] <- 1
@@ -152,5 +152,23 @@ which(names(dat) == "medi.2006-05-19.rovi")
 
 d <- data.frame(Group= rep(c("raw","scr1","scr2"), each = length(bef.norm)), Sample=c(before$gps.era1, bef.norm))
 qplot(sample=Sample, data=d, color=as.factor(Group))
+
+# test screening method on simulation 
+
+res <- data.frame(matrix(NA, ncol = 2, nrow = 1000))
+list.rm <- c()
+for (j in c(1:1000)) {
+  set.seed(j)
+  x = rnorm(1000,0,1)
+  x[seq(100, 1000, 100)] <- rep(5, 10)
+  r = screen.O(x)
+  list.rm <- c(list.rm, r$point.rm)
+  res[j,] <- c(shapiro.test(x)$p.value, shapiro.test(r$data)$p.value)
+}
+list.rm[! duplicated(list.rm)]
+summary(res)
+
+which(names(dat) == "auck.2005-11-07.hamt")
+
 
 
