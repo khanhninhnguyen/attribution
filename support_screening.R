@@ -162,13 +162,19 @@ screen.qn.o <- function(x, thres, sdt) {
   return(list(data = x.screened, point.rm = removed))
 }
 
-scr.O <- function(x){
+scr.O <- function(x, method ){
   n = length(x)
-  Q1 <- quantile(x, .25, na.rm = TRUE)
-  Q3 <- quantile(x, .75, na.rm = TRUE)
-  IQR <- IQR(x, na.rm = TRUE)
-  up = Q3+IQR*1.723869
-  down = Q1-IQR*1.723869
+  if(method == "IQR"){
+    Q1 <- quantile(x, .25, na.rm = TRUE)
+    Q3 <- quantile(x, .75, na.rm = TRUE)
+    IQR <- IQR(x, na.rm = TRUE)
+    up = Q3+IQR*1.723869
+    down = Q1-IQR*1.723869
+  }else if(method == "sigma"){
+    sdt <- robustbase::scaleTau2(x, na.rm = TRUE)
+    up = 3*sdt
+    down = -3*sdt
+  }
   candidate <- which(x<down | x>up)
   if (length(candidate) >0){
     # reorder ind of removal 
@@ -203,25 +209,30 @@ scr.O <- function(x){
   }
   return(list(x.out = x.out, candidate.out = candidate.out))
 }
-screen.O <- function(Y, name.var){
+screen.O <- function(Y, name.var, method){
   last.rm <- c()
   removed <- 1
-  y <- Y[ name.var]
+  y <- Y[name.var] 
   while(length(removed) > 0){
-    x <- one.step.norm()
-    r = scr.O(x)
+    x <- one.step.norm(Y, name.var = name.var)
+    names(x) <- NULL
+    r = scr.O(x, method = method)
     x <- r$x.out
+    Y[name.var] <- x
     last.rm <- c(last.rm,r$candidate.out)
     removed <- r$candidate.out
+    print(removed)
   }
   if(length(last.rm) != 0){
-    x.screened = x[-last.rm]
+    x.screened = y[-last.rm]
   } else{
-    x.screened = x
+    x.screened = y
   }
   return(list(data = x.screened, point.rm = last.rm))
 }
 # make some iteration with this block 
+# NEED TO SEE THE PLOT AFTER EACH ITERATION, WHY THEY REMOVE TOO MANY POINTS?
+# IF NEEDED, DO SIMULATIONS
 
 
 

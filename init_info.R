@@ -1,7 +1,9 @@
 rm(list = ls())
 #github reset
 library(gitcreds)
-# gitcreds_set() to reset the token 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
+# gitcreds_set() to reset the token 
+# library(credentials)
+# set_github_pat() set token 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
 # Main program to read all data and its path 
 library("gridExtra")
 library("dplyr") 
