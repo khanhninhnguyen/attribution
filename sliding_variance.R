@@ -71,7 +71,9 @@ RobEstiSlidingVariance.S <- function(Y, name.var, alpha){# require date in the d
     if(length(na.omit(x.idiff)) <= thre){
       sd <- NA
     }else{
-      sd <- robustbase::scaleTau2(x.idiff, na.rm = TRUE ) # change for AR(1), if white noise alspha = 0
+      sd <- mad(x.idiff, na.rm = TRUE ) # change for AR(1), if white noise alspha = 0
+      # sd <- robustbase::scaleTau2(na.omit(x.idiff)) # change for AR(1), if white noise alspha = 0
+      # sd <- robustbase::Qn(na.omit(x.idiff)) # change for AR(1), if white noise alspha = 0
     }
     sigma.est1[i] <- sd
   }

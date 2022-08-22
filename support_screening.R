@@ -162,8 +162,14 @@ screen.qn.o <- function(x, thres, sdt) {
   return(list(data = x.screened, point.rm = removed))
 }
 
-scr.O <- function(x, method ){
+myround <- function(y){
+  if(y == 0.5){z <- 1}
+  else{z <- round(y)}
+  return(z)
+}
+scr.O <- function(x, method){
   n = length(x)
+  mean0 = median(x, na.rm = TRUE)
   if(method == "IQR"){
     Q1 <- quantile(x, .25, na.rm = TRUE)
     Q3 <- quantile(x, .75, na.rm = TRUE)
@@ -171,9 +177,16 @@ scr.O <- function(x, method ){
     up = Q3+IQR*1.723869
     down = Q1-IQR*1.723869
   }else if(method == "sigma"){
-    sdt <- robustbase::scaleTau2(x, na.rm = TRUE)
+    sdt <- mad(x, na.rm = TRUE)
+    # sdt = robustbase::Qn(na.omit(x))
+    # sdt = robustbase::scaleTau2(na.omit(x))
     up = 3*sdt
     down = -3*sdt
+  }else if(method == "def"){
+    sdt = 1
+    up = 3*sdt
+    down = -3*sdt
+    mean0 = 0
   }
   candidate <- which(x<down | x>up)
   if (length(candidate) >0){
@@ -181,13 +194,13 @@ scr.O <- function(x, method ){
     detect.val = abs(x[candidate])
     removed <- candidate[order(detect.val, decreasing = TRUE)]
     detect.val <- abs(x[removed])
-    limit = max(detect.val)
+    limit = floor(max(detect.val)*10)/10
     last.rm <- c()
-    thres <- min(abs(c(up,down)))
+    thres <- floor(min(abs(c(up,down)))*10)/10
     for (i in seq(limit,thres,-0.1)) {
       detect = which(detect.val > i)
-      E = n*2*pnorm(-i, mean = median(x, na.rm = TRUE), sd = robustbase::scaleTau2(x, na.rm = TRUE))
-      npj = round(length(detect)-E)
+      E = n*2*pnorm(-i, mean = mean0, sd = sdt)
+      npj = myround(length(detect)-E)
       if(npj >0){
         detect.rm = detect[1:npj]
         last.rm <- c(last.rm, removed[detect.rm])
@@ -195,11 +208,11 @@ scr.O <- function(x, method ){
         detect.val <- detect.val[-detect.rm]
       }
     }
-    removed = unique(last.rm)
-    if(is.null(removed) == TRUE){
-      removed <- c()
-    }
-    candidate.out <- removed
+    candidate.out = unique(last.rm)
+    # if(length(removed1)){
+    #   removed <- c()
+    # }
+    # candidate.out <- removed1
   }else{ candidate.out <- c()}
   if( length(candidate.out) >0 ){ 
     x.out <- x
@@ -207,22 +220,29 @@ scr.O <- function(x, method ){
   }else{
     x.out <- x
   }
-  return(list(x.out = x.out, candidate.out = candidate.out))
+  return(list(x = x.out, point.rm = candidate.out))
 }
-screen.O <- function(Y, name.var, method){
+screen.O <- function(Y, name.var, method, iter){
   last.rm <- c()
   removed <- 1
-  y <- Y[name.var] 
+  y <- unlist(Y[name.var])
+  plo <- list()
+  i = 0
+  x <- y
   while(length(removed) > 0){
-    x <- one.step.norm(Y, name.var = name.var)
-    names(x) <- NULL
-    r = scr.O(x, method = method)
-    x <- r$x.out
-    Y[name.var] <- x
-    last.rm <- c(last.rm,r$candidate.out)
-    removed <- r$candidate.out
-    print(removed)
+    i <- i+1
+    if(iter ==1){
+      x <- one.step.norm(Y, name.var = name.var)
+      names(x) <- NULL
+    }
+    re = scr.O(x, method = method)
+    plo[[i]] <- x
+    Y[re$point.rm, name.var] <- NA
+    x <- unlist(Y[name.var])
+    last.rm <- c(last.rm,re$point.rm)
+    removed <- re$point.rm
   }
+  
   if(length(last.rm) != 0){
     x.screened = y[-last.rm]
   } else{
@@ -233,6 +253,30 @@ screen.O <- function(Y, name.var, method){
 # make some iteration with this block 
 # NEED TO SEE THE PLOT AFTER EACH ITERATION, WHY THEY REMOVE TOO MANY POINTS?
 # IF NEEDED, DO SIMULATIONS
-
-
+screen.O1 <- function(y, method){
+  last.rm <- c()
+  removed <- 1
+  plo <- list()
+  i = 0
+  x <- y
+  while(length(removed) > 0){
+    i <- i+1
+    # if(iter ==1){
+    #   x <- one.step.norm(Y, name.var = name.var)
+    #   names(x) <- NULL
+    # }
+    re = scr.O(x, method = method)
+    plo[[i]] <- x
+    x[re$point.rm] <- NA
+    last.rm <- c(last.rm,re$point.rm)
+    removed <- re$point.rm
+  }
+  print(last.rm)
+  if(length(last.rm) != 0){
+    x.screened = y[-last.rm]
+  } else{
+    x.screened = y
+  }
+  return(list(data = x.screened, point.rm = last.rm))
+}
 

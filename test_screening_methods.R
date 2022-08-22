@@ -1,84 +1,10 @@
 # test the screening methods 
 source(paste0(path_code_att,"support_test_screening_methods.R"))
+source(paste0(path_code_att,"support_screening.R"))
 
 gaps.list <- c(5,10,15)
 k = 1
 n0 = 60
-screen.iqr <- function(x) {
-  y = na.omit(x)
-  Q1 <- quantile(x, .25, na.rm = TRUE)
-  Q3 <- quantile(x, .75, na.rm = TRUE)
-  IQR <- IQR(x, na.rm = TRUE)
-  up = Q3+IQR*1.5
-  down = Q1-IQR*1.5
-  removed <- which(x<down | x>up)
-  if (length(removed) >0){
-    x.screened = x[-removed]
-  }else{ x.screened = x}
-  return(list(data = x.screened, point.rm = removed, up = up, down = down))
-}
-screen.diff <- function(x, dif){
-  if(dif == 1){
-    y = diff(x)
-  }
-  Q1 <- quantile(y, .25, na.rm = TRUE)
-  Q3 <- quantile(y, .75, na.rm = TRUE)
-  IQR <- IQR(y, na.rm = TRUE)
-  up = Q3+IQR*1.5
-  down = Q1-IQR*1.5
-  removed <- which(y<down | y>up)
-  list.rm <- removed
-  if (length(list.rm) >0){
-    for (j in c(1:length(removed))){
-      ind = removed[j]
-      ind.n = 11
-      if(ind<10){ 
-        subset <-  x[c(1 : (ind+10))]
-        ind.n = ind
-      }else if (ind>(n0-10)){
-        subset <-  x[c((ind-10): n0)]
-      }else{
-        subset <- x[c((ind-10): (ind+10))]
-      }
-      std.2 <- c()
-      for (k in c(1:2)) {
-        std.2[k] <- sd(subset[-(ind.n+k-1)])
-      }
-      ind.new = which.min(std.2)
-      if(ind.new != 1){
-        list.rm[j] <- list.rm[j]+1
-      }
-    }
-    x.screened = x[-list.rm]
-    list.rm = list.rm[!duplicated(list.rm)]
-  }else{ x.screened = x}
-  return(list(data = x.screened, point.rm = list.rm, up = up, down = down))
-}
-screen.mad <- function(x) {
-  y = abs(x - median(x))/mad(x)
-  removed <- which(y>2.7)
-  if (length(removed) >0){
-    x.screened = x[-removed]
-  }else{ x.screened = x}
-  return(list(data = x.screened, point.rm = removed))
-}
-screen.sca <- function(x) {
-  y = abs(x - median(x))/(robustbase::scaleTau2	(x))
-  removed <- which(y>2.7)
-  if (length(removed) >0){
-    x.screened = x[-removed]
-  }else{ x.screened = x}
-  return(list(data = x.screened, point.rm = removed))
-}
-screen.qn <- function(x) {
-  y = abs(x - median(x))/(robustbase::Qn(x))
-  removed <- which(y>2.7)
-  if (length(removed) >0){
-    x.screened = x[-removed]
-  }else{ x.screened = x}
-  return(list(data = x.screened, point.rm = removed))
-}
-
 nb.sim = 10000
 
 # AR(1) -------------------------------------------------------------------
@@ -329,9 +255,7 @@ plot(x)
 
 
 # compare with other screening method -------------------------------------
-
-
-# replace the difference by the mean of absolute difference bw the tested points with the point before and after 
+# replace the difference by the mean of absolute difference bw the tested points with the point before and after ---------------
 res = data.frame(matrix(NA, ncol = 6, nrow = nb.sim))
 # Box plot
 
@@ -617,6 +541,39 @@ x1 <- arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
 set.seed(122)
 sim.ar2 <-  arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# normal data, iterative screening, no normalization *
+
+Y = as.data.frame(dat[[30]]$bef)
+Y <- data.frame(date = Y1$date, gps.gps = rnorm(1000, 0,1))
+Y1 <- tidyr::complete(Y, date = seq(min(Y$date), min(Y$date)+999, by = "day"))
+a <- screen.O(Y, name.var = "gps.gps", method = 'sigma')
+
+res <- rep(NA, 1000)
+for(r in c(1:1000)){
+  set.seed(r)
+  Y <- data.frame(date = Y1$date, gps.gps = rnorm(1000, 0,1))
+  a <- screen.O(Y, name.var = "gps.gps", method = 'sigma', iter = 1)
+  # a <- screen.O1(Y$gps.gps, method = "def")
+  res[r] <- length( a$point.rm)
+  print(r)
+}
+summary(res)
+hist(res)
+
+# looking at a specific case, where MAD detect more and more modulate 
 
 
 
