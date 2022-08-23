@@ -2,7 +2,7 @@ source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"support_screening.R"))
 
 # # Normalize data first:  ------------------------------------------------
-window.thres = 2
+window.thres = 10
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
 name.var = list.test[4]

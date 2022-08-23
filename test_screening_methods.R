@@ -558,19 +558,31 @@ sim.ar2 <-  arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
 # normal data, iterative screening, no normalization *
 
 date = seq(as.Date("2011-12-30"), as.Date("2011-12-30")+999, by="days")
-
-res <- rep(NA, 1000)
-for(r in c(1:1000)){
+N = 1000
+res <- rep(NA, N)
+confusion <- data.frame(matrix(NA, ncol = 4, nrow = N))
+for(r in c(1:N)){
   set.seed(r)
   Y <- data.frame(date = date, gps.gps = rnorm(1000, 0,1))
-  
-  a <- screen.O(Y, name.var = "gps.gps", method = 'sigma', iter = 1, estimator = "Sca")
-  # a <- screen.O1(Y$gps.gps, method = "def")
+  set.seed(r) 
+  out = 5*sample(c(-1,1,0),1000,replace=T, prob = c(0.005, 0.005, 0.99))
+  out.ind = which(out!=0)
+  Y$gps.gps[out.ind] <- out[out.ind]
+  a <- screen.O(Y, name.var = "gps.gps", method = 'def', iter = 1, estimator = "Sca")
   res[r] <- length( a$point.rm)
-  print(r)
+  TP <- length(which(out.ind %in% a$point.rm))
+  FP <- length(a$point.rm) - TP
+  FN <- length(out.ind[!(out.ind %in% a$point.rm)])
+  TN <- (N - length(a$point.rm)) - FN
+  confusion[r,] <- (c(TP, FP, TN, FN))
 }
-summary(res)
+summary(res)/N
 hist(res)
+colnames(confusion) <- c("TP", "FP", "TN", "FN")
+confusion$TPR <- confusion$TP/(confusion$TP + confusion$FN)
+confusion$pre <- confusion$TP/(confusion$TP + confusion$FP)
+confusion$F1 = (2*confusion$TPR*confusion$pre)/(confusion$TPR+confusion$pre)
+colMeans(confusion)
 
 # looking at a specific case, where MAD detect more and more modulate 
 
