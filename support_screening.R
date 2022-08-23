@@ -167,7 +167,7 @@ myround <- function(y){
   else{z <- round(y)}
   return(z)
 }
-scr.O <- function(x, method){
+scr.O <- function(x, method, estimator){
   n = length(x)
   mean0 = median(x, na.rm = TRUE)
   if(method == "IQR"){
@@ -177,9 +177,7 @@ scr.O <- function(x, method){
     up = Q3+IQR*1.723869
     down = Q1-IQR*1.723869
   }else if(method == "sigma"){
-    sdt <- mad(x, na.rm = TRUE)
-    # sdt = robustbase::Qn(na.omit(x))
-    # sdt = robustbase::scaleTau2(na.omit(x))
+    sdt <- my.estimator(estimator = estimator, x)
     up = 3*sdt
     down = -3*sdt
   }else if(method == "def"){
@@ -209,10 +207,6 @@ scr.O <- function(x, method){
       }
     }
     candidate.out = unique(last.rm)
-    # if(length(removed1)){
-    #   removed <- c()
-    # }
-    # candidate.out <- removed1
   }else{ candidate.out <- c()}
   if( length(candidate.out) >0 ){ 
     x.out <- x
@@ -222,7 +216,7 @@ scr.O <- function(x, method){
   }
   return(list(x = x.out, point.rm = candidate.out))
 }
-screen.O <- function(Y, name.var, method, iter){
+screen.O <- function(Y, name.var, method, iter, estimator){
   last.rm <- c()
   removed <- 1
   y <- unlist(Y[name.var])
@@ -232,10 +226,10 @@ screen.O <- function(Y, name.var, method, iter){
   while(length(removed) > 0){
     i <- i+1
     if(iter ==1){
-      x <- one.step.norm(Y, name.var = name.var)
+      x <- one.step.norm(Y, name.var = name.var, estimator = estimator)
       names(x) <- NULL
     }
-    re = scr.O(x, method = method)
+    re = scr.O(x, method = method, estimator = estimator)
     plo[[i]] <- x
     Y[re$point.rm, name.var] <- NA
     x <- unlist(Y[name.var])
@@ -253,7 +247,7 @@ screen.O <- function(Y, name.var, method, iter){
 # make some iteration with this block 
 # NEED TO SEE THE PLOT AFTER EACH ITERATION, WHY THEY REMOVE TOO MANY POINTS?
 # IF NEEDED, DO SIMULATIONS
-screen.O1 <- function(y, method){
+screen.O1 <- function(y, method,estimator){
   last.rm <- c()
   removed <- 1
   plo <- list()
@@ -265,7 +259,7 @@ screen.O1 <- function(y, method){
     #   x <- one.step.norm(Y, name.var = name.var)
     #   names(x) <- NULL
     # }
-    re = scr.O(x, method = method)
+    re = scr.O(x, method = method,estimator)
     plo[[i]] <- x
     x[re$point.rm] <- NA
     last.rm <- c(last.rm,re$point.rm)
@@ -279,4 +273,14 @@ screen.O1 <- function(y, method){
   }
   return(list(data = x.screened, point.rm = last.rm))
 }
-
+my.estimator <- function(estimator,x){
+  x1 = na.omit(x)
+  if(estimator == "mad"){
+    y = mad(x1)
+  }else if(estimator == "Qn"){
+    y = robustbase::Qn(x1)
+  }else if(estimator == "Sca"){
+    y = robustbase::scaleTau2(x1)
+  }
+  return(y)
+}

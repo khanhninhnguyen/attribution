@@ -1,6 +1,7 @@
 # test the screening methods 
 source(paste0(path_code_att,"support_test_screening_methods.R"))
 source(paste0(path_code_att,"support_screening.R"))
+source(paste0(path_code_att,"sliding_variance.R"))
 
 gaps.list <- c(5,10,15)
 k = 1
@@ -556,16 +557,14 @@ sim.ar2 <-  arima.sim(model = list(ar = 0.8, ma = -0.2), n = 1000)
 
 # normal data, iterative screening, no normalization *
 
-Y = as.data.frame(dat[[30]]$bef)
-Y <- data.frame(date = Y1$date, gps.gps = rnorm(1000, 0,1))
-Y1 <- tidyr::complete(Y, date = seq(min(Y$date), min(Y$date)+999, by = "day"))
-a <- screen.O(Y, name.var = "gps.gps", method = 'sigma')
+date = seq(as.Date("2011-12-30"), as.Date("2011-12-30")+999, by="days")
 
 res <- rep(NA, 1000)
 for(r in c(1:1000)){
   set.seed(r)
-  Y <- data.frame(date = Y1$date, gps.gps = rnorm(1000, 0,1))
-  a <- screen.O(Y, name.var = "gps.gps", method = 'sigma', iter = 1)
+  Y <- data.frame(date = date, gps.gps = rnorm(1000, 0,1))
+  
+  a <- screen.O(Y, name.var = "gps.gps", method = 'sigma', iter = 1, estimator = "Sca")
   # a <- screen.O1(Y$gps.gps, method = "def")
   res[r] <- length( a$point.rm)
   print(r)
@@ -575,9 +574,13 @@ hist(res)
 
 # looking at a specific case, where MAD detect more and more modulate 
 
+ind.out = 3*rbinom(10, 1, gaps.list[k]/100)
+sim.ar <- sim.ar + ind.out*sign(sim.ar)
 
-
-
+a<-c()
+for (r in c(1:1000)) {
+  a <- c(a, sample(c(-1,1),1000,replace=T))
+}
 
 
 

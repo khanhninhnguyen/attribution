@@ -56,7 +56,7 @@ RobEstiSlidingVariance.S.diff <- function(Y, name.var, alpha){# require date in 
   return(sigma.est)
 }
 
-RobEstiSlidingVariance.S <- function(Y, name.var, alpha){# require date in the dataset, return std at time t
+RobEstiSlidingVariance.S <- function(Y, name.var, alpha, estimator){# require date in the dataset, return std at time t
   Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
   x = unlist(Y1[name.var], use.names = FALSE)
   n = nrow(Y1)
@@ -71,9 +71,7 @@ RobEstiSlidingVariance.S <- function(Y, name.var, alpha){# require date in the d
     if(length(na.omit(x.idiff)) <= thre){
       sd <- NA
     }else{
-      sd <- mad(x.idiff, na.rm = TRUE ) # change for AR(1), if white noise alspha = 0
-      # sd <- robustbase::scaleTau2(na.omit(x.idiff)) # change for AR(1), if white noise alspha = 0
-      # sd <- robustbase::Qn(na.omit(x.idiff)) # change for AR(1), if white noise alspha = 0
+      sd <- my.estimator(estimator = estimator, x.idiff)
     }
     sigma.est1[i] <- sd
   }
@@ -156,9 +154,9 @@ sliding.mean <- function(Y, name.var){
   return(slide.med)
 }
 
-one.step.norm <- function(Y, name.var){
+one.step.norm <- function(Y, name.var, estimator){
   norm2 = rep(NA, nrow(Y))
-  std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0)
+  std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator)
   slide.mean <- sliding.median(Y, name.var)
   # step 1: normalize by std and median
   norm1 <- unlist((Y[name.var] - slide.mean)/std.t)
