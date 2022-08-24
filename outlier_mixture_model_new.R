@@ -5,7 +5,7 @@ source(paste0(path_code_att,"support_screening.R"))
 window.thres = 10
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
-name.var = list.test[4]
+name.var = list.test[2]
 dist.mean <- data.frame(matrix(NA, nrow = 0, ncol = (length(seq(-30,30,0.05))-1)))
 data.all <- list()
 
@@ -78,7 +78,7 @@ name.var = list.test[2]
 res.x = list()
 res.y = list()
 for (i in c(1:length(dat))) {
-  x = dat[[i]]$bef[[name.var]]
+  x = dat[[i]]$bef
   if(is.null(x)==FALSE & sum(is.na(x))!= length(x) ){
     a = qqnorm(x, plot.it = FALSE)
     res.x[[i]] <- a$x
@@ -98,7 +98,7 @@ for (r in c(2:length(lim))) {
   }
   limy[r] <- mean(y, na.rm = TRUE)
 }
-
+plot( lim, limy, main = "Mean of QQ plots", xlab= "Theoretical Quantiles", ylab = "Sample Quantiles")
 
 
 
@@ -169,6 +169,44 @@ list.rm[! duplicated(list.rm)]
 summary(res)
 
 which(names(dat) == "auck.2005-11-07.hamt")
+
+
+# see the percentage of normalized data out of 3 sigma in +/-1 year only but sliding var and sliding mean is computed 
+# from the day before to avoid the edge effect
+
+window.thres = 2
+data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
+                                  window.thres,"year_", nearby_ver,".RData")))
+name.var = list.test[2]
+dist.mean <- data.frame(matrix(NA, nrow = 0, ncol = (length(seq(-30,30,0.05))-1)))
+data.all <- list()
+
+for (i in c(1:length(data.cr))) {
+  case.name = names(data.cr)[i]
+  station.ref = substr(case.name ,start = 1, stop = 4)
+  station.near = substr(case.name ,start = 17, stop = 20)
+  data.i = data.cr[[i]]
+  data.i <- tidyr::complete(data.i, date = seq(min(data.i$date), max(data.i$date), by = "day"))
+  breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
+  before =  data.i[which(data.i$date <= breakpoint),]
+  after =  data.i[which(data.i$date > breakpoint),]
+  if(nrow(na.omit(before)) > 30){
+    ind.sta = which(before$date == max(breakpoint %m+% years(-1), min(before$date)))
+    if(length(ind.sta)>0){
+      bef.norm = one.step.norm(before, name.var = name.var, estimator = "Sca") 
+      bef.norm <- bef.norm[ind.sta:length(bef.norm)]
+      data.all <- c(data.all, length(which(abs(bef.norm)>3))/length(bef.norm))
+    }
+  }
+  if(nrow(na.omit(after)) > 30){
+    ind.end = which(after$date == min(breakpoint %m+% years(1), max(after$date)))
+    if(length(ind.end) > 0){
+      aft.norm = one.step.norm(after, name.var = name.var, estimator = "Sca") 
+      aft.norm = aft.norm[1:ind.end]
+      data.all <- c(data.all, length(which(abs(aft.norm)>3))/ length(aft.norm))
+    }
+  }
+}
 
 
 

@@ -127,10 +127,10 @@ dev.off()
 source(paste0(path_code_att,"sliding_variance.R"))
 
 # # Normalize data first:  ------------------------------------------------
-window.thres = 10
+window.thres = 2
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
-name.var = list.test[4]
+name.var = list.test[2]
 dist.mean <- data.frame(matrix(NA, nrow = 0, ncol = (length(seq(-30,30,0.05))-1)))
 data.all <- list()
 for (i in c(1:length(data.cr))) {
@@ -142,18 +142,18 @@ for (i in c(1:length(data.cr))) {
   before =  data.i[which(data.i$date <= breakpoint),]
   after =  data.i[which(data.i$date > breakpoint),]
   if(nrow(na.omit(before)) > 31){
-    bef.norm = two.step.norm(Y = before, name.var)
+    norm.dat = one.step.norm(before, name.var = name.var, estimator = "Sca") 
     if(length(bef.norm)>30){
       hist.b = hist(bef.norm, breaks = seq(-30,30,0.05), plot = FALSE)
-      dist.mean <- rbind(dist.mean, hist.b$counts)
+      dist.mean <- rbind(dist.mean, hist.b$counts/length(bef.norm))
       data.all[[paste0(station.ref,".",as.character( breakpoint), ".", station.near)]]$bef<- bef.norm
     }
   }
   if(nrow(na.omit(after)) > 31){
-    aft.norm = two.step.norm(Y = after, name.var)
+    aft.norm = one.step.norm(after, name.var = name.var, estimator = "Sca") 
     if(length(aft.norm) > 30){
       hist.a = hist(aft.norm, breaks = seq(-30,30,0.05), plot = FALSE)
-      dist.mean <- rbind(dist.mean, hist.a$counts)
+      dist.mean <- rbind(dist.mean, hist.a$counts/length(aft.norm))
       data.all[[paste0(station.ref,".",as.character( breakpoint), ".", station.near)]]$aft <- aft.norm
     }
   }
@@ -164,10 +164,11 @@ save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby
 
 
 res <- data.frame(t = seq(-29.95,30,0.05), count = colMeans(dist.mean))
+res1 <- data.frame(t = seq(-29.95,30,0.1), count = e)
 
 d = res[c(400:800),]
 
-ggplot(d, aes(x = t, y = count))+geom_line()
+ggplot(d, aes(x = t, y = count))+geom_col() + theme_bw()+xlim(-10,10)
 fitG = function(x,y,mu,sig,scale){
   
   f = function(p){

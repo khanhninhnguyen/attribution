@@ -565,10 +565,10 @@ for(r in c(1:N)){
   set.seed(r)
   Y <- data.frame(date = date, gps.gps = rnorm(1000, 0,1))
   set.seed(r) 
-  out = 5*sample(c(-1,1,0),1000,replace=T, prob = c(0.005, 0.005, 0.99))
+  out = 5*sample(c(-1,1,0),1000,replace=T, prob = c(0.05, 0.05, 0.9))
   out.ind = which(out!=0)
   Y$gps.gps[out.ind] <- out[out.ind]
-  a <- screen.O(Y, name.var = "gps.gps", method = 'def', iter = 1, estimator = "Sca")
+  a <- screen.O(Y, name.var = "gps.gps", method = 'def', iter = 1, estimator = "mad")
   res[r] <- length( a$point.rm)
   TP <- length(which(out.ind %in% a$point.rm))
   FP <- length(a$point.rm) - TP

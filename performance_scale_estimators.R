@@ -3,8 +3,10 @@ path_results=paste0("/home/knguyen/Documents/PhD/","Results/")
 library("ggplot2")
 
 nb.sim = 10000
-for (l in c(30,60,90,120)) {
-  n0 = l
+res <- list()
+length.list = c(30,60,90,120)
+for (l in c(1:length(length.list))) {
+  n0 = length.list[l]
   sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
   alpha = 0
   off.set = 0
@@ -16,8 +18,9 @@ for (l in c(30,60,90,120)) {
       x = rnorm(n = n0, mean = 0, sd = 1)
       # adding outlier 
       set.seed(i)
-      ind.out = rbinom(n0, 1, 0.05)
-      x[ind.out] <- max(x)+2
+      out = 5*sample(c(-1,1,0),n0,replace=T, prob = c(0.005, 0.005, 0.99))
+      out.ind = which(out!=0)
+      x[out.ind] <- out[out.ind]
       # set.seed(2)
       # ind.out = rbinom(n0, 1, 0.01)
       # x[ind.out] <- -(max(x)+2)
@@ -39,28 +42,32 @@ for (l in c(30,60,90,120)) {
     # sigma[i,4] <- robustbase::Qn(a)/sqrt(2-2*alpha.e)
     # sigma[i,5] <- robustbase::scaleTau2(a)/sqrt(2-2*alpha.e)
   }
-  colnames(sigma) <- c("classic", "MAD", "Sn", "Qn","ScaleTAu")
-  b = data.frame(estimator = rep(colnames(sigma), each = nb.sim), std = unlist(sigma))
-  p <- ggplot(b, aes(x = estimator, y = std))+ 
-    geom_boxplot()+theme_bw()+
-    labs(subtitle = paste0("phi = ", alpha, ", n = ", n0, ", offset = ", off.set))+
-    geom_hline(yintercept = 1)+
-    theme(axis.text = element_text(size = 15))
-  if(n0==30){p <- p +  ylim(c(0,2))
-  }else{p <- p +  ylim(c(0.5,1.5))}
-
-  jpeg(paste0(path_results,"attribution/variances/sim.e", "phi = ", alpha, ", n = ", n0, ", offset = ", off.set, "o2.jpeg"),
-       width = 3000, height = 1800,res = 300) # change name
-  print(p)
-  dev.off()
+  colnames(sigma) <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
+  std <- sapply(c(1:5), function(x) IQR(sigma[,x]))
+  bias <- sapply(c(1:5), function(x) median(sigma[,x])-1)
+  res$sdt[[l]] <- std
+  res$bias[[l]] <- bias
+  # b = data.frame(estimator = rep(colnames(sigma), each = nb.sim), std = unlist(sigma))
+  # p <- ggplot(b, aes(x = estimator, y = std))+ 
+  #   geom_boxplot()+theme_bw()+
+  #   labs(subtitle = paste0("phi = ", alpha, ", n = ", n0, ", offset = ", off.set))+
+  #   geom_hline(yintercept = 1)+
+  #   theme(axis.text = element_text(size = 15))
+  # if(n0==30){p <- p +  ylim(c(0,2))
+  # }else{p <- p +  ylim(c(0.5,1.5))}
+  # 
+  # jpeg(paste0(path_results,"attribution/variances/sim.e", "phi = ", alpha, ", n = ", n0, ", offset = ", off.set, "o2.jpeg"),
+  #      width = 3000, height = 1800,res = 300) # change name
+  # print(p)
+  # dev.off()
+  
 }
 
 
-
+# Box plot to easily compare different estimators
 boxplot(sigma, ylab = "Std.est", main = "n = 60, offset = 1, std = 1, phi = 0.5")
 abline(h = 1)
 abline(h = 1/sqrt((1-alpha**2)))
-
 
 sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
 d <- c()
@@ -74,4 +81,23 @@ for (k in c(1:nb.sim)){
 
 hist(d)
 summary(d)
+
+# Scatter plot 
+iqr = as.data.frame(res$sdt)
+colnames(iqr) <- c("30", "60", "90", "120")
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
+a = reshape2::melt(iqr, id ="est")
+data.plot <- data.frame()
+
+ggplot(data = a, aes(x = variable, y = value, col = est)) + 
+  geom_point()+
+  theme_bw()+
+  xlab("Sample size")+
+  ylab("IQR")+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"))
+  
+
+
+
 
