@@ -50,5 +50,5 @@ for (i in c(1:length(data.cr))) {
   }
 }
 
-save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"onestep.RData"))
+save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.RData"))
 

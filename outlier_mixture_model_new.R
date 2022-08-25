@@ -210,3 +210,53 @@ for (i in c(1:length(data.cr))) {
 
 
 
+
+
+
+# normalized stations 
+da = data.cr$`auck.2005-11-07.whng`
+
+y = one.step.norm(da, name.var = "gps.gps", estimator = "Sca")
+save(Y, file = paste0(path_results,"auck.2005-11-07.whng.RData"))
+Y = data.frame(date = da$date, gps.gps = y)
+rownames(Y) <- NULL
+a = get(load( file = paste0(path_results,"auck.2005-11-07.whng.RData")))
+
+
+# investigate the concatenated data  --------------------------------------
+# took normalized data 
+dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.RData")))
+# FIND WHY WE EXCESS AT 0
+all.dat <- c()
+zero <- c()
+for (r in 1:length(dat)) {
+  # all.dat = c(all.dat, dat[[r]]$bef$gps.gps, dat[[r]]$aft$gps.gps)
+  if (length(dat[[r]]$bef$gps.gp) >0){
+    zero <- c(zero, length(which(abs(dat[[r]]$bef$gps.gps)<0.05)))
+  }
+  if (length(dat[[r]]$zft$gps.gp) >0){
+    zero <- c(zero, length(which(abs(dat[[r]]$aft$gps.gps)<0.05)))
+  }
+}
+save(all.dat, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.concat.RData"))
+x = get(load(file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.concat.RData")))
+x = na.omit(all.dat)
+a = hist(x, 
+         main = "Histogram of normalized data", 
+         xlab = "", 
+         breaks = 500,
+         xlim=c(-5, 5),
+         prob = TRUE)
+
+qqnorm(x)
+x2 <- a$breaks
+
+fun1 <- dnorm(x2, mean = mean(all.dat, na.rm = T), sd = sd(all.dat, na.rm = T))
+lines(x2, fun1, col = 2, lwd = 2)
+lines(density(na.omit(x)), col = 4, lwd = 2)
+lines(x2, trueCDF, col = 2, lwd = 2)
+
+
+
+
+

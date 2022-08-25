@@ -4,7 +4,8 @@ library("ggplot2")
 
 nb.sim = 10000
 res <- list()
-length.list = c(30,60,90,120)
+length.list = c(10,20,30,60,90,120,240,480,720)
+r <- c()
 for (l in c(1:length(length.list))) {
   n0 = length.list[l]
   sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
@@ -20,13 +21,13 @@ for (l in c(1:length(length.list))) {
       set.seed(i)
       out = 5*sample(c(-1,1,0),n0,replace=T, prob = c(0.005, 0.005, 0.99))
       out.ind = which(out!=0)
-      x[out.ind] <- out[out.ind]
+      x[out.ind] <- x[out.ind]+out[out.ind]
       # set.seed(2)
       # ind.out = rbinom(n0, 1, 0.01)
       # x[ind.out] <- -(max(x)+2)
       # x = arima.sim(model = list( order = c(0, 0, 0)), n = n0, sd = sqrt(1-alpha**2))
     }  
-  
+    r <- c(r,length(out.ind))
     x[(floor(n0/2)+1):n0] <- x[(floor(n0/2)+1):n0]+off.set
     x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
     alpha.e = arima(x, order = c(1,0,0), method = "ML")$coef[1]
@@ -84,7 +85,7 @@ summary(d)
 
 # Scatter plot 
 iqr = as.data.frame(res$sdt)
-colnames(iqr) <- c("30", "60", "90", "120")
+colnames(iqr) <- as.character(length.list)
 iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
 a = reshape2::melt(iqr, id ="est")
 data.plot <- data.frame()
@@ -96,7 +97,21 @@ ggplot(data = a, aes(x = variable, y = value, col = est)) +
   ylab("IQR")+
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size=15,face="bold"))
-  
+
+iqr = as.data.frame(res$bias)
+colnames(iqr) <- as.character(length.list)
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
+a = reshape2::melt(iqr, id ="est")
+data.plot <- data.frame()
+
+ggplot(data = a, aes(x = variable, y = value, col = est)) + 
+  geom_point()+
+  theme_bw()+
+  xlab("Sample size")+
+  ylab("Bias")+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"))
+
 
 
 
