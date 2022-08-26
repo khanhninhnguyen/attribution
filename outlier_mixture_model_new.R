@@ -2,7 +2,7 @@ source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"support_screening.R"))
 
 # # Normalize data first:  ------------------------------------------------
-window.thres = 10
+window.thres = 2
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
 name.var = list.test[2]
@@ -225,17 +225,24 @@ a = get(load( file = paste0(path_results,"auck.2005-11-07.whng.RData")))
 
 # investigate the concatenated data  --------------------------------------
 # took normalized data 
-dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.RData")))
+dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized1.RData")))
 # FIND WHY WE EXCESS AT 0
 all.dat <- c()
-zero <- c()
+zero <- data.frame(matrix(NA, ncol = 2, nrow = length(dat)))
 for (r in 1:length(dat)) {
-  # all.dat = c(all.dat, dat[[r]]$bef$gps.gps, dat[[r]]$aft$gps.gps)
-  if (length(dat[[r]]$bef$gps.gp) >0){
-    zero <- c(zero, length(which(abs(dat[[r]]$bef$gps.gps)<0.05)))
+  if(length(dat[[r]]$bef$gps.gps)>30){
+    ind1 = length(dat[[r]]$bef$gps.gps)-30
+    all.dat = c(all.dat, dat[[r]]$bef$gps.gps[30:ind1])
+  } 
+  if(length(dat[[r]]$aft$gps.gps)>30){
+    ind2 = length(dat[[r]]$aft$gps.gps)-30
+    all.dat = c(all.dat, dat[[r]]$aft$gps.gps[30:ind2])
   }
-  if (length(dat[[r]]$zft$gps.gp) >0){
-    zero <- c(zero, length(which(abs(dat[[r]]$aft$gps.gps)<0.05)))
+  if (length(dat[[r]]$bef$gps.gp) >0){
+    zero[r,1] <- length(which(dat[[r]]$bef$gps.gps<=0 & dat[[r]]$bef$gps.gps>-0.02))
+  }
+  if (length(dat[[r]]$aft$gps.gp) >0){
+    zero[r,2] <- length(which(dat[[r]]$aft$gps.gps<=0 & dat[[r]]$aft$gps.gps>-0.02))
   }
 }
 save(all.dat, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.concat.RData"))
@@ -244,19 +251,31 @@ x = na.omit(all.dat)
 a = hist(x, 
          main = "Histogram of normalized data", 
          xlab = "", 
-         breaks = 500,
+         breaks = 100,
          xlim=c(-5, 5),
          prob = TRUE)
 
-qqnorm(x)
+# qqnorm(x)
 x2 <- a$breaks
 
 fun1 <- dnorm(x2, mean = mean(all.dat, na.rm = T), sd = sd(all.dat, na.rm = T))
+fun2 <- dnorm(x2, mean = 0, sd = 1)
+
 lines(x2, fun1, col = 2, lwd = 2)
 lines(density(na.omit(x)), col = 4, lwd = 2)
 lines(x2, trueCDF, col = 2, lwd = 2)
 
+case.name = names(data.cr)[i]
+station.ref = substr(case.name ,start = 1, stop = 4)
+station.near = substr(case.name ,start = 17, stop = 20)
+data.i = data.cr[[i]]
+breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
+before =  data.i[which(data.i$date <= breakpoint),]
+Y1 <- tidyr::complete(before, date = seq(min(before$date), max(before$date), by = "day"))
+bef = Y1[which(Y1$date > (breakpoint-366)),]
+plot(dat$`albh.2015-12-29.pgc5`$bef$gps.gps, type="l")
+abline(h = 0)
+abline(h = -0.05)
 
-
-
+lines(bef$gps.gps, col="red")
 
