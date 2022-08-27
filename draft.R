@@ -336,3 +336,29 @@ save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby
 
 
 
+
+
+
+
+# simulation test impact of sliding normalization -------------------------
+t0 = as.Date("2003-01-01", format = "%Y-%m-%d")
+raw = c()
+norm = c()
+for(l in c(1:1000)){
+  set.seed(l)
+  # x = arima.sim(model = list(ar = 0.3), n = 1000, sd = 1)
+  x = rnorm(1000, 0 ,1)
+  raw = c(raw, x)
+  y = one.step.norm(Y = data.frame(date = seq(t0, t0+999,1), x = x), "x", estimator = "Sca" )
+  norm = c(norm, y)
+}
+
+a = hist(norm, 
+         main = "Histogram of normalized data", 
+         xlab = "", 
+         breaks = 200,
+         # xlim=c(-5, 5),
+         prob = TRUE)
+
+
+

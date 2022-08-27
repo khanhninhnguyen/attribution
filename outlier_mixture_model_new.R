@@ -245,13 +245,13 @@ for (r in 1:length(dat)) {
     zero[r,2] <- length(which(dat[[r]]$aft$gps.gps<=0 & dat[[r]]$aft$gps.gps>-0.02))
   }
 }
-save(all.dat, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.concat.RData"))
-x = get(load(file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.concat.RData")))
+# save(all.dat, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.concat.RData"))
+# x = get(load(file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.concat.RData")))
 x = na.omit(all.dat)
 a = hist(x, 
          main = "Histogram of normalized data", 
          xlab = "", 
-         breaks = 100,
+         breaks = 200,
          xlim=c(-5, 5),
          prob = TRUE)
 

@@ -106,15 +106,15 @@ sliding.median <- function(Y, name.var){
     x.i = x[begin:end]
     thre = 30
     if(i < 30|i>(n-30)){thre = 16}
-    if(length(na.omit(x.i))>30){
+    if(length(na.omit(x.i))>30 & (length(na.omit(x.i))%%2) ==0){
       slide.med[i] <- median(x.i, na.rm = TRUE)
       l[i] <- length(na.omit(x.i))
     }
   }
   slide.med = slide.med[which(Y1$date %in% Y$date)]
-  l = l[which(Y1$date %in% Y$date)]
-  # return(slide.med)
-  return(l)
+  # l = l[which(Y1$date %in% Y$date)]
+  return(slide.med)
+  # return(l)
 }
   
 sliding.IQR <- function(Y, name.var){
@@ -165,10 +165,11 @@ sliding.mean <- function(Y, name.var){
 one.step.norm <- function(Y, name.var, estimator){
   norm2 = rep(NA, nrow(Y))
   std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator)
-  slide.mean <- sliding.median(Y, name.var)
+  # slide.mean <- sliding.median(Y, name.var)
+  slide.mean <- sliding.mean(Y, name.var)
   # step 1: normalize by std and median
   norm1 <- unlist((Y[name.var] - slide.mean)/std.t)
-  # return(norm1)
+  return(norm1)
 }
 
 
