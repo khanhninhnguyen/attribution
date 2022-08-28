@@ -349,7 +349,7 @@ for(l in c(1:1000)){
   # x = arima.sim(model = list(ar = 0.3), n = 1000, sd = 1)
   x = rnorm(1000, 0 ,1)
   raw = c(raw, x)
-  y = one.step.norm(Y = data.frame(date = seq(t0, t0+999,1), x = x), "x", estimator = "Sca" )
+  y = one.step.norm(Y = data.frame(date = seq(t0, t0+999,1), x = x), "x", estimator = "Sca", length.wind = 500 )
   norm = c(norm, y)
 }
 
@@ -359,6 +359,7 @@ a = hist(norm,
          breaks = 200,
          # xlim=c(-5, 5),
          prob = TRUE)
+lines(x2, fun2, col = 2, lwd = 2)
 
 
 
