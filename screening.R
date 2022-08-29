@@ -23,7 +23,7 @@ for (i in c(1:length(data.cr))) {
     if(length(ind.sta)>0){
       bef.norm.all <- list()
       for (k in c(1:6)) {
-        bef.norm = one.step.norm(before, name.var = list.test[k], estimator = "Sca") 
+        bef.norm = one.step.norm(before, name.var = list.test[k], estimator = "Sca", length.wind = 30) 
         names(bef.norm) <- NULL
         bef.norm.all[[list.test[k]]] <- bef.norm
       }
@@ -38,7 +38,7 @@ for (i in c(1:length(data.cr))) {
     if(length(ind.end) > 0){
       aft.norm.all <- list()
       for (k in c(1:6)) {
-        aft.norm = one.step.norm(after, name.var = list.test[k], estimator = "Sca") 
+        aft.norm = one.step.norm(after, name.var = list.test[k], estimator = "Sca", length.wind = 30) 
         names(aft.norm) <- NULL
         aft.norm.all[[list.test[k]]] <- aft.norm
       }
@@ -50,5 +50,5 @@ for (i in c(1:length(data.cr))) {
   }
 }
 
-save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized1.RData"))
+save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized2.RData"))
 

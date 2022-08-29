@@ -353,12 +353,15 @@ for(l in c(1:1000)){
   norm = c(norm, y)
 }
 
-a = hist(norm, 
+a = hist(x, 
          main = "Histogram of normalized data", 
          xlab = "", 
-         breaks = 200,
+         breaks = 500,
          # xlim=c(-5, 5),
          prob = TRUE)
+x2 <- a$breaks
+fun2 <- dnorm(x2, mean = 0, sd = 1)
+
 lines(x2, fun2, col = 2, lwd = 2)
 
 

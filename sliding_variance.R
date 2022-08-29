@@ -147,25 +147,34 @@ two.step.norm <- function(Y, name.var){
   return(norm2)  
 }
 
-sliding.mean <- function(Y, name.var){
+sliding.mean <- function(Y, name.var, length.wind){
   Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
   x = unlist(Y1[name.var], use.names = FALSE)
   n = length(x)
   slide.med <- rep(NA, n)
+  l = rep(NA, n)
   for (i in c(1:n)) {
-    begin = max(i-30,1)
-    end = min(n, i+30)
+    begin = max(i-(length.wind-1),1)
+    end = min(n, i+length.wind)
     x.i = x[begin:end]
-    slide.med[i] <- mean(x.i, na.rm = TRUE)
+    thre = 30
+    if(i < 30|i>(n-30)){thre = 16}
+    if(length(na.omit(x.i))> thre){
+      slide.med[i] <- mean(x.i, na.rm = TRUE, trim = 0.1)
+      l[i] <- length(na.omit(x.i))
+    }
   }
   slide.med = slide.med[which(Y1$date %in% Y$date)]
+  # l = l[which(Y1$date %in% Y$date)]
   return(slide.med)
+  # return(l)
 }
+
 
 one.step.norm <- function(Y, name.var, estimator, length.wind){
   norm2 = rep(NA, nrow(Y))
   std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator, length.wind)
-  slide.mean <- sliding.median(Y, name.var, length.wind)
+  slide.mean <- sliding.mean(Y, name.var, length.wind)
   # slide.mean <- sliding.mean(Y, name.var)
   # step 1: normalize by std and median
   norm1 <- unlist((Y[name.var] - slide.mean)/std.t)
