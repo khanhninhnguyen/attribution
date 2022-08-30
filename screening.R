@@ -54,7 +54,7 @@ save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby
 
 # Study the distribution of all data sets ----------------------------
 
-dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized2.RData")))
+dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.RData")))
 # concatenate all data
 all.dat <- c()
 zero <- data.frame(matrix(NA, ncol = 2, nrow = length(dat)))
@@ -76,30 +76,39 @@ for (r in 1:length(dat)) {
 }
 x = na.omit(all.dat)
 
-# a = hist(x, 
-#          main = "Histogram of normalized data", 
-#          xlab = "", 
-#          breaks = 200,
-#          xlim=c(-5, 5),
-#          prob = TRUE)
+a = hist(x,
+         main = "Histogram of normalized data",
+         xlab = "",
+         breaks = 1000,
+         xlim=c(-5, 5),
+         prob = TRUE)
+
+y <- x[-which(x>-0.008 & x<0.008)] 
+fit = Mclust(y, G=2, model="V")
+param = fit$parameters
 # # add the normal density 
 # x2 <- a$breaks
 # fun1 <- dnorm(x2, mean = 0, sd = 1)
 # lines(x2, fun1, col = 2, lwd = 2)
 jpeg(paste0(path_results,"attribution/" , "histogram of all data.jpeg"),
      width = 3000, height = 2000,res = 300)
-  data.p = data.frame(x = x)
+  data.p = data.frame(x = y)
   p <- ggplot(data.p, aes(x=x)) +   theme_bw()+ 
-    geom_histogram(aes(y =..density..),
+    geom_histogram(aes(y =..density..), 
                    breaks = seq(-5, 5, by = 0.1),
                    fill="#69b3a2",
                    color="#e9ecef", 
                    alpha=0.9)+
     # xlim(c(-5,5))+
     labs(y = "Density", x = " GPS-GPS' ",
-         subtitle = "Normalized with trimmed mean (10%) + ScaleTau ")
-  p <- p + stat_function(fun = dnorm, args = list(mean = -0.009158155, sd = sqrt(3.1588313)), color = "orange")+
-    stat_function(fun = dnorm, args = list(mean =0.002219531 , sd = sqrt(0.7382873)), color = "orange")
+         subtitle = "Normalized with median + ScaleTau / Fit by Mclust ")
+  p <- p +
+    geom_function(fun = function(x) {
+      param$pro[1]*dnorm(x = x,mean = param$mean[1], sd = sqrt(param$variance$scale[1])) +
+        param$pro[2]*dnorm(x = x,mean = param$mean[2] , sd = sqrt(param$variance$scale[2]))
+      })+
+  geom_function(fun = function(x) param$pro[1]*dnorm(x = x,mean = param$mean[1], sd = sqrt(param$variance$scale[1])), col = "orange")+
+  geom_function(fun = function(x) param$pro[2]*dnorm(x = x,mean = param$mean[2], sd = sqrt(param$variance$scale[2])), col = "purple")
   print(p)
 dev.off()
 
