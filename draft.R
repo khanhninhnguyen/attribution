@@ -354,10 +354,10 @@ for(l in c(1:1000)){
 }
 
 a = hist(x, 
-         main = "Histogram of normalized data", 
+         main = "Histogram of normalized data with trimmed mean", 
          xlab = "", 
          breaks = 500,
-         # xlim=c(-5, 5),
+         xlim=c(-5, 5),
          prob = TRUE)
 x2 <- a$breaks
 fun2 <- dnorm(x2, mean = 0, sd = 1)

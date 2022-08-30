@@ -225,7 +225,7 @@ a = get(load( file = paste0(path_results,"auck.2005-11-07.whng.RData")))
 
 # investigate the concatenated data  --------------------------------------
 # took normalized data 
-dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized1.RData")))
+dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized2.RData")))
 # FIND WHY WE EXCESS AT 0
 all.dat <- c()
 zero <- data.frame(matrix(NA, ncol = 2, nrow = length(dat)))
@@ -259,7 +259,6 @@ a = hist(x,
 x2 <- a$breaks
 
 fun1 <- dnorm(x2, mean = mean(all.dat, na.rm = T), sd = sd(all.dat, na.rm = T))
-fun2 <- dnorm(x2, mean = 0, sd = 1)
 
 lines(x2, fun1, col = 2, lwd = 2)
 lines(density(na.omit(x)), col = 4, lwd = 2)
@@ -278,4 +277,14 @@ abline(h = 0)
 abline(h = -0.05)
 
 lines(bef$gps.gps, col="red")
+
+
+
+mixmdl = normalmixEM(log(x), k=2, epsilon = 1e-08, maxit = 1000, maxrestarts=20, 
+                     verb = TRUE, fast=FALSE, ECM = FALSE, arbmean = TRUE, arbvar = TRUE)
+
+
+
+
+
 
