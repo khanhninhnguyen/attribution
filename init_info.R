@@ -3,7 +3,7 @@ rm(list = ls())
 library(gitcreds)
 # gitcreds_set() to reset the token 
 # library(credentials)
-# set_github_pat() set token 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
+# set_github_pat() set token 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
 # Main program to read all data and its path 
 library("gridExtra")
 library("dplyr") 
