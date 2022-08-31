@@ -90,26 +90,72 @@ param = fit$parameters
 # x2 <- a$breaks
 # fun1 <- dnorm(x2, mean = 0, sd = 1)
 # lines(x2, fun1, col = 2, lwd = 2)
+# QQ PLOT 
+y <- y[-which(abs(y)>8)] 
 jpeg(paste0(path_results,"attribution/" , "histogram of all data.jpeg"),
      width = 3000, height = 2000,res = 300)
   data.p = data.frame(x = y)
+  colors <- c("N(0,1)" = "#CD3700", "Fit1" = "#FF3E96", "Fit2" = "#6495ED", "Fit12" = "#000000")
   p <- ggplot(data.p, aes(x=x)) +   theme_bw()+ 
     geom_histogram(aes(y =..density..), 
                    breaks = seq(-5, 5, by = 0.1),
                    fill="#69b3a2",
                    color="#e9ecef", 
                    alpha=0.9)+
-    # xlim(c(-5,5))+
+    # xlim(c(-7.5,7.5))+
     labs(y = "Density", x = " GPS-GPS' ",
-         subtitle = "Normalized with median + ScaleTau / Fit by Mclust ")
+         subtitle = "Normalized with median + ScaleTau / Fit by Mclust ")+
+    theme(axis.text = element_text(size = 15),
+          axis.title = element_text(size=15,face="bold"),
+          plot.subtitle = element_text(size = 15, face = "bold", colour = "black", vjust = -1))
   p <- p +
     geom_function(fun = function(x) {
       param$pro[1]*dnorm(x = x,mean = param$mean[1], sd = sqrt(param$variance$scale[1])) +
         param$pro[2]*dnorm(x = x,mean = param$mean[2] , sd = sqrt(param$variance$scale[2]))
-      })+
-  geom_function(fun = function(x) param$pro[1]*dnorm(x = x,mean = param$mean[1], sd = sqrt(param$variance$scale[1])), col = "orange")+
-  geom_function(fun = function(x) param$pro[2]*dnorm(x = x,mean = param$mean[2], sd = sqrt(param$variance$scale[2])), col = "purple")
+      }, aes(col = "Fit12"))+
+  geom_function(fun = function(x) dnorm(x = x,mean = 0, sd =1), aes(col = "N(0,1)"))+
+  geom_function(fun = function(x) param$pro[1]*dnorm(x = x,mean = param$mean[1], sd = sqrt(param$variance$scale[1])), aes(col = "Fit2"))+
+  geom_function(fun = function(x) param$pro[2]*dnorm(x = x,mean = param$mean[2], sd = sqrt(param$variance$scale[2])), aes(col = "Fit1"))+
+  scale_color_manual(values = colors)
+  
   print(p)
+dev.off()
+
+n= length(y)
+a =  rnorm(n,mean = param$mean[2] , sd = sqrt(param$variance$scale[2]))
+ind.out = rbinom(n, 1, 0.2299717)
+a[which(ind.out!=0)] <- rnorm(length(which(ind.out!=0)),mean = param$mean[1], sd = sqrt(param$variance$scale[1])) 
+
+library(tidyverse)
+
+set.seed(10)
+dat <- data.frame(Observed = y, 
+                  mixture = a, 
+                  normal = rnorm(n, 0 ,1))
+
+plot_data <- map_dfr(names(dat)[-1], ~as_tibble(qqplot(dat[[.x]], dat$Observed, plot.it = FALSE)) %>% 
+                       mutate(id = .x))
+jpeg(paste0(path_results,"attribution/" , "QQplots.jpeg"),
+     width = 3000, height = 1500,res = 300)
+ggplot(plot_data, aes(x, y, color = id)) + theme_bw()+
+  geom_point() +
+  geom_abline(slope = 1) +
+  facet_wrap(~id)+
+  labs(y = "", x = " Observed ")+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"))
+dev.off()
+
+# CDF PLOT  
+
+df <- data.frame(x = c(y, a, rnorm(n, 0 ,1)), val=factor(rep(c("Observed", "Mixture", "Normal"), c(n,n,n))))
+jpeg(paste0(path_results,"attribution/" , "PPplots.jpeg"),
+     width = 3000, height = 1500,res = 300)
+ggplot(df, aes(x, colour = val, linetype = val)) + theme_bw()+
+  stat_ecdf()+
+  labs(y = "CDF", x = " ")+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"))
 dev.off()
 
 
