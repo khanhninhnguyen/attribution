@@ -161,3 +161,9 @@ dev.off()
 
 
 
+
+
+# compute the skewness of data --------------------------------------------
+dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.RData")))
+
+

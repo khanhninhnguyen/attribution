@@ -167,7 +167,7 @@ myround <- function(y){
   else{z <- round(y)}
   return(z)
 }
-scr.O <- function(x, method, estimator){
+scr.O <- function(x, method, estimator, fix.thres){
   n = length(x)
   mean0 = median(x, na.rm = TRUE)
   if(method == "IQR"){
@@ -182,8 +182,8 @@ scr.O <- function(x, method, estimator){
     down = -3*sdt
   }else if(method == "def"){
     sdt = 1
-    up = 3*sdt
-    down = -3*sdt
+    up = fix.thres
+    down = -fix.thres
     mean0 = 0
   }
   candidate <- which(x<down | x>up)
@@ -216,7 +216,7 @@ scr.O <- function(x, method, estimator){
   }
   return(list(x = x.out, point.rm = candidate.out))
 }
-screen.O <- function(Y, name.var, method, iter, estimator){
+screen.O <- function(Y, name.var, method, iter, estimator, fix.thres){
   last.rm <- c()
   removed <- 1
   y <- unlist(Y[name.var])
@@ -229,7 +229,7 @@ screen.O <- function(Y, name.var, method, iter, estimator){
       x <- one.step.norm(Y, name.var = name.var, estimator = estimator)
       names(x) <- NULL
     }
-    re = scr.O(x, method = method, estimator = estimator)
+    re = scr.O(x, method = method, estimator = estimator, fix.thres)
     plo[[i]] <- x
     Y[re$point.rm, name.var] <- NA
     x <- unlist(Y[name.var])
