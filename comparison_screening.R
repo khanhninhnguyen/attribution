@@ -1,23 +1,20 @@
 ########## This function is used to compare the two method of outlier screening
+source(paste0(path_code_att,"UsedFunctions.R"))
 
-rm(list=ls())
-setwd("/home/knguyen/Documents/PhD/Code/from_Emilie/")
-source("UsedFunctions.R")
-source("/home/knguyen/Documents/PhD/Code/attribution/support_screening.R")
-source("/home/knguyen/Documents/PhD/Code/attribution/sliding_variance.R")
-
+source(paste0(path_code_att,"sliding_variance.R"))
+source(paste0(path_code_att,"support_screening.R"))
 
 library(tidyverse)   
 ########################@
 #### Simulation
 
 # Parameters
-n             = 500   #length of the series
-prob.outliers = 0.1
+n             = 1000   #length of the series
+prob.outliers = 0.01
 size.outliers = 5 
-P.true             = 2  # P can be 1, 2 or 3
+P.true             = 2 # P can be 1, 2 or 3
 
-# Simulated series
+# Simulated series ------------------
 SimData = SimulatedSeries(n,P.true,prob.outliers,size.outliers)
 Y=SimData$Y
 cluster.true=SimData$cluster.true
@@ -93,5 +90,56 @@ a1 <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, 
 obi = sort(a1$point.rm)
 obi
 
-# conclusion: emilie and Olivier threshold give the same results and same with the cluster themself 
+# conclusion: emilie and Olivier threshold give the same results and same with the cluster themself ------------------------
+
+nb.sim = 1000
+res <- data.frame(matrix(NA, nrow = nb.sim, ncol = 3))
+P=6
+for (i in c(1:nb.sim)) {
+  # sim series with P.true groups
+  set.seed(i)
+  SimData = SimulatedSeries(n,P=2,prob.outliers,size.outliers)
+  Y=SimData$Y
+  cluster.true= which(SimData$cluster.true != 1)
+  
+  # classification with fixed Ptrue group 
+  Out.EM.init_imp=EM.init_imp(Y,P=P,option.init="CAH")
+  Out.EM_imp =EM.algo_imp(Y,Out.EM.init_imp$phi,P=P,Out.EM.init_imp$Id.cluster1)
+  tau_imp = Out.EM_imp$tau 
+  cluster_imp = apply(tau_imp,1,which.max)
+  main.g = as.numeric(names(sort(table(cluster_imp),decreasing=TRUE)[1]))
+  emi = which(cluster_imp!=main.g)
+  
+  # algorithm from olivier
+  a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = 3)
+  obi = sort(a$point.rm)
+  clust_obi = rep(1, n)
+  clust_obi[obi] <- 2
+  mcl = Mclust(Y, G=6, model="V")
+  mcl.g = as.numeric(names(sort(table(mcl$classification),decreasing=TRUE)[1]))
+  nin = which(mcl$classification!=mcl.g)
+  
+  res[i,1] <- length(which(emi %in% cluster.true == TRUE))/length(cluster.true)
+  res[i,2] <- length(which(obi %in% cluster.true == TRUE))/length(cluster.true)
+  res[i,3] <- length(which(nin %in% cluster.true == TRUE))/length(cluster.true)
+  
+}
+
+summary(res)
+
+
+plot(Y, col = cluster_imp)
+plot(Y, col = mcl$classification)
+
+clust_obi = rep(1, n)
+clust_obi[obi] <- 2
+plot(Y, col = clust_obi)
+
+
+
+
+
+
+
+
 

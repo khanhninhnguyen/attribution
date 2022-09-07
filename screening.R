@@ -84,7 +84,7 @@ a = hist(x,
          prob = TRUE)
 
 y <- x[-which(x>-0.008 & x<0.008)] 
-fit = Mclust(y, G=2, model="V")
+fit = Mclust(y, G=3, model="V")
 param = fit$parameters
 # # add the normal density 
 # x2 <- a$breaks
@@ -165,5 +165,17 @@ dev.off()
 
 # compute the skewness of data --------------------------------------------
 dat = get(load( file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized.RData")))
-
+ 
+res = rep(NA, length(dat))
+for (i in c(1:length(dat))) {
+  y = dat[[i]]$bef$gps.gps
+  n = length(na.omit(y))
+  if(n>100){
+    numer = sum((y - mean(y, na.rm = TRUE))**3, na.rm = TRUE)
+    denom = (n-1)*(robustbase::scaleTau2(na.omit(y)))**3
+    sk = numer/denom
+    res[i] <- sk
+  }
+}
+boxplot(res)
 

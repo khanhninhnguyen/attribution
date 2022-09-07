@@ -284,3 +284,52 @@ my.estimator <- function(estimator,x){
   }
   return(y)
 }
+scr.O1 <- function(x, method, estimator, fix.thres){ # make it 2 sides 
+  n = length(x)
+  mean0 = median(x, na.rm = TRUE)
+  if(method == "IQR"){
+    Q1 <- quantile(x, .25, na.rm = TRUE)
+    Q3 <- quantile(x, .75, na.rm = TRUE)
+    IQR <- IQR(x, na.rm = TRUE)
+    up = Q3+IQR*1.723869
+    down = Q1-IQR*1.723869
+  }else if(method == "sigma"){
+    sdt <- my.estimator(estimator = estimator, x)
+    up = 3*sdt
+    down = -3*sdt
+  }else if(method == "def"){
+    sdt = 1
+    up = fix.thres
+    down = -fix.thres
+    mean0 = 0
+  }
+  candidate <- which(x<down | x>up)
+  if (length(candidate) >0){
+    # reorder ind of removal 
+    detect.val = abs(x[candidate])
+    removed <- candidate[order(detect.val, decreasing = TRUE)]
+    detect.val <- abs(x[removed])
+    limit = floor(max(detect.val)*10)/10
+    last.rm <- c()
+    thres <- floor(min(abs(c(up,down)))*10)/10
+    for (i in seq(limit,thres,-0.1)) {
+      detect = which(detect.val > i)
+      E = n*2*pnorm(-i, mean = mean0, sd = sdt)
+      npj = myround(length(detect)-E)
+      if(npj >0){
+        detect.rm = detect[1:npj]
+        last.rm <- c(last.rm, removed[detect.rm])
+        removed <- removed[-detect.rm]
+        detect.val <- detect.val[-detect.rm]
+      }
+    }
+    candidate.out = unique(last.rm)
+  }else{ candidate.out <- c()}
+  if( length(candidate.out) >0 ){ 
+    x.out <- x
+    x.out[candidate.out] <- NA
+  }else{
+    x.out <- x
+  }
+  return(list(x = x.out, point.rm = candidate.out))
+}
