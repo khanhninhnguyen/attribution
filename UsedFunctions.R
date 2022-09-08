@@ -24,7 +24,23 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers){
    
    cluster.true[outliers>0]=2
    cluster.true[outliers<0]=3
- }
+  } 
+  if (P==4) {
+    outliers=sample(c(size.outliers,0), n, replace=TRUE,prob=c(prob.outliers,1-prob.outliers))
+    pos.outliers=which(outliers!=0)
+    Y=rnorm(n,0,1)
+    Y[pos.outliers] <- Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = 0, sd = 2)
+    
+    cluster.true[pos.outliers]=2
+  }
+  if (P==5) {
+    outliers=sample(c(size.outliers,0), n, replace=TRUE,prob=c(prob.outliers,1-prob.outliers))
+    pos.outliers=which(outliers!=0)
+    Y=rnorm(n,0,1)
+    Y[pos.outliers] <- size.outliers
+    
+    cluster.true[pos.outliers]=2
+  }
 
   invisible(list(Y =Y,cluster.true=cluster.true))
 }

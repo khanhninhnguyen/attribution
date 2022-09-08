@@ -22,6 +22,7 @@ hist(Y,breaks = 20)
               ######
               #### Real data
 load(paste0(path_results,"auck.2005-11-07.whng.RData"))
+Y = Y[which(Y$date>as.Date("2005-11-07")),]
 dates=Y$date
 Y=Y$gps.gps
 n=length(Y)
@@ -74,14 +75,15 @@ tau_imp=TAU_imp[[P.best_imp]]
 P.best_imp
 
 # #         #### EM algorithm for a fixed P
-# P=2
-# Out.EM.init_imp=EM.init_imp(Y,P,option.init)
-# Out.EM_imp =EM.algo_imp(Y,Out.EM.init_imp$phi,P,Out.EM.init_imp$Id.cluster1)
-# PHI_imp[[P]]= Out.EM_imp$phi
-# TAU_imp[[P]]=Out.EM_imp$tau
-# empty_imp[P] = Out.EM_imp$empty
-# dv_imp[P] = Out.EM_imp$dv
-# lvincP_imp[P]=Out.EM_imp$lvinc
+P=3
+Out.EM.init_imp=EM.init_imp(Y,P,option.init)
+Out.EM_imp =EM.algo_imp(Y,Out.EM.init_imp$phi,P,Out.EM.init_imp$Id.cluster1)
+PHI_imp[[P]]= Out.EM_imp$phi
+TAU_imp[[P]]=Out.EM_imp$tau
+empty_imp[P] = Out.EM_imp$empty
+dv_imp[P] = Out.EM_imp$dv
+lvincP_imp[P]=Out.EM_imp$lvinc
+tau_imp=TAU_imp[[P]]
 
         #### Classification
 
@@ -185,14 +187,14 @@ for (p in 1:P){
 library(mclust)
 
 Pmax=10
-res.bic <- mclustBIC(Y, G=1:Pmax,modelName="E")   # ---> donne 1 group
+res.bic <- mclustBIC(Y, G=1:Pmax,modelName="V")   # ---> donne 1 group
 plot(res.bic)
 
 vraiss=c()
 for (i in 1:Pmax){
   dist.Y=dist(Y)
   Clust.cah<- hclust(dist.Y^2, method = "ward.D")  
-  classif.outliers <- Mclust(Y,G=i,modelName="E",initialization=Clust.cah)
+  classif.outliers <- Mclust(Y,G=i,modelName="V",initialization=Clust.cah)
   #classif.outliers <- Mclust(Y,G=i,modelName="E")
   vraiss[i]=classif.outliers$loglik
 }
