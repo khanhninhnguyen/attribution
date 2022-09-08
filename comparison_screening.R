@@ -155,7 +155,7 @@ P=3
 for (i in c(1:nb.sim)) {
   # sim series with P.true groups
   set.seed(i)
-  SimData = SimulatedSeries(n,P=3,prob.outliers,size.outliers)
+  SimData = SimulatedSeries(n,P=6,prob.outliers,size.outliers)
   Y=SimData$Y
   cluster.true= which(SimData$cluster.true != 1)
   
@@ -177,17 +177,17 @@ for (i in c(1:nb.sim)) {
   # mcl.g = as.numeric(names(sort(table(mcl$classification),decreasing=TRUE)[1]))
   # nin = which(mcl$classification!=mcl.g)
   # adjust quantile 
-  # adj.qua = boxB(Y,method="adjbox")
-  # clust_qua = rep(1, n)
-  # clust_qua[adj.qua$] <- 2
+  adj.qua = boxB(Y,method="adjbox")
+  clust_qua = rep(1, n)
+  clust_qua[adj.qua$outliers] <- 2
   
   res[i,1] <- length(which(emi %in% cluster.true == TRUE))/length(cluster.true)
   res[i,2] <- length(which(obi %in% cluster.true == TRUE))/length(cluster.true)
-  res[i,3] <- length(which(nin %in% cluster.true == TRUE))/length(cluster.true)
+  res[i,3] <- length(which( clust_qua %in% cluster.true == TRUE))/length(cluster.true)
   
   res[i,4] <- length(which(emi %in% cluster.true == TRUE))/length(emi)
   res[i,5] <- length(which(obi %in% cluster.true == TRUE))/length(obi)
-  res[i,6] <- length(which(nin %in% cluster.true == TRUE))/length(nin)
+  res[i,6] <- length(which( clust_qua %in% cluster.true == TRUE))/length( clust_qua)
 }
 summary(res)
 
@@ -197,7 +197,13 @@ hist(Y, breaks = 100, main =  "Histogram of simulated data")
 r <- rep(NA, 1000)
 for(k in c(1:1000)){
   set.seed(k)
-  test  <-  rsn(n = 1000, xi = 0, omega = 1, alpha=1)
-  r[k] <-  robustbase::scaleTau2(test)
+  test  <-  rsn(n = 1000, xi = 0, omega = 1, alpha=0.6)
+  # r[k] <-  robustbase::scaleTau2(test)
+  r[k] <-  IQR(test)/1.349
 }
+summary(r)
+
+
+
+
 

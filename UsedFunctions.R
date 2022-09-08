@@ -41,6 +41,15 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers){
     
     cluster.true[pos.outliers]=2
   }
+  if (P==6) {
+    outliers=sample(c(size.outliers,0), n, replace=TRUE,prob=c(prob.outliers,1-prob.outliers))
+    pos.outliers=which(outliers!=0)
+    Y=rsn(n = 1000, xi = 0, omega = 1, alpha=0.6)
+    Y[pos.outliers] <- Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = size.outliers, sd = 1)
+    
+    cluster.true[pos.outliers]=2
+  }
+  
 
   invisible(list(Y =Y,cluster.true=cluster.true))
 }
