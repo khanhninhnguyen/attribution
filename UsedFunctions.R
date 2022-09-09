@@ -3,7 +3,7 @@
 
 #### Function that simulates a series with or without outliers
 
-SimulatedSeries <- function(n,P,prob.outliers,size.outliers){
+SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
   
   cluster.true=rep(1,n)
   
@@ -26,7 +26,7 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers){
    cluster.true[outliers<0]=3
   } 
   if (P==4) {
-    outliers=sample(c(size.outliers,0), n, replace=TRUE,prob=c(prob.outliers,1-prob.outliers))
+    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
     pos.outliers=which(outliers!=0)
     Y=rnorm(n,0,1)
     Y[pos.outliers] <- Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = 0, sd = 2)
@@ -34,10 +34,10 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers){
     cluster.true[pos.outliers]=2
   }
   if (P==5) {
-    outliers=sample(c(size.outliers,0), n, replace=TRUE,prob=c(prob.outliers,1-prob.outliers))
+    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
     pos.outliers=which(outliers!=0)
     Y=rnorm(n,0,1)
-    Y[pos.outliers] <- size.outliers
+    Y[pos.outliers] <-  outliers[which(outliers!=0)]
     
     cluster.true[pos.outliers]=2
   }
@@ -49,7 +49,14 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers){
     
     cluster.true[pos.outliers]=2
   }
-  
+  if (P==7){
+    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
+    pos.outliers=which(outliers!=0 )
+    Y=arima.sim(model = list(ar = rho, ma = theta), n = n0, sd = sqrt(1-alpha**2)) +outliers
+    
+    cluster.true[outliers>0]=2
+    cluster.true[outliers<0]=3
+  } 
 
   invisible(list(Y =Y,cluster.true=cluster.true))
 }

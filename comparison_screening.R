@@ -204,6 +204,6 @@ for(k in c(1:1000)){
 summary(r)
 
 
-
+load(file=paste0(path_results, "skew.RData"))
 
 
