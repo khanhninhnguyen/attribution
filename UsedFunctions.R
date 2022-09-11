@@ -42,7 +42,7 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     cluster.true[pos.outliers]=2
   }
   if (P==6) {
-    outliers=sample(c(size.outliers,0), n, replace=TRUE,prob=c(prob.outliers,1-prob.outliers))
+    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
     pos.outliers=which(outliers!=0)
     Y=rsn(n = 1000, xi = 0, omega = 1, alpha=0.6)
     Y[pos.outliers] <- Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = size.outliers, sd = 1)
@@ -52,8 +52,13 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
   if (P==7){
     outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
     pos.outliers=which(outliers!=0 )
-    Y=arima.sim(model = list(ar = rho, ma = theta), n = n0, sd = sqrt(1-alpha**2)) +outliers
-    
+    if(theta == 0 & rho == 0){
+      Y=rnorm(n,0,1)
+    }else{
+      ratio = (1 + 2*theta*rho + theta**2)/(1 - rho**2)
+      Y=arima.sim(model = list(ar = rho, ma = theta), n = n0, sd = sqrt(1/ratio) )
+    }
+    Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = 0, sd = 2)
     cluster.true[outliers>0]=2
     cluster.true[outliers<0]=3
   } 

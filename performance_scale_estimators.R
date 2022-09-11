@@ -3,32 +3,41 @@ path_results=paste0("/home/knguyen/Documents/PhD/","Results/")
 library("ggplot2")
 source(paste0("/home/knguyen/Documents/PhD/","Code/attribution/","UsedFunctions.R"))
 
-
 nb.sim = 10000
 res <- list()
 length.list = c(10, 20, 30, 60, 120, 360, 720)
-outlier.list = seq(0.01, 0.2, 0.03)
+outlier.list = seq(0.00, 0.1, 0.01)
+outlier.list = seq(0.00, 0.1, 0.01)
+rho.list = seq(0.0, 0.9, 0.15)
+var.list <- rho.list
+size.outliers = 3
 
-var.list <- outlier.list
-size.outliers = 5
-model.n = 5
+choose_model <- function(x){
+  if(x == 1){ P = 5 } # fixed value of outlier
+  else if(x == 2){ P = 3 } # normal outlier 
+  else if(x == 3){ P = 4 } # normal overlayed outlier 
+  else if(x == 4){ P = 7 } # normal overlayed outlier + arma data
+  return(P)
+}
+model.out = 4
+P = choose_model(model.out)
 for (l in c(1:length(var.list))) {
-  # n0 = length.list[l]
-  prob.outliers = var.list[l]
+  n0 = 1000
+  prob.outliers = 0
   sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
-  rho = 0
+  rho = var.list[l]
   theta = 0
   off.set = 0
-  n0 = 60
+  ratio = sqrt((1 + 2*theta*rho + theta**2)/(1 - rho**2))
   for (i in 1:nb.sim) {
     set.seed(i)
-    x = SimulatedSeries(n = n0, P = model.n, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
+    x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
     # x <- rnorm(n = n0, mean = 0, sd =1)
     x[(floor(n0/2)+1):n0] <- x[(floor(n0/2)+1):n0]+off.set
     x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
     # alpha.e = arima(x, order = c(1,0,0), method = "ML")$coef[1]
     # a = diff(x)
-    sigma[i,1] = sd(x)
+    sigma[i,1] <- sd(x)
     sigma[i,2] <- mad(x)
     sigma[i,3] <- robustbase::Sn(x)
     sigma[i,4] <- robustbase::Qn(x)
@@ -81,14 +90,16 @@ summary(d)
 
 # Scatter plot ----------------
 # IQR
-lab.x = "Outlier percentage"
+lab.x = "Rho"
 
 iqr = as.data.frame(res$sdt)
 colnames(iqr) <- as.character(var.list)
-iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
+true.bias <- iqr[1,1]*ratio
+iqr <- rbind(iqr, c(true.bias))
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu", "true")
 a = reshape2::melt(iqr, id ="est")
 data.plot <- data.frame()
-jpeg(paste0(path_results,"attribution/variances/IQR.model",model.n, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers ),
+jpeg(paste0(path_results,"attribution/variances/IQR.model",model.out, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers,"1000.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = variable, y = value, col = est)) + 
   geom_point()+
@@ -101,12 +112,14 @@ dev.off()
 # BIAS
 iqr = as.data.frame(res$bias)
 colnames(iqr) <- as.character(var.list)
-iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
+true.bias <- iqr[1,1]*ratio
+iqr <- rbind(iqr, c(true.bias))
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu", "true")
 a = reshape2::melt(iqr, id ="est")
 lim1 = floor(min(a$value)*10)/10
 lim2 = ceiling(max(a$value)*10)/10
 data.plot <- data.frame()
-jpeg(paste0(path_results,"attribution/variances/bias.model", model.n, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers ),
+jpeg(paste0(path_results,"attribution/variances/bias.model", model.out, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers, "1000.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = variable, y = value, col = est)) + 
   geom_point()+
