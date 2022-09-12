@@ -7,9 +7,8 @@ nb.sim = 10000
 res <- list()
 length.list = c(10, 20, 30, 60, 120, 360, 720)
 outlier.list = seq(0.00, 0.1, 0.01)
-outlier.list = seq(0.00, 0.1, 0.01)
 rho.list = seq(0.0, 0.9, 0.15)
-var.list <- rho.list
+var.list <- outlier.list
 size.outliers = 3
 
 choose_model <- function(x){
@@ -22,11 +21,12 @@ choose_model <- function(x){
 model.out = 4
 P = choose_model(model.out)
 for (l in c(1:length(var.list))) {
-  n0 = 1000
-  prob.outliers = 0
+  n0 = 60
+  prob.outliers = var.list[l]
+  print(prob.outliers)
   sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
-  rho = var.list[l]
-  theta = 0
+  rho = 0.8
+  theta = -0.5
   off.set = 0
   ratio = sqrt((1 + 2*theta*rho + theta**2)/(1 - rho**2))
   for (i in 1:nb.sim) {
@@ -37,11 +37,11 @@ for (l in c(1:length(var.list))) {
     x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
     # alpha.e = arima(x, order = c(1,0,0), method = "ML")$coef[1]
     # a = diff(x)
-    sigma[i,1] <- sd(x)
-    sigma[i,2] <- mad(x)
-    sigma[i,3] <- robustbase::Sn(x)
-    sigma[i,4] <- robustbase::Qn(x)
-    sigma[i,5] <- robustbase::scaleTau2(x)
+    sigma[i,1] <- var(x)
+    sigma[i,2] <- mad(x)**2
+    sigma[i,3] <- robustbase::Sn(x)**2
+    sigma[i,4] <- robustbase::Qn(x)**2
+    sigma[i,5] <- robustbase::scaleTau2(x)**2
     # sigma[i,1] = sd(a)/sqrt(2-2*alpha.e)
     # sigma[i,2] <- mad(a)/sqrt(2-2*alpha.e)
     # sigma[i,3] <- robustbase::Sn(a)/sqrt(2-2*alpha.e)
@@ -50,7 +50,7 @@ for (l in c(1:length(var.list))) {
   }
   colnames(sigma) <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
   std <- sapply(c(1:5), function(x) IQR(sigma[,x]))
-  bias <- sapply(c(1:5), function(x) median(sigma[,x])-1)
+  bias <- sapply(c(1:5), function(x) mean(sigma[,x])-1)
   res$sdt[[l]] <- std
   res$bias[[l]] <- bias
   # b = data.frame(estimator = rep(colnames(sigma), each = nb.sim), std = unlist(sigma))
@@ -90,46 +90,78 @@ summary(d)
 
 # Scatter plot ----------------
 # IQR
-lab.x = "Rho"
+lab.x = "Outlier percentage"
 
 iqr = as.data.frame(res$sdt)
 colnames(iqr) <- as.character(var.list)
-true.bias <- iqr[1,1]*ratio
-iqr <- rbind(iqr, c(true.bias))
-iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu", "true")
+# ratio.l = sqrt((1 + 2*theta*rho.list + theta**2)/(1 - rho.list**2))
+# true.bias <- iqr[1,1]*ratio.l
+# iqr <- rbind(iqr, c(true.bias))
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
 a = reshape2::melt(iqr, id ="est")
 data.plot <- data.frame()
-jpeg(paste0(path_results,"attribution/variances/IQR.model",model.out, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers,"1000.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/IQR.model",model.out, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers,"60.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = variable, y = value, col = est)) + 
   geom_point()+
   theme_bw()+
   xlab(lab.x)+
-  scale_y_continuous( name = "IQR", limits = c(0, ceiling(max(a$value)*10)/10), breaks = seq(0, ceiling(max(a$value)*10)/10, 0.1))+
+  scale_y_continuous( name = "IQR", limits = c(0, ceiling(max(a$value)*10)/10), breaks = seq(0.2, ceiling(max(a$value)*10)/10, 0.1))+
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size=15,face="bold"))
 dev.off()
 # BIAS
 iqr = as.data.frame(res$bias)
 colnames(iqr) <- as.character(var.list)
-true.bias <- iqr[1,1]*ratio
-iqr <- rbind(iqr, c(true.bias))
-iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu", "true")
+# true.bias <- sample.b 
+# iqr <- rbind(iqr, c(true.bias))
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
 a = reshape2::melt(iqr, id ="est")
 lim1 = floor(min(a$value)*10)/10
 lim2 = ceiling(max(a$value)*10)/10
 data.plot <- data.frame()
-jpeg(paste0(path_results,"attribution/variances/bias.model", model.out, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers, "1000.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/bias.model", model.out, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers, "60.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = variable, y = value, col = est)) + 
   geom_point()+
   theme_bw()+
   xlab(lab.x)+
-  scale_y_continuous( name = "Bias", limits = c(lim1, lim2), breaks = seq(lim1, lim2, 0.1))+
+  scale_y_continuous( name = "Bias", limits = c(lim1, lim2), breaks = round(seq(lim1, lim2, 0.1), digits=2)) +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size=15,face="bold"))
 dev.off()
 
+d <- rep(NA, 10000)
+r = 1/(1-0.9**2)
+e = ARMAacf(ar=0.5, lag.max = 100)
+s=0
+for (j in (1:99)) {
+  s = s+ (1-j/100)*e[j]
+}
+e = (1-2*s/99)*(1/(1-0.5**2))
+for (i in c(1:10000)) {
+  # x <- rnorm(20, 0 ,1)
+  x <- arima.sim(model = list(ar = 0.5), n =100, sd = 1, n.start =1000 )
+  d[i] <- var(x)
+}
 
+summary(d)
+
+sample.b <- c()
+for (rho in rho.list) {
+  n=60
+  ac = ARMAacf(ar=rho , lag.max = 60)
+  s=0
+  for (j in (1:59)) {
+    s = s+ (1-j/60)*ac[j]
+  }
+  true.v = 1
+  a = (1-(2*s)/(n-1))
+  e = (a*true.v/n0)*1.35
+  sample.b <- c(sample.b,e)  
+}
+sav <- sample.b
+
+sample.b - sav
 
 

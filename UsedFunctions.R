@@ -58,7 +58,7 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
       ratio = (1 + 2*theta*rho + theta**2)/(1 - rho**2)
       Y=arima.sim(model = list(ar = rho, ma = theta), n = n0, sd = sqrt(1/ratio) )
     }
-    Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = 0, sd = 2)
+    Y[pos.outliers] <- Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = 0, sd = 2)
     cluster.true[outliers>0]=2
     cluster.true[outliers<0]=3
   } 
