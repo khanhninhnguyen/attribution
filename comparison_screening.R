@@ -18,6 +18,7 @@ choose_model <- function(x){
   else if(x == 2){ P = 3 } # normal outlier 
   else if(x == 3){ P = 4 } # normal overlayed outlier 
   else if(x == 4){ P = 7 } # normal overlayed outlier + arma data
+  else if(x == 5){ P = 8 } # normal overlayed outlier + replaced at a threshold
   return(P)
 }
 model.out = 3

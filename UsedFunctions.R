@@ -63,10 +63,18 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     cluster.true[outliers<0]=3
   } 
   if (P==8) { # replace tail of normal by tail of the outlier distributio, (0, sigma >1)
-    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
-    pos.outliers=which(outliers!=0)
+    per.out = sum(pnorm(c(-size.outliers:-1000), mean = 0, sd = 2))*2
+    n1 = round(n*prob.outliers/per.out)
     Y=rnorm(n,0,1)
-    Y[pos.outliers] <- Y[pos.outliers] + rnorm(length(Y[pos.outliers]), mean = 0, sd = 2)
+    out.lier = rnorm(n1, mean = 0, sd = 2)
+    n2 = length(which(abs(out.lier)>size.outliers))
+    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(n2/(2*n),n2/(2*n),1-n2/n))
+    pos.outliers=which(outliers!=0)
+    Y[which(abs(Y)>size.outliers)] <- NA
+    list.replaced = out.lier[which(abs(out.lier)>3)]
+    list.replaced <- list.replaced[order(abs(list.replaced))]
+    
+    Y[pos.outliers] <- list.replaced[1:length(pos.outliers)]
     
     cluster.true[pos.outliers]=2
   }
