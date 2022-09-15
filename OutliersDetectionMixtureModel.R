@@ -1,15 +1,18 @@
 rm(list=ls())
 setwd("/Users/lebarbier/Desktop/Boulot/Theses&Stages/Theses/NinhNguyen/MixtureModelForOutliers/")
 source("UsedFunctions.R")
-library(tidyverse)   
-          ########################@
-          #### Simulation
+library(tidyverse) 
+
+
+
+########################@
+#### Simulation
 
 # Parameters
 n             = 500   #length of the series
 prob.outliers = 0.1
 size.outliers = 5 
-P.true             = 2  # P can be 1, 2 or 3
+P.true        = 3  # P can be 1, 2 or 3
 
 # Simulated series
 SimData = SimulatedSeries(n,P.true,prob.outliers,size.outliers)
@@ -19,10 +22,10 @@ cluster.true=SimData$cluster.true
 plot(Y,col=cluster.true,pch=16,cex=0.8)
 hist(Y,breaks = 20)
 
-              ######
-              #### Real data
-load(paste0(path_results,"auck.2005-11-07.whng.RData"))
-Y = Y[which(Y$date>as.Date("2005-11-07")),]
+######
+#### Real data
+load(paste0(path_results,"attribution/auck.2005-11-07.whng.RData"))
+Y = Y[which(Y$date > as.Date("2005-11-07") & Y$date < as.Date("2006-11-07")),]
 dates=Y$date
 Y=Y$gps.gps
 n=length(Y)
@@ -33,10 +36,19 @@ dates=dates[-rg.na]
 n=length(Y)
 # Plot
 plot(dates,Y,pch=16,cex=0.8)
-hist(Y,breaks = 20)
 
+hist(Y,breaks = 30,freq=FALSE)
+yseq=seq(min(Y),max(Y),0.01)
+fnorm=dnorm(yseq,0,1)
+lines(yseq,fnorm,col="red")
+ft=dt(yseq,n-1)
+lines(yseq,ft,col="blue")
 
-              #### EM with imposed distribution for one group and variances=1 for P=1:Pmax
+#########
+# Gaussian mixture model with same variance
+
+#### 1. N(0,1) and the others variances=1
+
 option.init="CAH"
 
 Pmax=10  # Pmax>1. 
@@ -68,30 +80,29 @@ lines(BIC.c_imp,col="red")
 #s2.est=var(Y)
 #a=-0.5*n*log((2*pi))- 0.5*sum(Y^2)
 #b=-0.5*n*log((2*pi*s2.est))- 0.5*sum((Y-mu.est)^2)/s2.est
-        ### Choice of P
+### Choice of P
 P.best_imp=which(BIC.c_imp==max(BIC.c_imp))
 phi_imp=PHI_imp[[P.best_imp]]
 tau_imp=TAU_imp[[P.best_imp]]
 P.best_imp
 
 # #         #### EM algorithm for a fixed P
-P=3
-Out.EM.init_imp=EM.init_imp(Y,P,option.init)
-Out.EM_imp =EM.algo_imp(Y,Out.EM.init_imp$phi,P,Out.EM.init_imp$Id.cluster1)
-PHI_imp[[P]]= Out.EM_imp$phi
-TAU_imp[[P]]=Out.EM_imp$tau
-empty_imp[P] = Out.EM_imp$empty
-dv_imp[P] = Out.EM_imp$dv
-lvincP_imp[P]=Out.EM_imp$lvinc
-tau_imp=TAU_imp[[P]]
+# P=2
+# Out.EM.init_imp=EM.init_imp(Y,P,option.init)
+# Out.EM_imp =EM.algo_imp(Y,Out.EM.init_imp$phi,P,Out.EM.init_imp$Id.cluster1)
+# PHI_imp[[P]]= Out.EM_imp$phi
+# TAU_imp[[P]]=Out.EM_imp$tau
+# empty_imp[P] = Out.EM_imp$empty
+# dv_imp[P] = Out.EM_imp$dv
+# lvincP_imp[P]=Out.EM_imp$lvinc
 
-        #### Classification
+#### Classification
 
 cluster_imp = apply(tau_imp,1,which.max)
 #table(cluster.true,cluster)
 table(cluster_imp)
-        
-        #### Plot
+
+#### Plot
 
 plot(Y,col=cluster_imp,pch=16,cex=0.8)
 
@@ -106,7 +117,7 @@ for (p in 1:P){
 }
 
 
-            #### EM without imposed distribution for P=1:Pmax
+#### 2. gaussians with same variance=1
 option.init="CAH"
 
 Pmax=10  # Pmax>1. 
@@ -181,20 +192,19 @@ for (p in 1:P){
 
 
 
-###############################
-#### Test de mclust
+#### 3. Gaussians with same variances but estimated
 
 library(mclust)
 
 Pmax=10
-res.bic <- mclustBIC(Y, G=1:Pmax,modelName="V")   # ---> donne 1 group
+res.bic <- mclustBIC(Y, G=1:Pmax,modelName="E")   # ---> donne 1 group
 plot(res.bic)
 
 vraiss=c()
 for (i in 1:Pmax){
   dist.Y=dist(Y)
   Clust.cah<- hclust(dist.Y^2, method = "ward.D")  
-  classif.outliers <- Mclust(Y,G=i,modelName="V",initialization=Clust.cah)
+  classif.outliers <- Mclust(Y,G=i,modelName="E",initialization=Clust.cah)
   #classif.outliers <- Mclust(Y,G=i,modelName="E")
   vraiss[i]=classif.outliers$loglik
 }
@@ -209,3 +219,146 @@ plot(Y,col=classif.outliers$classification,pch=16,cex=0.8)
 # comparison between the classifications
 
 table(cluster,cluster_imp)
+
+
+
+#### 4. Gaussians with unequal variances with P=2
+P=2
+dist.Y=dist(Y)
+Clust.cah<- hclust(dist.Y^2, method = "ward.D")  
+classif.outliers <- Mclust(Y,G=P,modelName="V",initialization=Clust.cah)
+classif.outliers$parameters
+
+plot(Y,col=classif.outliers$classification,pch=16,cex=0.8)
+
+
+#### 5. P=2, N(mu,s2) et N(mu, a*s2)
+
+# initialisation with a mixture model with unequal variance
+P=2
+dist.Y=dist(Y)
+Clust.cah<- hclust(dist.Y^2, method = "ward.D")  
+classif.outliers <- Mclust(Y,G=P,modelName="V",initialization=Clust.cah)
+
+mu=classif.outliers$parameters$mean
+s2=classif.outliers$parameters$variance$sigmasq
+prop=classif.outliers$parameters$pro
+
+b    = order(s2)
+s2   = sort(s2)
+mu   = mu[b]
+prop = prop[b]
+
+phi=list()
+phi=list(prop=prop,mu=mu,s2=s2)
+# 
+Out.EM_SameMean_PropVariance =EM.algo_SameMean_PropVariance(Y,phi,P)
+phi_SameMean_PropVariance= Out.EM_SameMean_PropVariance$phi
+tau_SameMean_PropVariance=Out.EM_SameMean_PropVariance$tau
+empty_SameMean_PropVariance = Out.EM_SameMean_PropVariance$empty
+dv_SameMean_PropVariance= Out.EM_SameMean_PropVariance$dv
+lvinc_SameMean_PropVariance=Out.EM_SameMean_PropVariance$lvinc
+
+phi_SameMean_PropVariance
+#### Classification
+
+cluster_SameMean_PropVariance = apply(tau_SameMean_PropVariance,1,which.max)
+#table(cluster.true,cluster)
+table(cluster_SameMean_PropVariance)
+
+#### Plot
+
+plot(Y,col=cluster_SameMean_PropVariance+1,pch=16,cex=0.8)
+
+yseq=seq(min(Y),max(Y),0.001)
+f.per.cluster=matrix(0,ncol=length(yseq),nrow=P)
+for (p in 1:P){
+  f.per.cluster[p,]=dnorm(yseq,phi_SameMean_PropVariance$mu[p],sqrt(phi_SameMean_PropVariance$s2[p]))
+}
+hist(Y,breaks = 20,freq=FALSE)
+for (p in 1:P){
+  lines(yseq,f.per.cluster[p,],col=p)
+}
+
+table(classif.outliers$classification,cluster_SameMean_PropVariance)
+table(cluster.true,cluster_SameMean_PropVariance)
+table(cluster.true,classif.outliers$classification)
+
+
+hist(Y[cluster_SameMean_PropVariance==1],breaks = 20,freq=FALSE)
+fnorm=dnorm(yseq,0,1)
+lines(yseq,fnorm,col=p)
+
+#######
+# Simualtion gaussian and uniform
+n=200
+Y <- rnorm(n,0,1)
+pos.outliers <- sample(1:n,10,FALSE)
+Y0 <- runif(10, min = -8, max = 8)
+Y[pos.outliers] <- X0
+color=rep(1,n)
+color[pos.outliers]=2
+
+plot(Y,col=color,pch=16,cex=0.8)
+hist(Y,breaks = 20,freq=FALSE)
+# # Y transform
+# Y.min=min(Y)
+# Y.max=max(Y)
+# Y.new=sqrt(Y-Y.min)/sqrt(Y.max-Y.min)
+# 
+# Z=(Y-mean(Y))/sd(Y)
+# # Plot
+# plot(Y,col=cluster.true,pch=16,cex=0.8)
+# hist(Y,breaks = 20)
+# plot(Z,col=cluster.true,pch=16,cex=0.8)
+# hist(Z,breaks = 20)
+# 
+# ####? paper of Cousineau
+
+#####
+# fitting
+
+# Take first the true values and try the ratio
+
+Y.min=min(Y)
+Y.max=max(Y)
+# an oextreme outlier
+a.point= Y[pos.outliers[1]]
+plot(Y,col=color,pch=16,cex=0.8)
+points(pos.outliers[1],a.point,col="green")
+
+
+ratio.point=dnorm(a.point,0,1)/dunif(a.point, min = Y.min, max = Y.max)
+ratio.point
+
+# a moderate outlier 
+a.point= Y[38]
+plot(Y,col=color,pch=16,cex=0.8)
+points(38,a.point,col="green")
+
+
+ratio.point=dnorm(a.point,0,1)/dunif(a.point, min = Y.min, max = Y.max)
+ratio.point
+# a normal point 
+
+a.point= Y[1]
+plot(Y,col=color,pch=16,cex=0.8)
+points(1,a.point,col="green")
+
+
+ratio.point=dnorm(a.point,0,1)/dunif(a.point, min = Y.min, max = Y.max)
+ratio.point
+
+# remove points potential "good observation"
+
+d1 = abs(diff(Y))
+d2 = sapply(c(1:length(d1)), function(x) mean(d1[x:(x+1)], na.rm = T))
+
+Q3 <- quantile(d2, .75, na.rm = TRUE)
+d3 = which(d2>Q3)
+
+
+
+
+
+
