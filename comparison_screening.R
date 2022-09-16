@@ -6,6 +6,9 @@ source(paste0(path_code_att,"support_screening.R"))
 
 library(tidyverse) 
 library(mclust)
+library(extremevalues)
+library(EnvStats)
+
 ########################@
 #### Simulation
 
@@ -59,6 +62,7 @@ for (i in c(1:nb.sim)) {
   # 2 groups unequal variances
   gmm.unequal = GMM_sameMean_uequalvar(P = 2, Y = Y)
   nin = gmm.unequal
+  
   # save results
   res[i,1] <- length(which(emi %in% cluster.true == TRUE))/length(cluster.true)
   res[i,2] <- length(which(obi %in% cluster.true == TRUE))/length(cluster.true)
@@ -152,15 +156,15 @@ load(file=paste0(path_results, "skew.RData"))
 
 
 # # Loop to check all situation  ------------------------------------------
-nb.sim = 100
-res <- data.frame(matrix(NA, nrow = nb.sim, ncol = 6))
+nb.sim = 10
 size.outliers = 3
 prob.outliers = 0.1
 n0 = 100
 outlier.mod = c(2,3)
+res.tot <- list()
 for (j in c(1:length(outlier.mod))) {
   P.ini = choose_model(outlier.mod[j])
-  
+  res <- data.frame(matrix(NA, nrow = nb.sim, ncol = 12))
   for (i in c(1:nb.sim)) {
     # sim series with P.true groups
     set.seed(i)
@@ -170,7 +174,7 @@ for (j in c(1:length(outlier.mod))) {
     
     # classification with fixed Ptrue group 
     gmm.imp = GMM_imp(P = 3, Y = Y)
-    emi = gmm.imp$cluster
+    emi = gmm.imp$outliers
     
     # algorithm from olivier
     a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = 3)
@@ -180,20 +184,36 @@ for (j in c(1:length(outlier.mod))) {
     
     # 2 groups unequal variances
     gmm.unequal = GMM_sameMean_uequalvar(P = 2, Y = Y)
-    nin = gmm.unequal$cluster
+    nin = gmm.unequal$outliers
     
+    # Tests
+    test <- rosnerTest(Y,k=prob.outliers*n0)
+    num.outliers <- test$all.stats$Obs.Num[test$all.stats$Outlier==TRUE]
+    
+    # Tests
+    testI <- getOutliersI(Y, rho=c(1,1), FLim=c(0.1,0.9), distribution="normal")
+    testI.out = c(testI$iLeft, testI$iRight)
+    testII <- getOutliersII(Y, alpha=c(0.05, 0.05), FLim=c(0.1, 0.9),
+                            distribution="normal", returnResiduals=TRUE)
+    testII.out = c(testII$iLeft, testII$iRight)
     
     # save results
     res[i,1] <- length(which(emi %in% cluster.true == TRUE))/length(cluster.true)
     res[i,2] <- length(which(obi %in% cluster.true == TRUE))/length(cluster.true)
     res[i,3] <- length(which(nin %in% cluster.true == TRUE))/length(cluster.true)
-    
-    res[i,4] <- length(emi)
-    res[i,5] <- length(obi)
-    res[i,6] <- length(nin)
-    
+    res[i,4] <- length(which(num.outliers %in% cluster.true == TRUE))/length(cluster.true)
+    res[i,5] <- length(which(testI.out %in% cluster.true == TRUE))/length(cluster.true)
+    res[i,6] <- length(which(testII.out %in% cluster.true == TRUE))/length(cluster.true)
+
+    res[i,7] <- length(emi)
+    res[i,8] <- length(obi)
+    res[i,9] <- length(nin)
+    res[i,10] <- length(num.outliers)
+    res[i,11] <- length(testI.out)
+    res[i,12] <- length(testII.out)
+
   }
-  
+  res.tot[[j]] <- res
 }
 
 

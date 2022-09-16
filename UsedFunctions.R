@@ -445,6 +445,7 @@ GMM_sameMean_uequalvar = function(P, Y){
   
   if (is.null(classif.outliers) == TRUE){
     outliers <- c()
+    cluster_SameMean_PropVariance <- c()
   } else{
     mu=classif.outliers$parameters$mean
     s2=classif.outliers$parameters$variance$sigmasq
