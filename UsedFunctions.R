@@ -63,25 +63,47 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     cluster.true[outliers<0]=3
   } 
   if (P==8) { # replace tail of normal by tail of the outlier distributio, (0, sigma >1)
-    per.out = sum(pnorm(c(-size.outliers:-1000), mean = 0, sd = 2))*2
-    n1 = round(n*prob.outliers/per.out)
-    Y=rnorm(n,0,1)
-    out.lier = rnorm(n1, mean = 0, sd = 2)
-    n2 = length(which(abs(out.lier)>size.outliers))
-    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(n2/(2*n),n2/(2*n),1-n2/n))
+    # per.out = sum(pnorm(c(-size.outliers:-1000), mean = 0, sd = 2))*2
+    # n1 = round(n*prob.outliers/per.out)
+    # Y=rnorm(n,0,1)
+    # out.lier = rnorm(n1, mean = 0, sd = 2)
+    # n2 = length(which(abs(out.lier)>size.outliers))
+    # outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(n2/(2*n),n2/(2*n),1-n2/n))
+    Y = rnorm(n,0,1)
+    Y <- Y[which(abs(Y)<=size.outliers)] 
+    n.m = length(Y)
+    
+    outliers=sample(c(-size.outliers,size.outliers,0), n.m, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
+    print(table(outliers))
     pos.outliers=which(outliers!=0)
-    Y[which(abs(Y)>size.outliers)] <- NA
-    list.replaced = out.lier[which(abs(out.lier)>3)]
-    list.replaced <- list.replaced[order(abs(list.replaced))]
-    
-    Y[pos.outliers] <- list.replaced[1:length(pos.outliers)]
-    
-    cluster.true[pos.outliers]=2
+    n0 = length(pos.outliers)
+    n1 = round(n0/2)
+    n2 = n0-n1
+    tail.right = rnormt( n1, range = c(size.outliers, Inf), mu = 0) 
+    tail.left = rnormt( n2, range = c(-Inf, -size.outliers), mu = 0) 
+    # list.replaced = out.lier[which(abs(out.lier)>3)]
+    # list.replaced <- list.replaced[order(abs(list.replaced))]
+    # Y[pos.outliers] <- list.replaced[1:length(pos.outliers)]
+    Y[pos.outliers] <- c(tail.left, tail.right)
+    cluster.true[pos.outliers] = 2
   }
 
   invisible(list(Y =Y,cluster.true=cluster.true))
 }
 
+#### generate random series in tails of normal distribution
+rnormt <- function(n, range, mu, s = 1) {
+  
+  # range is a vector of two values
+  
+  F.a <- pnorm(min(range), mean = mu, sd = s)
+  F.b <- pnorm(max(range), mean = mu, sd = s)
+  
+  u <- runif(n, min = F.a, max = F.b)
+  
+  qnorm(u, mean = mu, sd = s)
+  
+}
 
 ####
 EM.init_imp <- function(Y,P,option.init="CAH"){

@@ -156,15 +156,18 @@ load(file=paste0(path_results, "skew.RData"))
 
 
 # # Loop to check all situation  ------------------------------------------
-nb.sim = 10
+nb.sim = 1000
 size.outliers = 3
 prob.outliers = 0.1
-n0 = 100
-outlier.mod = c(2,3)
+n0 = 300
+outlier.mod = c(2,3,5)
 res.tot <- list()
+res.all1 <- list()
+
 for (j in c(1:length(outlier.mod))) {
   P.ini = choose_model(outlier.mod[j])
   res <- data.frame(matrix(NA, nrow = nb.sim, ncol = 12))
+  res.all <- list()
   for (i in c(1:nb.sim)) {
     # sim series with P.true groups
     set.seed(i)
@@ -189,14 +192,25 @@ for (j in c(1:length(outlier.mod))) {
     # Tests
     test <- rosnerTest(Y,k=prob.outliers*n0)
     num.outliers <- test$all.stats$Obs.Num[test$all.stats$Outlier==TRUE]
+    test.res <- rep(1, length(Y))
+    if (length(num.outliers) >0){
+      test.res[test$all.stats$Obs.Num] <- 2
+    }
     
     # Tests
     testI <- getOutliersI(Y, rho=c(1,1), FLim=c(0.1,0.9), distribution="normal")
     testI.out = c(testI$iLeft, testI$iRight)
+    testI.res <- rep(1, length(Y))
+    if (length(testI.out) >0){
+      testI.res[testI.out] <- 2
+    }
     testII <- getOutliersII(Y, alpha=c(0.05, 0.05), FLim=c(0.1, 0.9),
                             distribution="normal", returnResiduals=TRUE)
     testII.out = c(testII$iLeft, testII$iRight)
-    
+    testII.res <- rep(1, length(Y))
+    if (length(testII.out) >0){
+      testII.res[testII.out] <- 2
+    }
     # save results
     res[i,1] <- length(which(emi %in% cluster.true == TRUE))/length(cluster.true)
     res[i,2] <- length(which(obi %in% cluster.true == TRUE))/length(cluster.true)
@@ -212,11 +226,14 @@ for (j in c(1:length(outlier.mod))) {
     res[i,11] <- length(testI.out)
     res[i,12] <- length(testII.out)
 
+    res.all[[i]] <-  c( gmm.imp, clust_obi, gmm.unequal$cluster, test.res, testI.res, testII.res )
   }
+  res.all1[[j]] <-  res.all
   res.tot[[j]] <- res
 }
 
-
+save(res.tot, file = paste0(path_results,"attribution/TPR.RData"))
+save(res.all1 , file = paste0(path_results,"attribution/comparison_screening_methods.RData"))
 
 
 
