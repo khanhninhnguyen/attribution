@@ -72,6 +72,7 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     Y = rnorm(n,0,1)
     Y <- Y[which(abs(Y)<=size.outliers)] 
     n.m = length(Y)
+    cluster.true=rep(1,n.m)
     
     outliers=sample(c(-size.outliers,size.outliers,0), n.m, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
     print(table(outliers))
@@ -282,7 +283,7 @@ EM.algo <- function(Y,phi,P){
 
 ####
 EM.algo_SameMean_PropVariance <- function(Y,phi,P){
-  
+  n = length(Y)
   ### Algo
   delta = 1
   empty = 0

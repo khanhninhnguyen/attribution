@@ -13,9 +13,9 @@ library(EnvStats)
 #### Simulation
 
 # Parameters
-n             = 1000   #length of the series
-prob.outliers = 0.02
-size.outliers = 3
+# n             = 1000   #length of the series
+# prob.outliers = 0.02
+# size.outliers = 3
 choose_model <- function(x){
   if(x == 1){ P = 5 } # fixed value of outlier
   else if(x == 2){ P = 3 } # normal outlier 
@@ -24,7 +24,7 @@ choose_model <- function(x){
   else if(x == 5){ P = 8 } # normal overlayed outlier + replaced at a threshold
   return(P)
 }
-model.out = 3
+# model.out = 3
 
 # Simulated series ------------------
 SimData = SimulatedSeries(n,P.true,prob.outliers,size.outliers)
@@ -157,10 +157,10 @@ load(file=paste0(path_results, "skew.RData"))
 
 # # Loop to check all situation  ------------------------------------------
 nb.sim = 1000
-size.outliers = 3
+size.outliers = 2
 prob.outliers = 0.1
 n0 = 300
-outlier.mod = c(2,3,5)
+outlier.mod = c(5)
 res.tot <- list()
 res.all1 <- list()
 
@@ -182,7 +182,7 @@ for (j in c(1:length(outlier.mod))) {
     # algorithm from olivier
     a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = 3)
     obi = sort(a$point.rm)
-    clust_obi = rep(1, n)
+    clust_obi = rep(1,length(Y))
     clust_obi[obi] <- 2
     
     # 2 groups unequal variances
@@ -211,7 +211,7 @@ for (j in c(1:length(outlier.mod))) {
     if (length(testII.out) >0){
       testII.res[testII.out] <- 2
     }
-    # save results
+    # save results - TPR
     res[i,1] <- length(which(emi %in% cluster.true == TRUE))/length(cluster.true)
     res[i,2] <- length(which(obi %in% cluster.true == TRUE))/length(cluster.true)
     res[i,3] <- length(which(nin %in% cluster.true == TRUE))/length(cluster.true)
@@ -226,20 +226,73 @@ for (j in c(1:length(outlier.mod))) {
     res[i,11] <- length(testI.out)
     res[i,12] <- length(testII.out)
 
-    res.all[[i]] <-  c( gmm.imp, clust_obi, gmm.unequal$cluster, test.res, testI.res, testII.res )
+    res.all[[i]] <-  list( cluster.true = SimData$cluster.true, 
+                           gmm.imp = gmm.imp$cluster, 
+                           three.sigma = clust_obi, 
+                           gmm.unequal = gmm.unequal$cluster, 
+                           test = test.res, 
+                           testI = testI.res, 
+                           testII = testII.res )
   }
   res.all1[[j]] <-  res.all
   res.tot[[j]] <- res
 }
 
-save(res.tot, file = paste0(path_results,"attribution/TPR.RData"))
-save(res.all1 , file = paste0(path_results,"attribution/comparison_screening_methods.RData"))
+save(res.tot, file = paste0(path_results,"attribution/TPR", prob.outliers,"P8.RData"))
+save(res.all1 , file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"P8.RData"))
 
+res.load <- get(load( file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"P8.RData")))
 
+res.total = res.all1[[1]]
+res.total.arrange = list()
+# translate name group 
+for (i in c(1:length(res.total))) {
+  res.i = as.data.frame(res.total[[i]])
+  res.arrange <- data.frame(true.cluster = res.i$cluster.true)
+  for (j in c(1:6)) {
+    col.j <- rep(NA, nrow(res.i))
+    g0 = as.numeric(names(sort(table(res.i[,(j+1)]),decreasing=TRUE)))
+    for (k in c(1:length(g0))) {
+      col.j[which(res.i[,(j+1)] == g0[k])] <- k
+    }
+    res.arrange[names(res.i)[j+1]] <- col.j
+  }
+  res.total.arrange[[i]] <- res.arrange
+}
 
+sta <- lapply(c(1:nb.sim), function (x){
+  r = as.data.frame(res.total.arrange[[x]])
+  val.true = r$true.cluster
+  n.pos = length(which(val.true > 1))
+  n.neg = length(which(val.true == 1))
+  a <- sapply(c(1:6), function (y) {
+    P.true = which(val.true > 1)
+    N.true = which(val.true == 1)
+    P.ind = which(r[,(y+1)] > 1)
+    N.ind = which(r[,(y+1)] == 1)
+    TPR = length(which(P.ind %in% P.true == TRUE))/n.pos
+    TNR = length(which(N.ind %in% N.true == TRUE))/n.neg
+    ACC = (TPR*n.pos+TNR*n.neg)/(n.pos+n.neg) 
+    c(TPR, TNR, ACC)
+  })
+  b = data.frame(t(a))
+  colnames(b) <- c("TPR", "TNR", "ACC")
+  b
+})
 
+# plot TPR, TNR and ACC
+name.methods = c("gmm.imp", "three.sigma", "gmm.unequal", "test", "testI", "testII")
+TPR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPR)))
+colnames(TPR.data) <- name.methods
+boxplot(TPR.data, main = "TPR, n = 300, p = 0.1, size = 2, model = 3")
 
+TNR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) 1 - sta[[x]]$TNR)))
+colnames(TNR.data) <- name.methods
+boxplot(TNR.data, main = "FPR, n = 300, p = 0.1, size = 2, model = 3")
 
+ACC.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$ACC)))
+colnames(ACC.data) <- name.methods
+boxplot(ACC.data, main = "ACC, n = 300, p = 0.1, size = 2, model = 3", ylim = c(0.7,1))
 
 
 
