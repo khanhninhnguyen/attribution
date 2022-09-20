@@ -70,18 +70,18 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     # n2 = length(which(abs(out.lier)>size.outliers))
     # outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(n2/(2*n),n2/(2*n),1-n2/n))
     Y = rnorm(n,0,1)
-    Y <- Y[which(abs(Y)<=size.outliers)] 
-    n.m = length(Y)
-    cluster.true=rep(1,n.m)
-    
-    outliers=sample(c(-size.outliers,size.outliers,0), n.m, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
-    print(table(outliers))
+    # Y <- Y[which(abs(Y)<=size.outliers)] 
+
+    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
     pos.outliers=which(outliers!=0)
     n0 = length(pos.outliers)
     n1 = round(n0/2)
     n2 = n0-n1
-    tail.right = rnormt( n1, range = c(size.outliers, Inf), mu = 0) 
-    tail.left = rnormt( n2, range = c(-Inf, -size.outliers), mu = 0) 
+    
+    # add tails from the crosspoints
+    c.p = size.outliers*sqrt(2*log(size.outliers, base = exp(1)))/sqrt(size.outliers**2-1) 
+    tail.right = rnormt( n1, range = c(c.p, Inf), mu = 0) 
+    tail.left = rnormt( n2, range = c(-Inf, -c.p), mu = 0) 
     # list.replaced = out.lier[which(abs(out.lier)>3)]
     # list.replaced <- list.replaced[order(abs(list.replaced))]
     # Y[pos.outliers] <- list.replaced[1:length(pos.outliers)]

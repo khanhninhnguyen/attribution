@@ -157,7 +157,7 @@ load(file=paste0(path_results, "skew.RData"))
 
 # # Loop to check all situation  ------------------------------------------
 nb.sim = 1000
-size.outliers = 2
+size.outliers = 5
 prob.outliers = 0.1
 n0 = 300
 outlier.mod = c(5)
