@@ -21,27 +21,28 @@ choose_model <- function(x){
 model.out = 4
 P = choose_model(model.out)
 for (l in c(1:length(var.list))) {
-  n0 = 60
+  n0 = 600
   prob.outliers = var.list[l]
   print(prob.outliers)
   sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
-  rho = 0.8
-  theta = -0.5
+  rho = 0.9
+  theta = 0
   off.set = 0
   ratio = sqrt((1 + 2*theta*rho + theta**2)/(1 - rho**2))
   for (i in 1:nb.sim) {
     set.seed(i)
-    x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
+    # x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
     # x <- rnorm(n = n0, mean = 0, sd =1)
+    x <- arima.sim(model = list(ar = rho), n = n0, sd = 1)
     x[(floor(n0/2)+1):n0] <- x[(floor(n0/2)+1):n0]+off.set
     x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
     # alpha.e = arima(x, order = c(1,0,0), method = "ML")$coef[1]
     # a = diff(x)
-    sigma[i,1] <- var(x)
-    sigma[i,2] <- mad(x)**2
-    sigma[i,3] <- robustbase::Sn(x)**2
-    sigma[i,4] <- robustbase::Qn(x)**2
-    sigma[i,5] <- robustbase::scaleTau2(x)**2
+    sigma[i,1] <- sd(x)*sqrt(1-rho^2)
+    sigma[i,2] <- mad(x)*sqrt(1-rho^2)
+    sigma[i,3] <- robustbase::Sn(x)*sqrt(1-rho^2)
+    sigma[i,4] <- robustbase::Qn(x)*sqrt(1-rho^2)
+    sigma[i,5] <- robustbase::scaleTau2(x)*sqrt(1-rho^2)
     # sigma[i,1] = sd(a)/sqrt(2-2*alpha.e)
     # sigma[i,2] <- mad(a)/sqrt(2-2*alpha.e)
     # sigma[i,3] <- robustbase::Sn(a)/sqrt(2-2*alpha.e)

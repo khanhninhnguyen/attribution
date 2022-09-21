@@ -80,6 +80,7 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     
     # add tails from the crosspoints
     c.p = size.outliers*sqrt(2*log(size.outliers, base = exp(1)))/sqrt(size.outliers**2-1) 
+    print(c.p)
     tail.right = rnormt( n1, range = c(c.p, Inf), mu = 0) 
     tail.left = rnormt( n2, range = c(-Inf, -c.p), mu = 0) 
     # list.replaced = out.lier[which(abs(out.lier)>3)]
@@ -449,21 +450,22 @@ E_Step=function(phi,log_dens){
 
 ####
 
-GMM_imp = function(P, Y){
+GMM_imp = function(P, Y, thres){
   Out.EM.init_imp=EM.init_imp(Y,P=P,option.init="CAH")
   Out.EM_imp =EM.algo_imp(Y,Out.EM.init_imp$phi,P=P,Out.EM.init_imp$Id.cluster1)
   tau_imp = Out.EM_imp$tau 
-  cluster_imp = apply(tau_imp,1,which.max)
-  main.g = as.numeric(names(sort(table(cluster_imp),decreasing=TRUE)[1]))
-  outliers = which(cluster_imp!=main.g)
+  cluster_imp0 = apply(tau_imp, 1, which.max)
+  main.g = as.numeric(names(sort(table(cluster_imp0),decreasing=TRUE)[1]))
+  cluster_imp = sapply(tau_imp[,main.g], function(x) ifelse(x>thres, 1, 2) ) # change here to modify how to choose 
+  outliers = which(cluster_imp!=1)
   return(list(outliers = outliers, cluster = cluster_imp))
 }
 
 
 ####
-GMM_sameMean_uequalvar = function(P, Y){
+GMM_sameMean_uequalvar = function(P, Y, thres){
   dist.Y=dist(Y)
-  Clust.cah<- hclust(dist.Y^2, method = "ward.D")  
+  Clust.cah <- hclust(dist.Y^2, method = "ward.D")  
   classif.outliers <- Mclust(Y,G=P,modelName="V",initialization=Clust.cah)
   
   if (is.null(classif.outliers) == TRUE){
@@ -488,12 +490,24 @@ GMM_sameMean_uequalvar = function(P, Y){
     empty_SameMean_PropVariance = Out.EM_SameMean_PropVariance$empty
     dv_SameMean_PropVariance = Out.EM_SameMean_PropVariance$dv
     lvinc_SameMean_PropVariance = Out.EM_SameMean_PropVariance$lvinc
+    cluster_imp0 = apply(tau_SameMean_PropVariance, 1, which.max)
+    main.g = as.numeric(names(sort(table(cluster_imp0),decreasing=TRUE)[1]))
+    cluster_SameMean_PropVariance = sapply(tau_SameMean_PropVariance[,main.g], function(x) ifelse(x>thres, 1, 2) )
     
-    cluster_SameMean_PropVariance = apply(tau_SameMean_PropVariance,1,which.max)
-    main.g = as.numeric(names(sort(table(cluster_SameMean_PropVariance),decreasing=TRUE)[1]))
-    
-    outliers = which(cluster_SameMean_PropVariance != main.g )
+    outliers = which(cluster_SameMean_PropVariance != 1)
   }
   return(list(outliers = outliers, cluster = cluster_SameMean_PropVariance))
 }
+
+testOS <- function(x){
+  outliers <- c(rep(1, length(x)))
+  prob.z=dnorm(x,0,1)
+  f=2
+  OS=log(prob.z)^(2*f)
+  ScOS=(OS-min(OS))/(max(OS)-min(OS))*10
+  thres=1
+  rg=which(ScOS>thres)
+  outliers[rg] <- 5
+  return(list(outliers = rg, cluster = outliers))
+} 
 

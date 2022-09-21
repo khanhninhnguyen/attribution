@@ -358,6 +358,57 @@ Q3 <- quantile(d2, .75, na.rm = TRUE)
 d3 = which(d2>Q3)
 
 
+###############@
+##### TESTS on real data
+
+load("data.all_1years_NGL.gope.2009-05-08.zdib.paired.RData")
+#data.all_1years_NGL.auck.2005-11-07.whng.paired.RData
+head(Y)
+y=Y$gps.era
+dates=Y$date
+n=length(y)
+times=1:n
+
+plot(dates,y,pch=16,cex=0.8)
+
+
+residus=y-median(y)
+plot(dates,residus^2)
+lissage=loess(residus^2~times,degree=2) # revoir pour une meilleure estimation
+lines(dates,lissage$fitted,col="red")
+
+z=residus/sqrt(lissage$fitted)
+plot(dates,z)
+hist(z,breaks = 20)
+
+prob.z=dnorm(z,0,1)
+f=2
+OS=log(prob.z)^(2*f)
+plot(dates,OS)
+ScOS=(OS-min(OS))/(max(OS)-min(OS))*10
+plot(dates,ScOS)
+thresh=7
+abline(h=thresh,col="red")
+rg=which(ScOS>thres)
+
+plot(dates,z,pch=16,cex=0.8)
+points(dates[rg],z[rg],col="red")
+
+plot(dates,y,pch=16,cex=0.8)
+points(dates[rg],y[rg],col="red")
+
+#mean(y,na.rm=TRUE)
+#y[c(50,60,80)]=NA
+reg=lm(z~1)
+### OLS
+print(coef(summary(reg)))
+### Test with variance correction
+library(sandwich)
+V_HAC <- sandwich::NeweyWest(reg, lag = 1)
+print(lmtest::coeftest(reg, sandwich::NeweyWest(reg, lag = 1))[, ])
+
+
+
 
 
 
