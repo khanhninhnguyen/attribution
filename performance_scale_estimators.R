@@ -21,7 +21,7 @@ choose_model <- function(x){
 model.out = 4
 P = choose_model(model.out)
 for (l in c(1:length(var.list))) {
-  n0 = 600
+  n0 = 60
   prob.outliers = var.list[l]
   print(prob.outliers)
   sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
@@ -33,12 +33,12 @@ for (l in c(1:length(var.list))) {
     set.seed(i)
     # x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
     # x <- rnorm(n = n0, mean = 0, sd =1)
-    x <- arima.sim(model = list(ar = rho), n = n0, sd = 1)
+    x <- arima.sim(model = list(ar = rho), n = n0, sd = 1, n.start = 10000)
     x[(floor(n0/2)+1):n0] <- x[(floor(n0/2)+1):n0]+off.set
     x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
     # alpha.e = arima(x, order = c(1,0,0), method = "ML")$coef[1]
     # a = diff(x)
-    sigma[i,1] <- sd(x)*sqrt(1-rho^2)
+    sigma[i,1] <- (var(x))*(1-rho^2)
     sigma[i,2] <- mad(x)*sqrt(1-rho^2)
     sigma[i,3] <- robustbase::Sn(x)*sqrt(1-rho^2)
     sigma[i,4] <- robustbase::Qn(x)*sqrt(1-rho^2)

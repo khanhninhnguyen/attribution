@@ -470,7 +470,7 @@ GMM_sameMean_uequalvar = function(P, Y, thres){
   
   if (is.null(classif.outliers) == TRUE){
     outliers <- c()
-    cluster_SameMean_PropVariance <- c()
+    cluster_SameMean_PropVariance <- rep(1, length(Y))
   } else{
     mu=classif.outliers$parameters$mean
     s2=classif.outliers$parameters$variance$sigmasq
@@ -499,15 +499,14 @@ GMM_sameMean_uequalvar = function(P, Y, thres){
   return(list(outliers = outliers, cluster = cluster_SameMean_PropVariance))
 }
 
-testOS <- function(x){
+testOS <- function(x, thres){
   outliers <- c(rep(1, length(x)))
   prob.z=dnorm(x,0,1)
   f=2
   OS=log(prob.z)^(2*f)
   ScOS=(OS-min(OS))/(max(OS)-min(OS))*10
-  thres=1
   rg=which(ScOS>thres)
-  outliers[rg] <- 5
+  outliers[rg] <- 2
   return(list(outliers = rg, cluster = outliers))
 } 
 

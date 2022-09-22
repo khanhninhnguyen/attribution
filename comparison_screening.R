@@ -161,7 +161,7 @@ nb.sim = 1000
 size.outliers = 5
 prob.outliers = 0.1
 n0 = 300
-outlier.mod = c(2)
+outlier.mod = c(1)
 res.tot <- list()
 res.all1 <- list()
 
@@ -171,15 +171,16 @@ for (j in c(1:length(outlier.mod))) {
   res.all <- list()
   for (i in c(1:nb.sim)) {
     # sim series with P.true groups
+    print(i)
     set.seed(i)
     SimData = SimulatedSeries(n = n0, P = P.ini, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = 0, theta = 0)
     Y=SimData$Y
     cluster.true= which(SimData$cluster.true != 1)
     
     # classification with fixed Ptrue group 
-    gmm.imp.0.1 = GMM_imp(P = 3, Y = Y, thres = 0.1)
-    gmm.imp.0.2 = GMM_imp(P = 3, Y = Y, thres = 0.2)
-    gmm.imp.0.3 = GMM_imp(P = 3, Y = Y, thres = 0.3)
+    # gmm.imp.0.1 = GMM_imp(P = 3, Y = Y, thres = 0.1)
+    # gmm.imp.0.2 = GMM_imp(P = 3, Y = Y, thres = 0.2)
+    gmm.imp.0.3 = GMM_imp(P = 3, Y = Y, thres = 0.5)
     
     # algorithm from olivier
     a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = 3)
@@ -188,12 +189,12 @@ for (j in c(1:length(outlier.mod))) {
     clust_obi[obi] <- 2
     
     # 2 groups unequal variances
-    gmm.unequal.0.1 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.1)
-    gmm.unequal.0.2 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.2)
-    gmm.unequal.0.3 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.3)
+    # gmm.unequal.0.1 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.1)
+    # gmm.unequal.0.2 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.2)
+    gmm.unequal.0.3 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.5)
     
     # OS Tests
-    OS = testOS(Y)
+    OS = testOS(Y, thres = 5)
     
     # Tests
     testI <- getOutliersI(Y, rho=c(1,1), FLim=c(0.1,0.9), distribution="normal")
@@ -210,35 +211,35 @@ for (j in c(1:length(outlier.mod))) {
       testII.res[testII.out] <- 2
     }
     # save results - TPR
-    TPR = list(gmm.imp.0.1$outliers, gmm.imp.0.1$outliers, gmm.imp.0.1$outliers,
-               gmm.unequal.0.1$outliers, gmm.unequal.0.2$outliers, gmm.unequal.0.3$outliers,
-               obi, OS$outliers, testI.out, testII.out)
-    for (k in c(1:length(TPR))) {
-      res[i,k] <- length(which(TPR[[k]] %in% cluster.true == TRUE))/length(cluster.true)
-      res[i,(k+length(TPR))] <- length(TPR[[k]])
-      
-    }
+    # TPR = list(gmm.imp.0.1$outliers, gmm.imp.0.1$outliers, gmm.imp.0.1$outliers,
+    #            gmm.unequal.0.1$outliers, gmm.unequal.0.2$outliers, gmm.unequal.0.3$outliers,
+    #            obi, OS$outliers, testI.out, testII.out)
+    # for (k in c(1:length(TPR))) {
+    #   res[i,k] <- length(which(TPR[[k]] %in% cluster.true == TRUE))/length(cluster.true)
+    #   res[i,(k+length(TPR))] <- length(TPR[[k]])
+    #   
+    # }
 
     res.all[[i]] <-  list( cluster.true = SimData$cluster.true, 
-                           gmm.imp.0.1 = gmm.imp.0.1$cluster,
-                           gmm.imp.0.2 = gmm.imp.0.2$cluster, 
+                           # gmm.imp.0.1 = gmm.imp.0.1$cluster,
+                           # gmm.imp.0.2 = gmm.imp.0.2$cluster, 
                            gmm.imp.0.3 = gmm.imp.0.3$cluster, 
-                           gmm.unequal.0.1 = gmm.unequal.0.1$cluster, 
-                           gmm.unequal.0.2 = gmm.unequal.0.2$cluster, 
-                           gmm.unequal.0.2 = gmm.unequal.0.3$cluster, 
+                           # gmm.uneq.0.1 = gmm.unequal.0.1$cluster, 
+                           # gmm.uneq.0.2 = gmm.unequal.0.2$cluster, 
+                           gmm.uneq.0.3 = gmm.unequal.0.3$cluster, 
                            three.sigma = clust_obi, 
-                           test = OS$cluster, 
-                           testI = testI.res, 
-                           testII = testII.res )
+                           testOS = OS$cluster, 
+                           MethodI = testI.res, 
+                           MethodII = testII.res )
   }
   res.all1[[j]] <-  res.all
   res.tot[[j]] <- res
 }
 
 save(res.tot, file = paste0(path_results,"attribution/TPR", prob.outliers,"P8.RData"))
-save(res.all1 , file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, ".RData"))
+save(res.all1 , file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, size.outliers, "1.RData"))
 
-res.load <- get(load( file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, ".RData")))
+res.load <- get(load( file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, size.outliers, "1.RData")))
 
 res.total = res.all1[[1]]
 res.total.arrange = list()
@@ -246,7 +247,7 @@ res.total.arrange = list()
 for (i in c(1:length(res.total))) {
   res.i = as.data.frame(res.total[[i]])
   res.arrange <- data.frame(true.cluster = res.i$cluster.true)
-  for (j in c(1:10)) {
+  for (j in c(1:(dim(res.i)[2] -1))) {
     col.j <- rep(NA, nrow(res.i))
     g0 = as.numeric(names(sort(table(res.i[,(j+1)]),decreasing=TRUE)))
     for (k in c(1:length(g0))) {
@@ -262,7 +263,7 @@ sta <- lapply(c(1:nb.sim), function (x){
   val.true = r$true.cluster
   n.pos = length(which(val.true > 1))
   n.neg = length(which(val.true == 1))
-  a <- sapply(c(1:10), function (y) {
+  a <- sapply(c(1:(dim(res.i)[2] -1)), function (y) {
     P.true = which(val.true > 1)
     N.true = which(val.true == 1)
     P.ind = which(r[,(y+1)] > 1)
@@ -278,19 +279,85 @@ sta <- lapply(c(1:nb.sim), function (x){
 })
 
 # plot TPR, TNR and ACC
-name.methods = c("gmm.imp", "three.sigma", "gmm.unequal", "test", "testI", "testII")
+name.methods = names(res.total[[1]])[-1]
 TPR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPR)))
 colnames(TPR.data) <- name.methods
-boxplot(TPR.data, main = "TPR, n = 300, p = 0.1, size = 2, model = 3")
+dat <- reshape2::melt(TPR.data[,-1])
+jpeg(paste0(path_results,"attribution/variances/bias.model.TPR",outlier.mod, size.outliers, prob.outliers, "601.jpeg" ),
+     width = 3500, height = 1500,res = 300)
+p <- ggplot(dat, aes(x=variable, y=value)) + 
+  geom_boxplot()+theme_bw()  +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size=10,face="bold"))+xlab("methods") + ylab("TPR")
+p
+dev.off()
 
 TNR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) 1 - sta[[x]]$TNR)))
 colnames(TNR.data) <- name.methods
-boxplot(TNR.data, main = "FPR, n = 300, p = 0.1, size = 2, model = 3")
+dat <- reshape2::melt(TNR.data[,-1])
+jpeg(paste0(path_results,"attribution/variances/bias.model.TNR",outlier.mod, size.outliers, prob.outliers, "601.jpeg" ),
+     width = 3500, height = 1500,res = 300)
+p <- ggplot(dat, aes(x=variable, y=value)) + 
+  geom_boxplot()+theme_bw()  +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size=10,face="bold"))+xlab("methods") + ylab("FPR")
+p
+dev.off()
 
 ACC.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$ACC)))
 colnames(ACC.data) <- name.methods
-boxplot(ACC.data, main = "ACC, n = 300, p = 0.1, size = 2, model = 3", ylim = c(0.7,1))
+dat <- reshape2::melt(ACC.data[,-1])
+jpeg(paste0(path_results,"attribution/variances/bias.model.ACC",outlier.mod, size.outliers, prob.outliers, "601.jpeg" ),
+     width = 3500, height = 1500,res = 300)
+p <- ggplot(dat, aes(x=variable, y=value)) + 
+  geom_boxplot()+theme_bw()  +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size=10,face="bold"))+xlab("methods") + ylab("ACC")
+p
+dev.off()
 
 
+
+# testOS ------------------------------------------------------------------
+thres.t <- c(0.1, 0.5, 1:9)
+tot <- data.frame(matrix(NA, nrow = length(thres.t), ncol = 3))
+for (j in c(1:length(thres.t))) {
+  res.all <- list()
+  statis = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
+  for (i in c(1:nb.sim)) {
+    # sim series with P.true groups
+    print(i)
+    set.seed(i)
+    SimData = SimulatedSeries(n = n0, P = choose_model(5), prob.outliers = prob.outliers, size.outliers = size.outliers, rho = 0, theta = 0)
+    Y=SimData$Y
+    cluster.true= which(SimData$cluster.true != 1)
+    
+    OS = testOS(Y, thres = thres.t[j])
+    TP = length(which(OS$outliers %in% cluster.true == TRUE))/length(cluster.true)
+    N.true = which(SimData$cluster.true == 1)
+    N.pre = which(OS$cluster == 1)
+    TN = length(which(N.pre %in% N.true))/length(N.true)
+    ACC = (TP*length(cluster.true)+TN*(300 - length(cluster.true)))/300
+    
+    statis[i, ] <- c( TP, 1-TN, ACC)
+    res.all[[i]] <- list( cluster.true, OS$cluster)
+  }
+  tot[j,] <- colMeans(statis)
+}
+
+colnames(tot) <- c("TPR", "FPR", "ACC")
+tot$thres = thres.t
+dat <- reshape2::melt(tot, id = "thres")
+
+jpeg(paste0(path_results,"attribution/variances/bias.model.ACC",outlier.mod, size.outliers, prob.outliers, "60OS.jpeg" ),
+     width = 3500, height = 1500,res = 300)
+p <- ggplot(dat, aes(x= thres, y=value, col = variable)) + 
+  geom_point()+theme_bw()  +
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size=10,face="bold"))+xlab("methods") + ylab("ACC")
+p
+dev.off()
+
+boxplot(statis)
 
 
