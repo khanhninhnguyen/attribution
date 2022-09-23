@@ -216,20 +216,23 @@ scr.O <- function(x, method, estimator, fix.thres){
   }
   return(list(x = x.out, point.rm = candidate.out))
 }
-screen.O <- function(Y, name.var, method, iter, estimator, fix.thres){
+screen.O <- function(Y, name.var, method, iter, estimator, fix.thres, loes){
   last.rm <- c()
   removed <- 1
   y <- unlist(Y[name.var])
   plo <- list()
   i = 0
   x <- y
+  normalized <- one.step.norm(Y, name.var = name.var, estimator = estimator, length.wind = 60, loes = loes)
+  
   while(length(removed) > 0){
     i <- i+1
     if(iter ==1){
-      x <- one.step.norm(Y, name.var = name.var, estimator = estimator)
+      x <- one.step.norm(Y, name.var = name.var, estimator = estimator, length.wind = 60, loes = loes)
       names(x) <- NULL
     }
     re = scr.O(x, method = method, estimator = estimator, fix.thres)
+    print(re$point.rm)
     plo[[i]] <- x
     Y[re$point.rm, name.var] <- NA
     x <- unlist(Y[name.var])
@@ -242,7 +245,7 @@ screen.O <- function(Y, name.var, method, iter, estimator, fix.thres){
   } else{
     x.screened = y
   }
-  return(list(data = x.screened, point.rm = last.rm))
+  return(list(data = x.screened, point.rm = last.rm, normalized = normalized))
 }
 # make some iteration with this block 
 # NEED TO SEE THE PLOT AFTER EACH ITERATION, WHY THEY REMOVE TOO MANY POINTS?

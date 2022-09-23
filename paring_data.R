@@ -1,4 +1,5 @@
-# This function is used for pairing data 
+# This function is used for pairing data,
+# Minimum of points is set at 100
 window.thres = 2
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))

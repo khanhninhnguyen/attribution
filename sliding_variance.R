@@ -171,16 +171,39 @@ sliding.mean <- function(Y, name.var, length.wind){
 }
 
 
-one.step.norm <- function(Y, name.var, estimator, length.wind){
+one.step.norm <- function(Y, name.var, estimator, length.wind, loes){
   norm2 = rep(NA, nrow(Y))
-  std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator, length.wind)
+  # slide.mean <- sliding.median(Y, name.var, length.wind)
   # slide.mean <- sliding.mean(Y, name.var, length.wind)
-  slide.mean <- sliding.median(Y, name.var, length.wind)
+  slide.mean = median(unlist(Y[name.var]), na.rm = TRUE)
+  if (loes == 1){
+    y = unlist(Y[name.var]) 
+    n=length(y)
+    times=1:n
+    residus = y - median(y, na.rm = TRUE)
+    lissage=loess(residus^2~times,degree=1, span = 60/n, normalize = FALSE, na.action = na.exclude)
+    slide.var <- rep(NA, n)
+    slide.var[which(is.na(y) == TRUE)] <- approx(times, predict(lissage), xout= which(is.na(y)==TRUE))$y
+    slide.var[which(is.na(y) == FALSE)] <- na.omit(lissage$fitted)
+    std.t <- sqrt(sapply(slide.var, function(x) ifelse(x>0, x, abs(x))))
+    } else{
+    std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator, length.wind)
+  }
   # step 1: normalize by std and median
   norm1 <- unlist((Y[name.var] - slide.mean)/std.t)
   return(norm1)
 }
 
-
+loess.sd <- function(x){
+  n=length(x)
+  times=1:n
+  residus = x - median(x, na.rm = TRUE)
+  lissage=loess(residus^2~times,degree=1, span = 60/n, normalize = FALSE, na.action = na.exclude)
+  slide.var <- rep(NA, n)
+  slide.var[which(is.na(x) == TRUE)] <- approx(times, predict(lissage), xout= which(is.na(x)==TRUE))$y
+  slide.var[which(is.na(x) == FALSE)] <- na.omit(lissage$fitted)
+  std.t <- sqrt(sapply(slide.var, function(y) ifelse(y>0, y, abs(y))))
+  return(std.t)
+}
 
 # check

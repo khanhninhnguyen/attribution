@@ -319,7 +319,7 @@ dev.off()
 
 
 # testOS ------------------------------------------------------------------
-thres.t <- c(0.1, 0.5, 1:9)
+thres.t <- 2
 tot <- data.frame(matrix(NA, nrow = length(thres.t), ncol = 3))
 for (j in c(1:length(thres.t))) {
   res.all <- list()
@@ -328,19 +328,26 @@ for (j in c(1:length(thres.t))) {
     # sim series with P.true groups
     print(i)
     set.seed(i)
-    SimData = SimulatedSeries(n = n0, P = choose_model(5), prob.outliers = prob.outliers, size.outliers = size.outliers, rho = 0, theta = 0)
+    SimData = SimulatedSeries(n = n0, P = choose_model(6), prob.outliers = prob.outliers, size.outliers = size.outliers, rho = 0, theta = 0)
     Y=SimData$Y
     cluster.true= which(SimData$cluster.true != 1)
     
-    OS = testOS(Y, thres = thres.t[j])
-    TP = length(which(OS$outliers %in% cluster.true == TRUE))/length(cluster.true)
+    # OS = testOS(Y, thres = thres.t[j])
+    a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = thres.t[j])
+    obi = sort(a$point.rm)
+    clust_obi = rep(1,length(Y))
+    clust_obi[obi] <- 2
+    rst.outlier = obi
+    rst.cluster = clust_obi
+    
+    TP = length(which(rst.outlier %in% cluster.true == TRUE))/length(cluster.true)
     N.true = which(SimData$cluster.true == 1)
-    N.pre = which(OS$cluster == 1)
+    N.pre = which(rst.cluster == 1)
     TN = length(which(N.pre %in% N.true))/length(N.true)
     ACC = (TP*length(cluster.true)+TN*(300 - length(cluster.true)))/300
     
     statis[i, ] <- c( TP, 1-TN, ACC)
-    res.all[[i]] <- list( cluster.true, OS$cluster)
+    res.all[[i]] <- list( cluster.true, rst.cluster)
   }
   tot[j,] <- colMeans(statis)
 }

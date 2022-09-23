@@ -1,5 +1,7 @@
 source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"support_screening.R"))
+
+##### Study in the raw data #####
 # This function is used for data screening ---------------------------------
 # first normalized data
 window.thres = 2
@@ -182,4 +184,25 @@ boxplot(res)
 
 
 
+
+
+
+#### Study on the pair data ####
+# read the paired data (after - before)
+data.p = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"paired.RData")))
+list1 <- list()
+list2 <- list()
+for (i in c(1:length(data.p))) {
+  data.i = data.p[[i]]
+  data.i <- tidyr::complete(data.i, date = seq(min(data.i$date), max(data.i$date), by = "day"))
+  a <- screen.O(Y = data.i, name.var = "gps.era", method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, loes = 0)
+  a1 <- screen.O(Y = data.i, name.var = "gps.era", method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, loes = 1)
+  
+  list1[[i]] <- a$point.rm
+  list2[[i]] <- a1$point.rm
+  
+}
+
+d1 <- sapply(c(1:length(data.p)), function(x) length(list1[[x]]))
+d2 <- sapply(c(1:length(data.p)), function(x) length(list2[[x]]))
 

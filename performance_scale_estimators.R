@@ -166,3 +166,18 @@ sav <- sample.b
 sample.b - sav
 
 
+# compare with weighted mean estimation -----------------------------------
+
+for (l in c(1:length(var.list))) {
+  n0 = 60
+  prob.outliers = 0.1
+  sigma = rep(NA, nb.sim)
+  sigma.loes <- list()
+  for (i in 1:nb.sim) {
+    set.seed(i)
+    x = SimulatedSeries(n = n0, P = 5, prob.outliers = 0.1, size.outliers = 3, rho = 0, theta = 0)$Y
+    sigma[i] <- robustbase::scaleTau2(x)
+    sigma.loes[[i]] <- loess.sd(x)
+  }
+ 
+}
