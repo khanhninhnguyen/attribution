@@ -366,3 +366,21 @@ lines(x2, fun2, col = 2, lwd = 2)
 
 
 
+
+# test loess function in estimate the mean 
+
+tot <- data.frame(matrix(NA, ncol = 2, nrow = 1000))
+for (l in c(1:1000)) {
+  n0 = 60
+  prob.outliers = 0.1
+  times = c(1:n0)
+  tot1 <- list()
+  for (i in 1:nb.sim) {
+    set.seed(i)
+    x = SimulatedSeries(n = n0, P = 5, prob.outliers = 0.1, size.outliers = 3, rho = 0, theta = 0)$Y
+    tot[i,1] <- median(x, na.rm = TRUE)
+    a <- loess(x~times,degree=1, span = 60/n0, normalize = FALSE, na.action = na.exclude)
+    tot[i,2] <- a$fitted[30]
+  }
+}
+nb.sim=1000

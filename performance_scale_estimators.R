@@ -1,7 +1,7 @@
-rm(list = ls())
-path_results=paste0("/home/knguyen/Documents/PhD/","Results/")
-library("ggplot2")
-source(paste0("/home/knguyen/Documents/PhD/","Code/attribution/","UsedFunctions.R"))
+# test the screening methods 
+source(paste0(path_code_att,"support_test_screening_methods.R"))
+source(paste0(path_code_att,"support_screening.R"))
+source(paste0(path_code_att,"sliding_variance.R"))
 
 nb.sim = 10000
 res <- list()
@@ -181,3 +181,48 @@ for (l in c(1:length(var.list))) {
   }
  
 }
+
+
+# compare moving window vs loess:
+nb.sim = 1000
+list.sd = seq(0.2,0.8, 0.2)
+length.month1 = c(31,28,31,30,31,30,31,31,30,31,30,31)
+L = 365
+n = 365
+t = c(1:n)
+std.t = list.sd[2]*2*sin(2*pi*t/L-pi/2)/2 +1
+std = std.t[seq(1,365,length.out = 12)]
+res1 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
+res2 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
+t0 <- as.Date("2021-01-01", format = "%Y-%m-%d" )
+t.year <- seq(t0, t0+364,1)
+for (i in c(1:nb.sim)) {
+  set.seed(i)
+  sim.ar <- simulate.series.2(mean.1 = 0, sigma.1 = std,
+                              N = n,  arma.model = c(0, 0), length.month = length.month1)
+  
+  std.est <- RobEstiSlidingVariance.S(Y = data.frame(date = t.year, y = sim.ar), 
+                                      name.var = "y", 
+                                      alpha = 0, estimator = "Sca",
+                                      length.wind = 60)
+  
+  std.est1 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year, y = sim.ar), 
+                                          name.var = "y", 
+                                          alpha = 0, 
+                                          length.wind = 60)
+  res1[i,] <- std.est
+  res2[i,] <- std.est1
+  
+}
+
+s1 <- colMeans(res1)
+
+s2 <- colMeans(res2)
+
+plot(t.year, s1)
+lines(t.year, s2)
+a = as.numeric(res1 %>% summarise_if(is.numeric, sd))
+b = as.numeric(res2 %>% summarise_if(is.numeric, sd))
+
+plot(t.year, a)
+plot(t.year, b)

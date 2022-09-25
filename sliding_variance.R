@@ -94,6 +94,36 @@ RobEstiSlidingVariance.S <- function(Y, name.var, alpha, estimator, length.wind)
   return(sigma.est)
 }
 
+RobEstiSlidingVariance.WLS <- function(Y, name.var, alpha, length.wind){# require date in the dataset, return std at time t
+  Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
+  x = unlist(Y1[name.var], use.names = FALSE)
+  n = nrow(Y1)
+  slide.var = rep(NA, n)
+  times=1:n
+  residus = x - median(x, na.rm = TRUE)
+  lissage=loess(residus^2~times,degree=1, span = length.wind/n, normalize = FALSE, na.action = na.exclude)
+  slide.var[which(is.na(x) == FALSE)] <- (na.omit(lissage$fitted))
+  # linear regression of the variance for gaps  MAYBE REPLACE BY INTERPOLATION FUNCTION
+  s = slide.var
+  if (sum(is.na(s)) != 0 & sum(is.na(s)) != length(s)){
+    ts.s = c(1:n)
+    na.ind = which(is.na(s))
+    if(na.ind[1] == 1){
+      ind.stop = which(is.na(s)==FALSE)[1]-1
+      na.ind <- na.ind[-c(1:ind.stop)]
+    }else if (is.na(s[n]) == 1){
+      m = which(is.na(s)==FALSE)
+      ind.start = m[length(m)]
+      na.ind <- na.ind[-which(na.ind %in% c(ind.start:n))]
+    }
+    s[na.ind] <- approx(ts.s, s, xout=na.ind)$y
+  }
+  std.t <- sqrt(sapply(s, function(x) ifelse(x>0, x, abs(x))))
+  sigma.est = std.t[which(Y1$date %in% Y$date)]
+  return(sigma.est)
+}
+
+
 sliding.median <- function(Y, name.var, length.wind){
   Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
   x = unlist(Y1[name.var], use.names = FALSE)
@@ -186,6 +216,8 @@ one.step.norm <- function(Y, name.var, estimator, length.wind, loes){
     slide.var[which(is.na(y) == TRUE)] <- approx(times, predict(lissage), xout= which(is.na(y)==TRUE))$y
     slide.var[which(is.na(y) == FALSE)] <- na.omit(lissage$fitted)
     std.t <- sqrt(sapply(slide.var, function(x) ifelse(x>0, x, abs(x))))
+    w = 1/(std.t**2)
+    slide.mean = sum(y*w, na.rm = TRUE)/sum(w, na.rm = TRUE)
     } else{
     std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator, length.wind)
   }
