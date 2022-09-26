@@ -2,6 +2,7 @@
 source(paste0(path_code_att,"support_test_screening_methods.R"))
 source(paste0(path_code_att,"support_screening.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
+source(paste0(path_code_att,"UsedFunctions.R"))
 
 nb.sim = 10000
 res <- list()
@@ -16,6 +17,8 @@ choose_model <- function(x){
   else if(x == 2){ P = 3 } # normal outlier 
   else if(x == 3){ P = 4 } # normal overlayed outlier 
   else if(x == 4){ P = 7 } # normal overlayed outlier + arma data
+  else if(x == 5){ P = 8 } # normal overlayed outlier + replaced at a threshold
+  else if(x == 6){ P = 1 } # no outlier
   return(P)
 }
 model.out = 4
@@ -171,13 +174,16 @@ sample.b - sav
 for (l in c(1:length(var.list))) {
   n0 = 60
   prob.outliers = 0.1
-  sigma = rep(NA, nb.sim)
+  sigma <- data.frame(matrix(NA, nrow = nb.sim, ncol = 3))
   sigma.loes <- list()
   for (i in 1:nb.sim) {
     set.seed(i)
-    x = SimulatedSeries(n = n0, P = 5, prob.outliers = 0.1, size.outliers = 3, rho = 0, theta = 0)$Y
-    sigma[i] <- robustbase::scaleTau2(x)
-    sigma.loes[[i]] <- loess.sd(x)
+    # x = SimulatedSeries(n = n0, P = 5, prob.outliers = 0.1, size.outliers = 3, rho = 0, theta = 0)$Y
+    x = SimulatedSeries(n = n0, P = 2, prob.outliers = 0.1, size.outliers = 3, rho = 0, theta = 0)$Y
+    sigma[i, 1] <- robustbase::scaleTau2(x)
+    sigma[i, 2] <- loess.sd(x, alpha = 0.5)[30]
+    sigma[i, 3] <- sd(x)
+    
   }
  
 }
@@ -190,7 +196,7 @@ length.month1 = c(31,28,31,30,31,30,31,31,30,31,30,31)
 L = 365
 n = 365
 t = c(1:n)
-std.t = list.sd[2]*2*sin(2*pi*t/L-pi/2)/2 +1
+std.t = list.sd[1]*2*sin(2*pi*t/L-pi/2)/2 +1
 std = std.t[seq(1,365,length.out = 12)]
 res1 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
 res2 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
@@ -200,7 +206,13 @@ for (i in c(1:nb.sim)) {
   set.seed(i)
   sim.ar <- simulate.series.2(mean.1 = 0, sigma.1 = std,
                               N = n,  arma.model = c(0, 0), length.month = length.month1)
+  # SimData = SimulatedSeries(n = n, 
+  #                           P = choose_model(1), 
+  #                           prob.outliers = 0.1,
+  #                           size.outliers = 5, 
+  #                           rho = 0, theta = 0)
   
+  # 
   std.est <- RobEstiSlidingVariance.S(Y = data.frame(date = t.year, y = sim.ar), 
                                       name.var = "y", 
                                       alpha = 0, estimator = "Sca",
@@ -219,10 +231,32 @@ s1 <- colMeans(res1)
 
 s2 <- colMeans(res2)
 
-plot(t.year, s1)
-lines(t.year, s2)
+lines(t.year, s1)
+plot(t.year, s2)
+dat = data.frame( t = t.year, true = std.t, MW.ScaleTau = s1, loess = s2)
+a = reshape2::melt(dat, id = "t")
+jpeg(paste0(path_results,"attribution/variances/bias.model1.0.2.Loess60.jpeg" ),
+     width = 3000, height = 1500,res = 300)
+ggplot(data = a, aes(x = t, y = value, col = variable)) + 
+  geom_line()+
+  theme_bw()+
+  ylab("Mean of estimated scale")+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"))
+dev.off()
 a = as.numeric(res1 %>% summarise_if(is.numeric, sd))
 b = as.numeric(res2 %>% summarise_if(is.numeric, sd))
 
-plot(t.year, a)
-plot(t.year, b)
+dat = data.frame( t = t.year, MW.ScaleTau = a, loess = b)
+a = reshape2::melt(dat, id = "t")
+jpeg(paste0(path_results,"attribution/variances/bias.model1.0.2.Loess.sd60.jpeg" ),
+     width = 3000, height = 1500,res = 300)
+ggplot(data = a, aes(x = t, y = value, col = variable)) + 
+  geom_line()+
+  theme_bw()+
+  ylab("Mean of estimated scale")+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"))
+dev.off()
+
+

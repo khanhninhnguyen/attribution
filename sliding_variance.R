@@ -226,11 +226,11 @@ one.step.norm <- function(Y, name.var, estimator, length.wind, loes){
   return(norm1)
 }
 
-loess.sd <- function(x){
+loess.sd <- function(x, alpha){
   n=length(x)
   times=1:n
   residus = x - median(x, na.rm = TRUE)
-  lissage=loess(residus^2~times,degree=1, span = 60/n, normalize = FALSE, na.action = na.exclude)
+  lissage=loess(residus^2~times,degree=1, span = alpha, normalize = TRUE, na.action = na.exclude)
   slide.var <- rep(NA, n)
   slide.var[which(is.na(x) == TRUE)] <- approx(times, predict(lissage), xout= which(is.na(x)==TRUE))$y
   slide.var[which(is.na(x) == FALSE)] <- na.omit(lissage$fitted)
