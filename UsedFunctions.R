@@ -83,10 +83,11 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     print(c.p)
     tail.right = rnormt( n1, range = c(c.p, Inf), mu = 0) 
     tail.left = rnormt( n2, range = c(-Inf, -c.p), mu = 0) 
+    outlier.reordered <- sample( c(tail.left, tail.right), replace = FALSE)
     # list.replaced = out.lier[which(abs(out.lier)>3)]
     # list.replaced <- list.replaced[order(abs(list.replaced))]
     # Y[pos.outliers] <- list.replaced[1:length(pos.outliers)]
-    Y[pos.outliers] <- c(tail.left, tail.right)
+    Y[pos.outliers] <- outlier.reordered
     cluster.true[pos.outliers] = 2
   }
 

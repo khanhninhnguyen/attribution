@@ -178,8 +178,8 @@ for (j in c(1:length(outlier.mod))) {
     cluster.true= which(SimData$cluster.true != 1)
     
     # classification with fixed Ptrue group 
-    # gmm.imp.0.1 = GMM_imp(P = 3, Y = Y, thres = 0.1)
-    # gmm.imp.0.2 = GMM_imp(P = 3, Y = Y, thres = 0.2)
+    gmm.imp.0.1 = GMM_imp(P = 3, Y = Y, thres = 0.1)
+    gmm.imp.0.2 = GMM_imp(P = 3, Y = Y, thres = 0.2)
     gmm.imp.0.3 = GMM_imp(P = 3, Y = Y, thres = 0.5)
     
     # algorithm from olivier
@@ -366,5 +366,17 @@ p
 dev.off()
 
 boxplot(statis)
+
+# individual case 
+
+plot(SimData$Y, cex = 0.5)
+points(cluster.true, SimData$Y[cluster.true], cex = 0.5, col = "red",pch = 19)
+points(gmm.imp.0.1$outliers, SimData$Y[gmm.imp.0.1$outliers], cex = 0.6, col = "blue", pch = 0)
+points(gmm.imp.0.2$outliers, SimData$Y[gmm.imp.0.2$outliers], cex = 0.6, col = "blue", pch = 2)
+points(gmm.imp.0.3$outliers, SimData$Y[gmm.imp.0.3$outliers], cex = 0.6, col = "blue", pch = 3)
+
+
+
+
 
 
