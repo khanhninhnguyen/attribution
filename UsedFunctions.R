@@ -412,11 +412,13 @@ M_Step_SameMean_PropVariance=function(Y,tau,phi){
   prop = apply(tau,2,sum)/n
   #2. Means
   mu.same=c()
-  mu.same=(Y %*% sum.tau)/sum(sum.tau)
+  # mu.same=(Y %*% sum.tau)/sum(sum.tau)
+  mu.same = 0 # Ninh added
   mu=rep(mu.same,2)
   #3. Variances
   var.same =c()
-  var.same =(((Y-mu.same[1])^2) %*% sum.tau)/n
+  # var.same =(((Y-mu.same[1])^2) %*% sum.tau)/n
+  var.same = 1
   #4. a?
   a  = c()
   a=(((Y-mu.same[1])^2) %*% tau[,2])/sum(tau[,2]*var.same[1])
