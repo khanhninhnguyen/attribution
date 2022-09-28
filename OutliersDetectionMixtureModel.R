@@ -111,7 +111,7 @@ f.per.cluster=matrix(0,ncol=length(yseq),nrow=P)
 for (p in 1:P){
   f.per.cluster[p,]=dnorm(yseq,phi_imp$mu[p],sqrt(phi_imp$s2[p]))
 }
-hist(Y,breaks = 20,freq=FALSE)
+hist(Y,breaks = 50,freq=FALSE)
 for (p in 1:P){
   lines(yseq,f.per.cluster[p,],col=p)
 }
@@ -275,7 +275,7 @@ f.per.cluster=matrix(0,ncol=length(yseq),nrow=P)
 for (p in 1:P){
   f.per.cluster[p,]=dnorm(yseq,phi_SameMean_PropVariance$mu[p],sqrt(phi_SameMean_PropVariance$s2[p]))
 }
-hist(Y,breaks = 20,freq=FALSE)
+hist(Y,breaks = 50,freq=FALSE)
 for (p in 1:P){
   lines(yseq,f.per.cluster[p,],col=p)
 }

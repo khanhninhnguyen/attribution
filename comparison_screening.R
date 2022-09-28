@@ -161,7 +161,7 @@ nb.sim = 1000
 size.outliers = 5
 prob.outliers = 0.1
 n0 = 300
-outlier.mod = c(5)
+outlier.mod = c(1)
 res.tot <- list()
 res.all1 <- list()
 
@@ -183,7 +183,7 @@ for (j in c(1:length(outlier.mod))) {
     gmm.imp.0.3 = GMM_imp(P = 3, Y = Y, thres = 0.3)
     
     # algorithm from olivier
-    a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = 3)
+    a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = 3, loes = 0)
     obi = sort(a$point.rm)
     clust_obi = rep(1,length(Y))
     clust_obi[obi] <- 2
@@ -194,17 +194,17 @@ for (j in c(1:length(outlier.mod))) {
     gmm.unequal.0.3 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.3)
     
     # OS Tests
-    OS = testOS(Y, thres = 5)
+    OS = testOS(Y, thres = 9)
     
     # Tests
-    testI <- getOutliersI(Y, rho=c(1,1), FLim=c(0.1,0.9), distribution="normal")
+    testI <- getOutliersI(exp(Y), rho=c(1,1), FLim=c(0.1,0.9), distribution="lognormal")
     testI.out = c(testI$iLeft, testI$iRight)
     testI.res <- rep(1, length(Y))
     if (length(testI.out) >0){
       testI.res[testI.out] <- 2
     }
-    testII <- getOutliersII(Y, alpha=c(0.01, 0.01), FLim=c(0.1, 0.9),
-                            distribution="normal", returnResiduals=TRUE)
+    testII <- getOutliersII(exp(Y), alpha=c(0.01, 0.01), FLim=c(0.1, 0.9),
+                            distribution="lognormal", returnResiduals=TRUE)
     testII.out = c(testII$iLeft, testII$iRight)
     testII.res <- rep(1, length(Y))
     if (length(testII.out) >0){
@@ -278,7 +278,7 @@ sta <- lapply(c(1:nb.sim), function (x){
   b
 })
 
-# plot TPR, TNR and ACC
+# plot TPR, TNR and ACC -------------
 name.methods = names(res.total[[1]])[-1]
 TPR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPR)))
 colnames(TPR.data) <- name.methods
@@ -367,18 +367,77 @@ dev.off()
 
 boxplot(statis)
 
-# individual case 
+# individual case ----------------------------------
 
 hist(SimData$Y, breaks = 100)
 
-plot(SimData$Y, cex = 0.6)
-points(cluster.true, SimData$Y[cluster.true], cex = 0.6, col = "red", pch = 16)
-points(gmm.imp.0.1$outliers, SimData$Y[gmm.imp.0.1$outliers], cex = 0.7, col = "blue", pch = 0)
-points(gmm.imp.0.2$outliers, SimData$Y[gmm.imp.0.2$outliers], cex = 0.7, col = "blue", pch = 2)
-points(gmm.imp.0.3$outliers, SimData$Y[gmm.imp.0.3$outliers], cex = 0.7, col = "blue", pch = 3)
+# results of gmm.imp
+plot(SimData$Y, cex = 0.8)
+points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
+points(gmm.imp.0.1$outliers, SimData$Y[gmm.imp.0.1$outliers], cex = 0.9, col = "blue", pch = 0)
+points(gmm.imp.0.2$outliers, SimData$Y[gmm.imp.0.2$outliers], cex = 0.9, col = "purple", pch = 2)
+points(gmm.imp.0.3$outliers, SimData$Y[gmm.imp.0.3$outliers], cex = 0.7, col = "green", pch = 3)
+legend("bottomright", c("true", "gmm.imp.0.1", "gmm.imp.0.2", "gmm.imp.0.3"), 
+       col=c("red","blue","purple", "green"),
+       pch=c(19,0, 2, 3),
+       inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
+)
+
+a = reshape2::melt(tau_imp)
+colnames(a) <- c("index", "group", "value")
+a$group = as.factor(a$group)
+ggplot(a, aes(x=index, y=value, col = group))+geom_point()+ theme_bw()+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"),
+        legend.text=element_text(size=15)) + ylab("Tau")
 
 
 
+# results of Olivier and test OS
+
+plot(SimData$Y, cex = 0.8)
+points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
+points(a$outliers, SimData$Y[a$outliers], cex = 0.9, col = "blue", pch = 0)
+points(OS$outliers, SimData$Y[OS$outliers], cex = 0.9, col = "green", pch = 2)
+legend("bottomright", c("true", "3.sigma.m", "testOS"), 
+       col=c("red","blue", "green"),
+       pch=c(19,0, 2),
+       inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
+)
+
+# results of GMM.unequal 
+
+plot(SimData$Y, cex = 0.8)
+points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
+points(gmm.unequal.0.1$outliers, SimData$Y[gmm.unequal.0.1$outliers], cex = 0.9, col = "blue", pch = 0)
+points(gmm.unequal.0.2$outliers, SimData$Y[gmm.unequal.0.2$outliers], cex = 0.9, col = "green", pch = 2)
+points(gmm.unequal.0.3$outliers, SimData$Y[gmm.unequal.0.3$outliers], cex = 0.7, col = "purple", pch = 3)
+legend("bottomright", c("true", "gmm.unequal.0.1", "gmm.unequal.0.2", "gmm.unequal.0.3"), 
+       col=c("red","blue","purple", "green"),
+       pch=c(19,0, 2, 3),
+       inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
+)
+
+a = reshape2::melt(tau_SameMean_PropVariance)
+colnames(a) <- c("index", "group", "value")
+a$group = as.factor(a$group)
+ggplot(a, aes(x=index, y=value, col = group))+geom_point()+ theme_bw()+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"),
+        legend.text=element_text(size=15)) + ylab("Tau")
 
 
+# results of Loo's methods 
 
+plot(SimData$Y, cex = 0.8)
+points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
+points(testI.out, SimData$Y[testI.out], cex = 0.9, col = "blue", pch = 0)
+points(testII.out, SimData$Y[testII.out], cex = 0.9, col = "green", pch = 2)
+legend("bottomright", c("true", "MethodI", "MethodII"), 
+       col=c("red","blue","green"),
+       pch=c(19,0, 2),
+       inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
+)
+
+outlierPlot(Y,testI,mode="qq")
+outlierPlot(Y,testII,mode="residual")

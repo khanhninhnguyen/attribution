@@ -25,7 +25,7 @@ for (i in c(1:length(data.cr))) {
     if(length(ind.sta)>0){
       bef.norm.all <- list()
       for (k in c(1:6)) {
-        bef.norm = one.step.norm(before, name.var = list.test[k], estimator = "Sca", length.wind = 30) 
+        bef.norm = one.step.norm(before, name.var = list.test[k], estimator = "Sca", length.wind = 30, loes = 0) 
         names(bef.norm) <- NULL
         bef.norm.all[[list.test[k]]] <- bef.norm
       }
@@ -40,7 +40,7 @@ for (i in c(1:length(data.cr))) {
     if(length(ind.end) > 0){
       aft.norm.all <- list()
       for (k in c(1:6)) {
-        aft.norm = one.step.norm(after, name.var = list.test[k], estimator = "Sca", length.wind = 30) 
+        aft.norm = one.step.norm(after, name.var = list.test[k], estimator = "Sca", length.wind = 30, loes = 0) 
         names(aft.norm) <- NULL
         aft.norm.all[[list.test[k]]] <- aft.norm
       }
@@ -53,6 +53,7 @@ for (i in c(1:length(data.cr))) {
 }
 
 save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"normalized2.RData"))
+save(data.all, file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"paired.normalized.RData"))
 
 # Study the distribution of all data sets ----------------------------
 
@@ -189,7 +190,8 @@ boxplot(res)
 
 #### Study on the pair data ####
 # read the paired data (after - before)
-data.p = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"paired.RData")))
+
+data.p = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"paired.normalized.RData")))
 list1 <- list()
 list2 <- list()
 for (i in c(1:length(data.p))) {
@@ -205,5 +207,68 @@ for (i in c(1:length(data.p))) {
 
 d1 <- sapply(c(1:length(data.p)), function(x) length(list1[[x]]))
 d2 <- sapply(c(1:length(data.p)), function(x) length(list2[[x]]))
+
+# concatenate all data
+all.dat <- c()
+zero <- data.frame(matrix(NA, ncol = 2, nrow = length(dat)))
+for (r in 1:length(dat)) {
+  if(length(dat[[r]]$bef$gps.era1)>30){
+    all.dat = c(all.dat, dat[[r]]$bef$gps.era1)
+  } 
+  if (length(dat[[r]]$bef$gps.era1) >0){
+    zero[r,1] <- length(which(dat[[r]]$bef$gpa.era1<=0 & dat[[r]]$bef$gpa.era1>-0.02))
+  }
+}
+x = na.omit(all.dat)
+
+a = hist(x,
+         main = "Histogram of normalized data",
+         xlab = "",
+         breaks = 1000,
+         xlim=c(-5, 5),
+         prob = TRUE)
+
+y <- x[-which(x==0)] 
+fit = Mclust(y, G=2, model="V")
+param = fit$parameters
+text1 = paste0("pro",  ": ", paste(round(param$pro, digits = 2), collapse = " & "), 
+               ",   mean", ": ", paste(round(param$mean, digits = 2), collapse = " & "),
+              ",   variance", ": ", paste(round(param$variance$scale, digits = 2), collapse = " & "))
+
+# # add the normal density 
+# x2 <- a$breaks
+# fun1 <- dnorm(x2, mean = 0, sd = 1)
+# lines(x2, fun1, col = 2, lwd = 2)
+# QQ PLOT 
+y <- y[-which(abs(y)>8)] 
+jpeg(paste0(path_results,"attribution/" , "histogram of all paired normalized data.jpeg"),
+     width = 3000, height = 2000,res = 300)
+data.p = data.frame(x = y)
+colors <- c("N(0,1)" = "#CD3700", "Fit1" = "#FF3E96", "Fit2" = "#6495ED", "Fit12" = "#000000")
+p <- ggplot(data.p, aes(x=x)) +   theme_bw()+ 
+  geom_histogram(aes(y =..density..), 
+                 breaks = seq(-5, 5, by = 0.1),
+                 fill="#69b3a2",
+                 color="#e9ecef", 
+                 alpha=0.9)+
+  # xlim(c(-7.5,7.5))+
+  labs(y = "Density", x = " GPS-GPS' ",
+       title = "Normalized with median + ScaleTau / Fit by Mclust ", 
+       subtitle = text1)+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"),
+        plot.title = element_text(size = 15, face = "bold", colour = "black", vjust = -1))
+p <- p +
+  geom_function(fun = function(x) {
+    param$pro[1]*dnorm(x = x,mean = param$mean[1], sd = sqrt(param$variance$scale[1])) +
+      param$pro[2]*dnorm(x = x,mean = param$mean[2] , sd = sqrt(param$variance$scale[2]))
+  }, aes(col = "Fit12"))+
+  geom_function(fun = function(x) dnorm(x = x,mean = 0, sd =1), aes(col = "N(0,1)"))+
+  geom_function(fun = function(x) param$pro[1]*dnorm(x = x,mean = param$mean[1], sd = sqrt(param$variance$scale[1])), aes(col = "Fit2"))+
+  geom_function(fun = function(x) param$pro[2]*dnorm(x = x,mean = param$mean[2], sd = sqrt(param$variance$scale[2])), aes(col = "Fit1"))+
+  scale_color_manual(values = colors)
+
+print(p)
+dev.off()
 
 

@@ -223,8 +223,8 @@ screen.O <- function(Y, name.var, method, iter, estimator, fix.thres, loes){
   plo <- list()
   i = 0
   x <- y
-  normalized <- one.step.norm(Y, name.var = name.var, estimator = estimator, length.wind = 60, loes = loes)
-  
+  # normalized <- one.step.norm(Y, name.var = name.var, estimator = estimator, length.wind = 60, loes = loes)
+  normalized <- c()
   while(length(removed) > 0){
     i <- i+1
     if(iter ==1){
