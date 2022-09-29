@@ -186,6 +186,7 @@ scr.O <- function(x, method, estimator, fix.thres){
     down = -fix.thres
     mean0 = 0
   }
+  print(c(up,down))
   candidate <- which(x<down | x>up)
   if (length(candidate) >0){
     # reorder ind of removal 
@@ -232,7 +233,6 @@ screen.O <- function(Y, name.var, method, iter, estimator, fix.thres, loes){
       names(x) <- NULL
     }
     re = scr.O(x, method = method, estimator = estimator, fix.thres)
-    print(re$point.rm)
     plo[[i]] <- x
     Y[re$point.rm, name.var] <- NA
     x <- unlist(Y[name.var])

@@ -178,9 +178,9 @@ for (j in c(1:length(outlier.mod))) {
     cluster.true= which(SimData$cluster.true != 1)
     
     # classification with fixed Ptrue group 
-    gmm.imp.0.1 = GMM_imp(P = 3, Y = Y, thres = 0.1)
-    gmm.imp.0.2 = GMM_imp(P = 3, Y = Y, thres = 0.2)
-    gmm.imp.0.3 = GMM_imp(P = 3, Y = Y, thres = 0.3)
+    # gmm.imp.0.1 = GMM_imp(P = 3, Y = Y, thres = 0.1)
+    # gmm.imp.0.2 = GMM_imp(P = 3, Y = Y, thres = 0.2)
+    # gmm.imp.0.3 = GMM_imp(P = 3, Y = Y, thres = 0.3)
     
     # algorithm from olivier
     a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'def', iter = 0, estimator = "mad", fix.thres = 3, loes = 0)
@@ -189,27 +189,27 @@ for (j in c(1:length(outlier.mod))) {
     clust_obi[obi] <- 2
     
     # 2 groups unequal variances
-    gmm.unequal.0.1 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.1)
-    gmm.unequal.0.2 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.2)
-    gmm.unequal.0.3 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.3)
-    
+    # gmm.unequal.0.1 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.1)
+    # gmm.unequal.0.2 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.2)
+    # gmm.unequal.0.3 = GMM_sameMean_uequalvar(P = 2, Y = Y, thres = 0.3)
+    # 
     # OS Tests
-    OS = testOS(Y, thres = 9)
-    
-    # Tests
-    testI <- getOutliersI(exp(Y), rho=c(1,1), FLim=c(0.1,0.9), distribution="lognormal")
-    testI.out = c(testI$iLeft, testI$iRight)
-    testI.res <- rep(1, length(Y))
-    if (length(testI.out) >0){
-      testI.res[testI.out] <- 2
-    }
-    testII <- getOutliersII(exp(Y), alpha=c(0.01, 0.01), FLim=c(0.1, 0.9),
-                            distribution="lognormal", returnResiduals=TRUE)
-    testII.out = c(testII$iLeft, testII$iRight)
-    testII.res <- rep(1, length(Y))
-    if (length(testII.out) >0){
-      testII.res[testII.out] <- 2
-    }
+    # OS = testOS(Y, thres = 9)
+    # 
+    # # Tests
+    # testI <- getOutliersI(exp(Y), rho=c(1,1), FLim=c(0.1,0.9), distribution="lognormal")
+    # testI.out = c(testI$iLeft, testI$iRight)
+    # testI.res <- rep(1, length(Y))
+    # if (length(testI.out) >0){
+    #   testI.res[testI.out] <- 2
+    # }
+    # testII <- getOutliersII(exp(Y), alpha=c(0.01, 0.01), FLim=c(0.1, 0.9),
+    #                         distribution="lognormal", returnResiduals=TRUE)
+    # testII.out = c(testII$iLeft, testII$iRight)
+    # testII.res <- rep(1, length(Y))
+    # if (length(testII.out) >0){
+    #   testII.res[testII.out] <- 2
+    # }
     # save results - TPR
     # TPR = list(gmm.imp.0.1$outliers, gmm.imp.0.1$outliers, gmm.imp.0.1$outliers,
     #            gmm.unequal.0.1$outliers, gmm.unequal.0.2$outliers, gmm.unequal.0.3$outliers,
@@ -220,17 +220,17 @@ for (j in c(1:length(outlier.mod))) {
     #   
     # }
 
-    res.all[[i]] <-  list( cluster.true = SimData$cluster.true, 
-                           # gmm.imp.0.1 = gmm.imp.0.1$cluster,
-                           # gmm.imp.0.2 = gmm.imp.0.2$cluster, 
-                           gmm.imp.0.3 = gmm.imp.0.3$cluster, 
-                           # gmm.uneq.0.1 = gmm.unequal.0.1$cluster, 
-                           # gmm.uneq.0.2 = gmm.unequal.0.2$cluster, 
-                           gmm.uneq.0.3 = gmm.unequal.0.3$cluster, 
-                           three.sigma = clust_obi, 
-                           testOS = OS$cluster, 
-                           MethodI = testI.res, 
-                           MethodII = testII.res )
+    # res.all[[i]] <-  list( cluster.true = SimData$cluster.true, 
+    #                        # gmm.imp.0.1 = gmm.imp.0.1$cluster,
+    #                        # gmm.imp.0.2 = gmm.imp.0.2$cluster, 
+    #                        gmm.imp.0.3 = gmm.imp.0.3$cluster, 
+    #                        # gmm.uneq.0.1 = gmm.unequal.0.1$cluster, 
+    #                        # gmm.uneq.0.2 = gmm.unequal.0.2$cluster, 
+    #                        gmm.uneq.0.3 = gmm.unequal.0.3$cluster, 
+    #                        three.sigma = clust_obi, 
+    #                        testOS = OS$cluster, 
+    #                        MethodI = testI.res, 
+    #                        MethodII = testII.res )
   }
   res.all1[[j]] <-  res.all
   res.tot[[j]] <- res
@@ -239,9 +239,53 @@ for (j in c(1:length(outlier.mod))) {
 save(res.tot, file = paste0(path_results,"attribution/TPR", prob.outliers,"P8.RData"))
 save(res.all1 , file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, size.outliers, "1.RData"))
 
-res.load <- get(load( file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, size.outliers, "1.RData")))
+res.load <- get(load( file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, ".RData")))
 
-res.total = res.all1[[1]]
+
+
+# run again with estimated variance in three sigma rule -------------------
+
+res.load <- get(load( file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod = 5, ".RData")))
+
+
+nb.sim = 1000
+size.outliers = 5
+prob.outliers = 0.1
+n0 = 300
+outlier.mod = c(1, 2, 5, 6)
+res.tot <- list()
+res.all.O <- list()
+
+for (j in c(1:length(outlier.mod))) {
+  P.ini = choose_model(outlier.mod[j])
+  res <- data.frame(matrix(NA, nrow = nb.sim, ncol = 20))
+  res.all <- list()
+  for (i in c(1:nb.sim)) {
+    # sim series with P.true groups
+    print(i)
+    set.seed(i)
+    SimData = SimulatedSeries(n = n0, P = P.ini, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = 0, theta = 0)
+    Y=SimData$Y
+    cluster.true= which(SimData$cluster.true != 1)
+    
+    # algorithm from olivier
+    a <- screen.O(Y = data.frame(y = Y), name.var = "y", method = 'sigma', iter = 0, estimator = "Sca", fix.thres = 0, loes = 0)
+    obi = sort(a$point.rm)
+    clust_obi = rep(1,length(Y))
+    clust_obi[obi] <- 2
+    
+    res.all[[i]] <- clust_obi
+  }
+  res.all.O[[j]] <- res.all
+}
+
+# analyze all result ------------------------------------------------------
+res.total = res.load[[1]]
+
+for (k in c(1:length(res.total))) {
+  res.total[[k]]$three.sigma <- res.all.O[[5]][[k]]
+}
+
 res.total.arrange = list()
 # translate name group 
 for (i in c(1:length(res.total))) {
@@ -268,16 +312,56 @@ sta <- lapply(c(1:nb.sim), function (x){
     N.true = which(val.true == 1)
     P.ind = which(r[,(y+1)] > 1)
     N.ind = which(r[,(y+1)] == 1)
-    TPR = length(which(P.ind %in% P.true == TRUE))/n.pos
-    TNR = length(which(N.ind %in% N.true == TRUE))/n.neg
-    ACC = (TPR*n.pos+TNR*n.neg)/(n.pos+n.neg) 
-    c(TPR, TNR, ACC)
+    TP = length(which(P.ind %in% P.true == TRUE))
+    TN = length(which(N.ind %in% N.true == TRUE))
+    FN = n.pos - TP
+    FP = n.neg - TN
+    TPR = TP/n.pos
+    TNR = TN/n.neg
+    PPV = TP/(TP+FP)
+    if(is.na(PPV) == TRUE){ PPV = 0}
+    ACC = (TPR*n.pos+TNR*n.neg)/(n.pos+n.neg)
+    F1 = (2*TP)/(2*TP + FN + FP)
+    TS = TP/( TP+ FN+FP)
+    c(TP, TN, FP, FN, TPR, TNR, PPV, ACC, F1, TS)
   })
   b = data.frame(t(a))
-  colnames(b) <- c("TPR", "TNR", "ACC")
+  colnames(b) <- c("TP", "TN", "FP", "FN", "TPR", "TNR", "PPV", "ACC", "F1", "TS")
   b
 })
 
+TP.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TP)))
+FP.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FP)))
+TN.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TN)))
+FN.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FN)))
+TPR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPR)))
+PPV.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$PPV)))
+ACC.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$ACC)))
+F1.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$F1)))
+TS.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TS)))
+
+all.data <- list(TP.data, FP.data, TN.data, FN.data, TPR.data, PPV.data, ACC.data, F1.data, TS.data)
+median.val = data.frame(matrix(NA, ncol = 10, nrow = 9))
+IQR.val = data.frame(matrix(NA, ncol = 10, nrow = 9))
+for (h in c(1:length(all.data))) {
+  dat = all.data[[h]]
+  median.val[h,] <- round(apply(dat,2,median), digits = 3)
+  IQR.val[h,] <- round(apply(dat,2,IQR), digits = 3)
+}
+
+write.table(median.val, 
+            file = paste0(path_results,'attribution/median', model= 5, ".txt"), 
+            sep="\t",
+            col.names = TRUE,
+            row.names = FALSE,
+            quote=FALSE)
+
+write.table(IQR.val, 
+            file = paste0(path_results,'attribution/IQR', model= 5, ".txt"), 
+            sep="\t",
+            col.names = TRUE,
+            row.names = FALSE,
+            quote=FALSE)
 # plot TPR, TNR and ACC -------------
 name.methods = names(res.total[[1]])[-1]
 TPR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPR)))
