@@ -118,11 +118,41 @@ RobEstiSlidingVariance.WLS <- function(Y, name.var, alpha, length.wind){# requir
     }
     s[na.ind] <- approx(ts.s, s, xout=na.ind)$y
   }
-  std.t <- sqrt(sapply(s, function(x) ifelse(x>0, x, abs(x))))
+  var.t = sapply(s, function(x) ifelse(x>0, x, abs(x)))
+  std.t <- sqrt(var.t)
   sigma.est = std.t[which(Y1$date %in% Y$date)]
   return(sigma.est)
 }
 
+RobEstiSlidingVariance.log.WLS <- function(Y, name.var, alpha, length.wind){# require date in the dataset, return std at time t
+  Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
+  x = exp(unlist(Y1[name.var], use.names = FALSE))
+  n = nrow(Y1)
+  slide.var = rep(NA, n)
+  times=1:n
+  residus = x - median(x, na.rm = TRUE)
+  lissage=loess(residus^2~times,degree=1, span = length.wind/n, normalize = FALSE, na.action = na.exclude)
+  slide.var[which(is.na(x) == FALSE)] <- (na.omit(lissage$fitted))
+  # linear regression of the variance for gaps  MAYBE REPLACE BY INTERPOLATION FUNCTION
+  s = slide.var
+  if (sum(is.na(s)) != 0 & sum(is.na(s)) != length(s)){
+    ts.s = c(1:n)
+    na.ind = which(is.na(s))
+    if(na.ind[1] == 1){
+      ind.stop = which(is.na(s)==FALSE)[1]-1
+      na.ind <- na.ind[-c(1:ind.stop)]
+    }else if (is.na(s[n]) == 1){
+      m = which(is.na(s)==FALSE)
+      ind.start = m[length(m)]
+      na.ind <- na.ind[-which(na.ind %in% c(ind.start:n))]
+    }
+    s[na.ind] <- approx(ts.s, s, xout=na.ind)$y
+  }
+  var.t = sapply(s, function(x) ifelse(x>1, x, 1))
+  std.t <- sqrt(log(var.t))
+  sigma.est = std.t[which(Y1$date %in% Y$date)]
+  return( sigma.est)
+}
 
 sliding.median <- function(Y, name.var, length.wind){
   Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
@@ -238,4 +268,15 @@ loess.sd <- function(x, alpha){
   return(std.t)
 }
 
+my.estimator <- function(estimator,x){
+  x1 = na.omit(x)
+  if(estimator == "mad"){
+    y = mad(x1)
+  }else if(estimator == "Qn"){
+    y = robustbase::Qn(x1)
+  }else if(estimator == "Sca"){
+    y = robustbase::scaleTau2(x1)
+  }
+  return(y)
+}
 # check
