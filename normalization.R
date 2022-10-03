@@ -9,7 +9,8 @@ length.month1 = c(31,28,31,30,31,30,31,31,30,31,30,31)
 L = 365
 n = 365
 t = c(1:n)
-std.t = list.sd[1]*2*sin(2*pi*t/L-pi/2)/2 +1
+case = 4
+std.t = list.sd[case]*2*sin(2*pi*t/L-pi/2)/2 +1
 std = std.t[seq(1,365,length.out = 12)]
 res1 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
 res2 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
@@ -61,14 +62,14 @@ s2 <- colMeans(res2)
 
 s3 <- colMeans(res3)
 
-plot(t.year, s1)
-lines(t.year, s2, col = "red")
-lines(t.year, s2, col = "blue")
+# plot(t.year, s3)
+# plot(t.year, s2, col = "red")
+# plot(t.year, s1, col = "blue")
 
 dat = data.frame( t = t.year, true = std.t, MW.ScaleTau = s1, loess = s2, log.loess = s3,
-                  bias1 = abs(s1 - std.t), bias2 = abs(s2 - std.t),  bias3 = abs(s3 - std.t))
+                  bias.MW.ScaleTau = abs(s1 - std.t), bias.loess = abs(s2 - std.t),  bias.log.loess = abs(s3 - std.t))
 a = reshape2::melt(dat, id = "t")
-jpeg(paste0(path_results,"attribution/variances/bias.model1.0.2.Loess60.log.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/bias.model1",list.sd[case], ".Loess.60.log.add10.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = t, y = value, col = variable)) + 
   geom_line()+
@@ -79,15 +80,19 @@ ggplot(data = a, aes(x = t, y = value, col = variable)) +
 dev.off()
 a = as.numeric(res1 %>% summarise_if(is.numeric, sd))
 b = as.numeric(res2 %>% summarise_if(is.numeric, sd))
+d = as.numeric(res3 %>% summarise_if(is.numeric, sd))
 
-dat = data.frame( t = t.year, MW.ScaleTau = a, loess = b)
+
+dat = data.frame( t = t.year, MW.ScaleTau = a, loess = b, log.loess = d)
 a = reshape2::melt(dat, id = "t")
-jpeg(paste0(path_results,"attribution/variances/bias.model1.0.2.Loess.sd60.log.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/SD.model1",list.sd[case], ".Loess.60.log.add10.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = t, y = value, col = variable)) + 
   geom_line()+
   theme_bw()+
-  ylab("Mean of estimated scale")+
+  ylab("Sd of estimated scale")+
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size=15,face="bold"))
 dev.off()
+
+
