@@ -131,7 +131,8 @@ RobEstiSlidingVariance.log.WLS <- function(Y, name.var, alpha, length.wind){# re
   slide.var = rep(NA, n)
   times=1:n
   residus = x - median(x, na.rm = TRUE)
-  y = log(residus^2 + exp(10))
+  adding = 0
+  y = log(residus^2 + adding)
   y[which(y == -Inf)] <- NA
   lissage=loess(y~times,degree=1, span = length.wind/n, normalize = FALSE, na.action = na.exclude)
   slide.var[which(is.na(y ) == FALSE)] <- (na.omit(lissage$fitted))
@@ -152,7 +153,7 @@ RobEstiSlidingVariance.log.WLS <- function(Y, name.var, alpha, length.wind){# re
   }
   
   # var.t = sapply(s, function(x) ifelse(x>1, x, 1))
-  std.t <- sqrt(exp(s)-exp(10))
+  std.t <- sqrt(exp(s)-adding)
   sigma.est = std.t[which(Y1$date %in% Y$date)]
   return( sigma.est)
 }

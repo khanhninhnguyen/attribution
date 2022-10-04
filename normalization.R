@@ -45,11 +45,11 @@ for (i in c(1:nb.sim)) {
                                           alpha = 0, 
                                           length.wind = 60)
   
-  std.est2 <- RobEstiSlidingVariance.log.WLS (Y = data.frame(date = t.year, y = sim.ar), 
-                                          name.var = "y", 
-                                          alpha = 0, 
+  std.est2 <- RobEstiSlidingVariance.log.WLS (Y = data.frame(date = t.year, y = sim.ar),
+                                          name.var = "y",
+                                          alpha = 0,
                                           length.wind = 60)
-  
+
   res1[i,] <- std.est
   res2[i,] <- std.est1
   res3[i,] <- std.est2
@@ -61,6 +61,14 @@ s1 <- colMeans(res1)
 s2 <- colMeans(res2)
 
 s3 <- colMeans(res3)
+
+sd1 = apply(res1,2,sd)
+sd2 = apply(res1,2,sd)
+sd3 = apply(res1,2,sd)
+
+MSE1 = (colMeans(res1) -std.t  )^2 +  apply(res1,2,var)
+MSE2 = (colMeans(res2) -std.t  )^2 +  apply(res2,2,var)
+MSE3 = (colMeans(res3) -std.t  )^2 +  apply(res2,2,var)
 
 # plot(t.year, s3)
 # plot(t.year, s2, col = "red")

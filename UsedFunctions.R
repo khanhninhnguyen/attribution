@@ -90,8 +90,23 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     Y[pos.outliers] <- outlier.reordered
     cluster.true[pos.outliers] = 2
   }
+  if (P==9){
+    n.main = n*(1-prob.outliers)
+    n.out = n*prob.outliers/2
+    pos.outliers = sample(1:n, n.out*2, replace=FALSE)
+    Y.main = rnorm(n.main, 0, 1)
+    Y.1 = rnorm(n.out, -size.outliers, 1)
+    Y.2 = rnorm(n.out, size.outliers, 1)
+    Y = rep(NA, n)
+    Y[pos.outliers] <- c(Y.1, Y.2)
+    Y[-pos.outliers] <- Y.main
+    
+    cluster.true[pos.outliers[1:n.out]]=2
+    cluster.true[pos.outliers[(n.out+1):(n.out*2)]]=3
 
-  invisible(list(Y =Y,cluster.true=cluster.true))
+  } 
+
+  invisible(list(Y =Y,cluster.true=cluster.true,pos.outliers))
 }
 
 #### generate random series in tails of normal distribution
@@ -461,7 +476,7 @@ GMM_imp = function(P, Y, thres){
   main.g = as.numeric(names(sort(table(cluster_imp0),decreasing=TRUE)[1]))
   cluster_imp = sapply(tau_imp[,main.g], function(x) ifelse(x>thres, 1, 2) ) # change here to modify how to choose 
   outliers = which(cluster_imp!=1)
-  return(list(outliers = outliers, cluster = cluster_imp))
+  return(list(outliers = outliers, cluster = cluster_imp, tau = tau_imp))
 }
 
 
@@ -499,7 +514,7 @@ GMM_sameMean_uequalvar = function(P, Y, thres){
     
     outliers = which(cluster_SameMean_PropVariance != 1)
   }
-  return(list(outliers = outliers, cluster = cluster_SameMean_PropVariance))
+  return(list(outliers = outliers, cluster = cluster_SameMean_PropVariance, tau = tau_SameMean_PropVariance))
 }
 
 testOS <- function(x, thres){
