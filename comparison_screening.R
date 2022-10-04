@@ -106,7 +106,9 @@ thres.outlier = function(tau, thres){
   cluster_imp0 = apply(tau, 1, which.max)
   main.g = as.numeric(names(sort(table(cluster_imp0),decreasing=TRUE)[1]))
   cluster_imp = sapply(tau[,main.g], function(x) ifelse(x>thres, 1, 2) ) # change here to modify how to choose 
-  return(cluster_imp)
+  outliers = which(cluster_imp >1)
+  # return(cluster_imp)
+  return(outliers)
 }
 thres.list = seq(0.1,0.4,0.1)
 for (i in c(1:length(res.all))) {
@@ -242,19 +244,20 @@ for (h in c(1:length(all.data))) {
 }
 
 colnam = names(res.all[[1]])[-1]
+colnam[c(1,2)] <- paste(colnam[c(1,2)], ".0.5", sep = "") 
 colnames(mean.val) = colnam
 colnames(sd.val) = colnam
 mean.data = mean.val[,order(colnames(mean.val))]
 sd.data = sd.val[,order(colnames(sd.val))]
 
-write.table(mean.val, 
+write.table(mean.data , 
             file = paste0(path_results,'attribution/mean', outlier.mod, size.outlier, ".txt"), 
             sep="\t",
             col.names = TRUE,
             row.names = FALSE,
             quote=FALSE)
 
-write.table(sd.val, 
+write.table(sd.data, 
             file = paste0(path_results,'attribution/sd',outlier.mod, size.outlier, ".txt"), 
             sep="\t",
             col.names = TRUE,
@@ -357,7 +360,7 @@ hist(SimData$Y, breaks = 100)
 # results of gmm.imp
 plot(SimData$Y, cex = 0.8)
 points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
-points(gmm.imp.0.1$outliers, SimData$Y[gmm.imp.0.1$outliers], cex = 0.9, col = "blue", pch = 0)
+points(gmm.imp$gmm.imp.0.1, SimData$Y[gmm.imp$gmm.imp.0.1], cex = 0.9, col = "blue", pch = 0)
 points(gmm.imp.0.2$outliers, SimData$Y[gmm.imp.0.2$outliers], cex = 0.9, col = "purple", pch = 2)
 points(gmm.imp.0.3$outliers, SimData$Y[gmm.imp.0.3$outliers], cex = 0.7, col = "green", pch = 3)
 legend("bottomright", c("true", "gmm.imp.0.1", "gmm.imp.0.2", "gmm.imp.0.3"), 
