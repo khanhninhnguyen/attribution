@@ -358,16 +358,24 @@ boxplot(statis)
 hist(SimData$Y, breaks = 100)
 
 # results of gmm.imp
-plot(SimData$Y, cex = 0.8)
+jpeg(paste0(path_results,"attribution/gmm.imp",outlier.mod, size.outlier, prob.outliers, ".jpeg" ),
+     width = 2000, height = 1000,res = 300)
+par(mar = c(2, 2, 2, 2))
+
+plot(SimData$Y, cex = 0.8, ann=FALSE)
 points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
 points(gmm.imp$gmm.imp.0.1, SimData$Y[gmm.imp$gmm.imp.0.1], cex = 0.9, col = "blue", pch = 0)
-points(gmm.imp.0.2$outliers, SimData$Y[gmm.imp.0.2$outliers], cex = 0.9, col = "purple", pch = 2)
-points(gmm.imp.0.3$outliers, SimData$Y[gmm.imp.0.3$outliers], cex = 0.7, col = "green", pch = 3)
-legend("bottomright", c("true", "gmm.imp.0.1", "gmm.imp.0.2", "gmm.imp.0.3"), 
-       col=c("red","blue","purple", "green"),
-       pch=c(19,0, 2, 3),
+points(gmm.imp$gmm.imp.0.2, SimData$Y[gmm.imp$gmm.imp.0.2], cex = 1, col = "purple", pch = 2)
+points(gmm.imp$gmm.imp.0.3, SimData$Y[gmm.imp$gmm.imp.0.3], cex = 1, col = "green", pch = 3)
+points(gmm.imp$gmm.imp.0.4, SimData$Y[gmm.imp$gmm.imp.0.4], cex = 1.2, col = "orange", pch = 4)
+points(gmm.imp$outliers, SimData$Y[gmm.imp$outliers], cex = 1.5, col = "pink", pch = 5)
+
+legend("bottomright", c("true", "0.1", "0.2", "0.3","0.4", "0.5"), 
+       col=c("red","blue","purple", "green","orange","pink"),
+       pch=c(19,0, 2, 3, 4, 5),
        inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
 )
+dev.off()
 
 a = reshape2::melt(tau_imp)
 colnames(a) <- c("index", "group", "value")
@@ -380,30 +388,40 @@ ggplot(a, aes(x=index, y=value, col = group))+geom_point()+ theme_bw()+
 
 
 # results of Olivier and test OS
+jpeg(paste0(path_results,"attribution/OB",outlier.mod, size.outlier, prob.outliers, ".jpeg" ),
+     width = 2000, height = 1000,res = 300)
+par(mar = c(2, 2, 2, 2))
 
-plot(SimData$Y, cex = 0.8)
+plot(SimData$Y, cex = 0.8, ann=FALSE)
 points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
-points(a$outliers, SimData$Y[a$outliers], cex = 0.9, col = "blue", pch = 0)
-points(OS$outliers, SimData$Y[OS$outliers], cex = 0.9, col = "green", pch = 2)
-legend("bottomright", c("true", "3.sigma.m", "testOS"), 
-       col=c("red","blue", "green"),
-       pch=c(19,0, 2),
+points(a$point.rm, SimData$Y[a$point.rm], cex = 0.9, col = "blue", pch = 0)
+# points(OS$outliers, SimData$Y[OS$outliers], cex = 0.9, col = "green", pch = 2)
+legend("bottomright", c("true", "3.sigma.m"), 
+       col=c("red","blue"),
+       pch=c(19,0),
        inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
 )
+dev.off()
 
 # results of GMM.unequal 
+jpeg(paste0(path_results,"attribution/gmm.une",outlier.mod, size.outlier, prob.outliers, ".jpeg" ),
+     width = 2000, height = 1000,res = 300)
+par(mar = c(2, 2, 2, 2))
 
-plot(SimData$Y, cex = 0.8)
+plot(SimData$Y, cex = 0.8, ann=FALSE)
 points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
-points(gmm.unequal.0.1$outliers, SimData$Y[gmm.unequal.0.1$outliers], cex = 0.9, col = "blue", pch = 0)
-points(gmm.unequal.0.2$outliers, SimData$Y[gmm.unequal.0.2$outliers], cex = 0.9, col = "purple", pch = 2)
-points(gmm.unequal.0.3$outliers, SimData$Y[gmm.unequal.0.3$outliers], cex = 0.7, col = "green", pch = 3)
-legend("bottomright", c("true", "gmm.unequal.0.1", "gmm.unequal.0.2", "gmm.unequal.0.3"), 
-       col=c("red","blue","purple", "green"),
-       pch=c(19,0, 2, 3),
+points(gmm.unequal$gmm.imp.0.1, SimData$Y[gmm.unequal$gmm.imp.0.1], cex = 0.9, col = "blue", pch = 0)
+points(gmm.unequal$gmm.imp.0.2, SimData$Y[gmm.unequal$gmm.imp.0.2], cex = 1, col = "purple", pch = 2)
+points(gmm.unequal$gmm.imp.0.3, SimData$Y[gmm.unequal$gmm.imp.0.3], cex = 1, col = "green", pch = 3)
+points(gmm.unequal$gmm.imp.0.4, SimData$Y[gmm.unequal$gmm.imp.0.4], cex = 1.2, col = "orange", pch = 4)
+points(gmm.unequal$outliers, SimData$Y[gmm.unequal$outliers], cex = 1.5, col = "pink", pch = 5)
+
+legend("bottomright", c("true", "0.1", "0.2", "0.3","0.4", "0.5"), 
+       col=c("red","blue","purple", "green","orange","pink"),
+       pch=c(19,0, 2, 3, 4, 5),
        inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
 )
-
+dev.off()
 a = reshape2::melt(tau_SameMean_PropVariance)
 colnames(a) <- c("index", "group", "value")
 a$group = as.factor(a$group)
