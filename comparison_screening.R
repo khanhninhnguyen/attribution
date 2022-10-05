@@ -32,11 +32,11 @@ choose_model <- function(x){
 nb.sim = 1000
 prob.outliers = 0.1
 n0 = 300
-outlier.mod = c(7)
+outlier.mod = c(5)
 list.gmm.imp = list()
 list.gmm.une = list()
 test.length = c()
-list.loop = c(3,5)
+list.loop = c(5)
 P.ini = choose_model(outlier.mod)
 data.sim = list()
 # loop
@@ -107,7 +107,7 @@ thres.outlier = function(tau, thres){
   main.g = as.numeric(names(sort(table(cluster_imp0),decreasing=TRUE)[1]))
   cluster_imp = sapply(tau[,main.g], function(x) ifelse(x>thres, 1, 2) ) # change here to modify how to choose 
   outliers = which(cluster_imp >1)
-  # return(cluster_imp)
+  return(cluster_imp)
   return(outliers)
 }
 thres.list = seq(0.1,0.4,0.1)
@@ -247,21 +247,26 @@ colnam = names(res.all[[1]])[-1]
 colnam[c(1,2)] <- paste(colnam[c(1,2)], ".0.5", sep = "") 
 colnames(mean.val) = colnam
 colnames(sd.val) = colnam
+rownam = c("TP", "FP", "TN", "FN", "TPR", "FPR", "FNs", "FPs", "PPV", "ACC", "F1", "TS")
+rownames(mean.val) = rownam
+rownames(sd.val) = rownam
+
 mean.data = mean.val[,order(colnames(mean.val))]
 sd.data = sd.val[,order(colnames(sd.val))]
+
 
 write.table(mean.data , 
             file = paste0(path_results,'attribution/mean', outlier.mod, size.outlier, ".txt"), 
             sep="\t",
             col.names = TRUE,
-            row.names = FALSE,
+            row.names = TRUE,
             quote=FALSE)
 
 write.table(sd.data, 
             file = paste0(path_results,'attribution/sd',outlier.mod, size.outlier, ".txt"), 
             sep="\t",
             col.names = TRUE,
-            row.names = FALSE,
+            row.names = TRUE,
             quote=FALSE)
 
 # plot TPR, TNR and ACC -------------

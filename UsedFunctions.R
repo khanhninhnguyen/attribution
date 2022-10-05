@@ -71,9 +71,8 @@ SimulatedSeries <- function(n,P,prob.outliers,size.outliers, rho, theta){
     # outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(n2/(2*n),n2/(2*n),1-n2/n))
     Y = rnorm(n,0,1)
     # Y <- Y[which(abs(Y)<=size.outliers)] 
-
-    outliers=sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
-    pos.outliers=which(outliers!=0)
+    n.out = n*prob.outliers/2
+    pos.outliers=sample(1:n, n.out*2, replace=FALSE)
     n0 = length(pos.outliers)
     n1 = round(n0/2)
     n2 = n0-n1

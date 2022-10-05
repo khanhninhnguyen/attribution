@@ -384,3 +384,20 @@ for (l in c(1:1000)) {
   }
 }
 nb.sim=1000
+
+
+set.seed(30)
+N <- 300
+combined <- data.frame(futureChange = c(rnorm(N, mean = 0, sd = 1), rnorm(N, mean = 0, sd = 5)),
+                       direction = rep(c("long", "not long"), each = N))
+
+lower.limit <- min(combined$futureChange)
+upper.limit <- max(combined$futureChange)
+long.density <- density(subset(combined, direction == "long")$futureChange, from = lower.limit, to = upper.limit, n = 2^10)
+not.long.density <- density(subset(combined, direction == "not long")$futureChange, from = lower.limit, to = upper.limit, n = 2^10)
+
+density.difference <- long.density$y - not.long.density$y
+intersection.point <- long.density$x[which(diff(density.difference > 0) != 0) + 1]
+
+ggplot(combined, aes(futureChange, fill = direction)) + geom_density(alpha = 0.2) + 
+  geom_vline(xintercept = intersection.point, color = "red")
