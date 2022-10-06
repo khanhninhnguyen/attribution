@@ -32,7 +32,7 @@ choose_model <- function(x){
 nb.sim = 1000
 prob.outliers = 0.1
 n0 = 300
-outlier.mod = c(5)
+outlier.mod = c(7)
 list.gmm.imp = list()
 list.gmm.une = list()
 test.length = c()
@@ -88,10 +88,10 @@ for (j in c(1:length(list.loop))) {
     list.gmm.une[[i]] <- gmm.unequal
     data.sim[[i]] <- Y
   }
-  save(res.all, file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, size.outlier, ".RData"))
-  save(list.gmm.imp, file = paste0(path_results,"attribution/gmm.imp", prob.outliers,"mod", outlier.mod, size.outlier, ".RData"))
-  save(list.gmm.une, file = paste0(path_results,"attribution/gmm.unequal", prob.outliers,"mod", outlier.mod, size.outlier, ".RData"))
-  save(data.sim, file = paste0(path_results,"attribution/data.sim", prob.outliers,"mod", outlier.mod, size.outlier, ".RData"))
+  save(res.all, file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, size.outlier, "1.RData"))
+  save(list.gmm.imp, file = paste0(path_results,"attribution/gmm.imp", prob.outliers,"mod", outlier.mod, size.outlier, "1.RData"))
+  save(list.gmm.une, file = paste0(path_results,"attribution/gmm.unequal", prob.outliers,"mod", outlier.mod, size.outlier, "1.RData"))
+  save(data.sim, file = paste0(path_results,"attribution/data.sim", prob.outliers,"mod", outlier.mod, size.outlier, "1.RData"))
 }
 
 print(table(test.length))
@@ -107,7 +107,7 @@ thres.outlier = function(tau, thres){
   main.g = as.numeric(names(sort(table(cluster_imp0),decreasing=TRUE)[1]))
   cluster_imp = sapply(tau[,main.g], function(x) ifelse(x>thres, 1, 2) ) # change here to modify how to choose 
   outliers = which(cluster_imp >1)
-  return(cluster_imp)
+  # return(cluster_imp)
   return(outliers)
 }
 thres.list = seq(0.1,0.4,0.1)
