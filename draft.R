@@ -401,3 +401,61 @@ intersection.point <- long.density$x[which(diff(density.difference > 0) != 0) + 
 
 ggplot(combined, aes(futureChange, fill = direction)) + geom_density(alpha = 0.2) + 
   geom_vline(xintercept = intersection.point, color = "red")
+
+library(tidyverse)
+load("data.all_1years_NGL.auck.2005-11-07.whng.RData")
+head(Y)
+dim(Y)
+
+# Adding the missing data corresponding to missing date
+YY <- Y
+Y <- pad(Y)
+na.Y <- which(is.na(Y$gps.era))
+
+# We create the data adapted to the model: one year before the break and one year after
+date.detected.break="2005-11-07"
+rg.break <- which(Y$date==date.detected.break)
+one.year=365
+time.series <- seq(1-one.year/2,one.year/2,1)
+
+Data.mod <- Y %>% dplyr::select(gps.era,date) %>%
+  mutate(signal=gps.era) %>% dplyr::select(-gps.era) %>%
+  slice((rg.break-one.year+1):(rg.break+one.year)) %>%
+  mutate(Group=c(rep("Left",one.year),rep("Right",one.year))) %>%
+  mutate(Xt=rep(time.series,2)) %>% dplyr::select(-date)
+
+for (i in 1:4){
+  eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=rep(cos(i*time.series*(2*pi)/one.year),2),sin",i,"=rep(sin(i*time.series*(2*pi)/one.year),2))")))
+}
+head(Data.mod)
+
+#model
+fit.signal=lm(signal~Group+Xt+cos1+sin1+cos2+sin2+cos3+sin3+cos4+sin4,data=Data.mod)
+summary(fit.signal)
+fit.signal.hac=lmtest::coeftest(fit.signal, sandwich::NeweyWest(fit.signal, lag = 1))[, ]
+fit.signal.hac=as.data.frame(fit.signal.hac)
+pval=fit.signal.hac$`Pr(>|t|)`
+
+# Variable selection by hand
+fit.signal=lm(signal~Group+Xt+sin2,data=Data.mod)
+fit.signal.hac=lmtest::coeftest(fit.signal, sandwich::NeweyWest(fit.signal, lag = 1))[, ]
+fit.signal.hac=as.data.frame(fit.signal.hac)
+fit.signal.hac
+a=which.max(fit.signal.hac[2:dim(fit.signal.hac)[1],]$`Pr(>|t|)`)
+max(fit.signal.hac[2:dim(fit.signal.hac)[1],]$`Pr(>|t|)`)
+rownames(fit.signal.hac)[a+1]
+
+# final model-> sin2+constante+rupture (GroupR)+tendance (Xt)
+
+signal.predicted <- rep(NA,length(Data.mod$signal))
+signal.predicted[!((1:length(Data.mod$signal)) %in% na.Y)] <- fit.signal$fitted.values
+
+Left <- 1:one.year
+plot(Data.mod$Xt[Left],Data.mod$signal[Left],col="red", type="l",xlab="time",ylab="signal")
+lines(Data.mod$Xt[Left],signal.predicted[Left],col="red")
+
+Right <- (one.year+1):(2*one.year)
+lines(Data.mod$Xt[Right],Data.mod$signal[Right],col="blue")
+lines(Data.mod$Xt[Right],signal.predicted[Right],col="blue")
+
+

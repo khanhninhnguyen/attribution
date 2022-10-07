@@ -2,8 +2,8 @@ source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"support_screening.R"))
 
 ##### Study in the raw data #####
-# This function is used for data screening ---------------------------------
-# first normalized data
+# This function is used for data screening
+# first normalized data ---------------------------------
 window.thres = 2
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
@@ -270,5 +270,50 @@ p <- p +
 
 print(p)
 dev.off()
+
+
+# FINAL SCREENING  --------------------------------------------------------
+
+# read data : can be paired or not 
+data.in = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"paired.normalized.RData")))
+for (i in c(1:length(data.in))) {
+  case.name = names(data.in)[i]
+  station.ref = substr(case.name ,start = 1, stop = 4)
+  station.near = substr(case.name ,start = 17, stop = 20)
+  data.i = data.in[[i]]
+  data.i <- tidyr::complete(data.i, date = seq(min(data.i$date), max(data.i$date), by = "day"))
+  breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
+  before =  data.i[which(data.i$date <= breakpoint),]
+  after =  data.i[which(data.i$date > breakpoint),]
+  ind.sta = which(before$date == max(breakpoint %m+% years(-1), min(before$date)))
+  ind.end = which(after$date == min(breakpoint %m+% years(1), max(after$date)))
+  if(length(ind.sta)>0){
+    before <- tidyr::complete(before, date = seq(min(before$date), max(before$date), by = "day"))
+    bef.all <- list()
+    for (k in c(1:6)) {
+      bef.scr <- screen.O(Y = before, name.var = "gps.era", method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, loes = 0)
+      bef.all[[list.test[k]]] <- bef.scr
+    }
+    bef.all[["date"]] = before$date
+    bef.all <- as.data.frame(bef.all)
+    # bef.all <- bef.all[c(ind.sta:length(bef.norm)),]
+    data.all[[paste0(station.ref,".",as.character( breakpoint), ".", station.near)]]$bef <- bef.all
+  }
+  if(length(ind.end) > 0){
+    after <- tidyr::complete(after, date = seq(min(after$date), max(after$date), by = "day"))
+    aft.all <- list()
+    for (k in c(1:6)) {
+      aft.scr <- screen.O(Y = after, name.var = "gps.era", method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, loes = 0)
+      aft.all[[list.test[k]]] <- aft.scr
+    }
+    aft.all[["date"]] = after$date
+    aft.all <- as.data.frame(aft.all)
+    # aft.all <- bef.all[c(ind.sta:length(aft.norm)),]
+    data.all[[paste0(station.ref,".",as.character( breakpoint), ".", station.near)]]$aft <- aft.all
+  }
+}
+save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby_ver,"screened.RData"))
+
+  
 
 
