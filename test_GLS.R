@@ -60,7 +60,9 @@ sum(y/(b**2))/(sum(1/(b**2)))
 
 # compute the true covariance matrix of ARMA 
 inv.s = solve(Sig)
-d2 = solve(t(x)%*%x)%*%t(x)%*%Sig%*%x%*%solve(t(x)%*%x)
+t1 = solve(t(x)%*%x)%*%t(x)
+d.ols = sqrt(t1%*%Sig%*%t(t1))
+d.gls = sqrt(solve(t(x)%*%solve(Sig)%*%x))
    # (1/(1-0.9**2)) * solve(t(x)%*% inv.s %*% x)
 d1 = solve(t(x)%*%x)
 
