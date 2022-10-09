@@ -96,7 +96,7 @@ for (j in c(1:length(list.loop))) {
 
 print(table(test.length))
 # adding results of GMM regarding different threshold  --------------------
-size.outlier = 5
+size.outlier = 3
 res.all <- get(load( file = paste0(path_results,"attribution/comparison_screening_methods", prob.outliers,"mod", outlier.mod, size.outlier,".RData")))
 res.imp <- get(load( file = paste0(path_results,"attribution/gmm.imp", prob.outliers,"mod", outlier.mod, size.outlier,".RData")))
 res.une <- get(load( file = paste0(path_results,"attribution/gmm.unequal", prob.outliers,"mod", outlier.mod, size.outlier,".RData")))
@@ -107,8 +107,8 @@ thres.outlier = function(tau, thres){
   main.g = as.numeric(names(sort(table(cluster_imp0),decreasing=TRUE)[1]))
   cluster_imp = sapply(tau[,main.g], function(x) ifelse(x>thres, 1, 2) ) # change here to modify how to choose 
   outliers = which(cluster_imp >1)
-  # return(cluster_imp)
-  return(outliers)
+  return(cluster_imp)
+  # return(outliers)
 }
 thres.list = seq(0.1,0.4,0.1)
 for (i in c(1:length(res.all))) {
@@ -196,6 +196,8 @@ sta <- lapply(c(1:nb.sim), function (x){
     N.ind = which(r[,(y+1)] == 1)
     FN.pos = which(r[,(y+1)] == 1 & val.true != 1)
     FP.pos = which(r[,(y+1)] != 1 & val.true == 1)
+    TN.pos = which(r[,(y+1)] == 1 & val.true == 1)
+    TP.pos = which(r[,(y+1)] != 1 & val.true != 1)
     TP = length(which(P.ind %in% P.true == TRUE))
     TN = length(which(N.ind %in% N.true == TRUE))
     FN = n.pos - TP
@@ -208,16 +210,20 @@ sta <- lapply(c(1:nb.sim), function (x){
     ACC = (TPR*n.pos+TNR*n.neg)/(n.pos+n.neg)
     F1 = (2*TP)/(2*TP + FN + FP)
     TS = TP/( TP+ FN+FP)
-    if(FN >0){
-      FNs = sum(sim.seri[FN.pos]^2)/FN
-    }else{FNs = 0}
-    if(FP >0){
-      FPs = sum(sim.seri[FP.pos]^2)/FP
-    }else{FPs = 0}
-    c(TP, TN, FP, FN, TPR, FPR, FNs, FPs, PPV, ACC, F1, TS)
+    # if(FN >0){
+    #   FNs = sum(sim.seri[FN.pos]^2)/FN
+    # }else{FNs = 0}
+    # if(FP >0){
+    #   FPs = sum(sim.seri[FP.pos]^2)/FP
+    # }else{FPs = 0}
+    wTP = sum((sim.seri[P.true])^2)
+    TPw = (sum((sim.seri[TP.pos])^2))/wTP
+    wTN= sum((sim.seri[N.true])^2)
+    FPw = (sum((sim.seri[FP.pos])^2))/wTN
+    c(TP, TN, FP, FN, TPR, FPR, TPw, FPw, PPV, ACC, F1, TS)
   })
   b = data.frame(t(a))
-  colnames(b) <- c("TP", "TN", "FP", "FN", "TPR", "FPR", "FNs", "FPs", "PPV", "ACC", "F1", "TS")
+  colnames(b) <- c("TP", "TN", "FP", "FN", "TPR", "FPR", "TPw", "FPw", "PPV", "ACC", "F1", "TS")
   b
 })
 
@@ -231,10 +237,10 @@ PPV.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$PPV)))
 ACC.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$ACC)))
 F1.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$F1)))
 TS.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TS)))
-FPs.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FPs)))
-FNs.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FNs)))
+FPw.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FPw)))
+TPw.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPw)))
 
-all.data <- list(TP.data, FP.data, TN.data, FN.data, TPR.data, FPR.data, FNs.data, FPs.data, PPV.data, ACC.data, F1.data, TS.data)
+all.data <- list(TP.data, FP.data, TN.data, FN.data, TPR.data, FPR.data, TPw.data, FPw.data, PPV.data, ACC.data, F1.data, TS.data)
 mean.val = data.frame(matrix(NA, ncol = 13, nrow = 12))
 sd.val = data.frame(matrix(NA, ncol = 13, nrow = 12))
 for (h in c(1:length(all.data))) {
@@ -247,7 +253,7 @@ colnam = names(res.all[[1]])[-1]
 colnam[c(1,2)] <- paste(colnam[c(1,2)], ".0.5", sep = "") 
 colnames(mean.val) = colnam
 colnames(sd.val) = colnam
-rownam = c("TP", "FP", "TN", "FN", "TPR", "FPR", "FNs", "FPs", "PPV", "ACC", "F1", "TS")
+rownam = c("TP", "FP", "TN", "FN", "TPR", "FPR", "TPw", "FPw", "PPV", "ACC", "F1", "TS")
 rownames(mean.val) = rownam
 rownames(sd.val) = rownam
 

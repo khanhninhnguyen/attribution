@@ -23,7 +23,7 @@ n = 100
 res = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 mu = rep(NA, nb.sim)
-alpha = 0.9
+alpha = 0.5
 
 x = as.matrix(rep(1, n))
 s0 = c(1, alpha^(c(1:(n-1))))

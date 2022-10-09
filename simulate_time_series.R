@@ -30,7 +30,7 @@ simulate.general <- function(N, auto, arma.model, burn.in = 0,
   alpha =  arma.model[1]
   beta = arma.model[2]
   coef = (1+2*alpha*beta+beta**2)/(1-alpha**2)
-  sigma = sqrt((sigma**2)/coef)
+  # sigma = sqrt((sigma**2)/coef)
 
   if(monthly.var == 1){
     for (i in c(1:12)) {
