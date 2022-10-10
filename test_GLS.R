@@ -1,6 +1,6 @@
 # this prog used to test how GLS work 
 source(paste0(path_code_att,"simulate_time_series.R"))
-
+library(sandwich)
 # inverse matrix : solve(mat)
 # transpose matrix: t(matrix) 
 gls.func <- function(Y, X, sigma.matrix){
@@ -19,8 +19,8 @@ ols.func <- function(Y, X){
 
 # homoskedatic 
 nb.sim = 10000
-n = 100
-res = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
+n = 10
+res = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 mu = rep(NA, nb.sim)
 alpha = 0.5
@@ -41,8 +41,15 @@ for (i in c(1:nb.sim)) {
   beta.ols = ols.func(X = x, Y = y)
   # Sig = b*diag(length(y)) heteroskedastic 
   beta.gls = gls.func(Y = y, X = x, sigma.matrix = Sig)
-  res[i,] <- c(beta.gls, beta.ols)
-  res.var[i,] <- c(sum((y - mean(y))^2)/(n-1), sum((y - mean(y))^2)/(n-1))
+  
+  fit1=lm(y~x)
+  # e1=fit1$resid
+  hc=vcovHC(fit1,type="HC0")
+  # a = lmtest::coeftest(fit1, vcov. = hc)
+  # res.hc = as.data.frame(a[, ])
+  
+  res[i,] <- c(beta.gls, beta.ols, as.numeric(hc))
+  # res.var[i,] <- c(sum((y - mean(y))^2)/(n-1), sum((y - mean(y))^2)/(n-1))
 }
 summary(res)
 summary(sqrt(res.var))
@@ -67,5 +74,25 @@ d.gls = sqrt(solve(t(x)%*%solve(Sig)%*%x))
 d1 = solve(t(x)%*%x)
 
 
+fit1=lm(y_diff~x_diff)
+print(summary(fit1))
+e1=fit1$resid
+# Heteroskedasticity-Consistent Covariance Matrix Estimation
+#hc0=vcovHC(fit1,type="const")
+#print(sqrt(diag(hc0)))
+# type=c("const","HC","HC0","HC1","HC2","HC3","HC4")
 
+# HC0 is the White estimator
+hc1=vcovHC(fit1,type="HC0")
+print(sqrt(diag(hc1)))
+#Heteroskedasticity and autocorrelation consistent (HAC) estimation
+#of the covariance matrix of the coefficient estimates in a
+#(generalized) linear regression model.
+hac1=vcovHAC(fit1,sandwich=T)
+print(sqrt(diag(hac1)))
+
+lmtest::coeftest(fit.signal, sandwich::NeweyWest(fit.signal, lag = 1))[, ]
+
+
+print(lmtest::coeftest(fit1, vcov. = hc1))
 

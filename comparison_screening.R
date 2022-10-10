@@ -27,8 +27,6 @@ choose_model <- function(x){
   
   return(P)
 }
-
-# # Loop to check all methods ------------------------------------------
 nb.sim = 1000
 prob.outliers = 0.1
 n0 = 300
@@ -39,6 +37,8 @@ test.length = c()
 list.loop = c(5)
 P.ini = choose_model(outlier.mod)
 data.sim = list()
+# # Loop to check all methods ------------------------------------------
+
 # loop
 
 for (j in c(1:length(list.loop))) {
@@ -207,9 +207,8 @@ sta <- lapply(c(1:nb.sim), function (x){
     TNR = TN/n.neg
     PPV = TP/(TP+FP)
     if(is.na(PPV) == TRUE){ PPV = 0}
-    ACC = (TPR*n.pos+TNR*n.neg)/(n.pos+n.neg)
-    F1 = (2*TP)/(2*TP + FN + FP)
-    TS = TP/( TP+ FN+FP)
+    F1 = (5*TP)/(5*TP + 4*FN + FP)
+    # TS = TP/( TP+ FN+FP)
     # if(FN >0){
     #   FNs = sum(sim.seri[FN.pos]^2)/FN
     # }else{FNs = 0}
@@ -220,10 +219,19 @@ sta <- lapply(c(1:nb.sim), function (x){
     TPw = (sum((sim.seri[TP.pos])^2))/wTP
     wTN= sum((sim.seri[N.true])^2)
     FPw = (sum((sim.seri[FP.pos])^2))/wTN
-    c(TP, TN, FP, FN, TPR, FPR, TPw, FPw, PPV, ACC, F1, TS)
+    wPPV= sum((sim.seri[P.ind])^2)
+    PPVw =  (sum((sim.seri[TP.pos])^2))/wPPV
+    F1w = (5*(TPw * PPVw))/(4*PPVw + TPw)
+    if (length(P.ind) == 0){
+      PPVw = 0
+    }
+    if(PPVw ==0|TPw==0){
+      F1w = 0
+    }
+    c(TP, TN, FP, FN, TPR, FPR, TPw, FPw, PPV, PPVw, F1, F1w)
   })
   b = data.frame(t(a))
-  colnames(b) <- c("TP", "TN", "FP", "FN", "TPR", "FPR", "TPw", "FPw", "PPV", "ACC", "F1", "TS")
+  colnames(b) <- c("TP", "TN", "FP", "FN", "TPR", "FPR", "TPw", "FPw", "PPV", "PPVw", "F1", "F1w")
   b
 })
 
@@ -234,13 +242,13 @@ FN.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FN)))
 TPR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPR)))
 FPR.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FPR)))
 PPV.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$PPV)))
-ACC.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$ACC)))
+PPVw.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$PPVw)))
 F1.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$F1)))
-TS.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TS)))
+F1w.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$F1w)))
 FPw.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$FPw)))
 TPw.data = as.data.frame( t(sapply(c(1:nb.sim), function(x) sta[[x]]$TPw)))
 
-all.data <- list(TP.data, FP.data, TN.data, FN.data, TPR.data, FPR.data, TPw.data, FPw.data, PPV.data, ACC.data, F1.data, TS.data)
+all.data <- list(TP.data, FP.data, TN.data, FN.data, TPR.data, FPR.data, TPw.data, FPw.data, PPV.data, PPVw.data, F1.data, F1w.data)
 mean.val = data.frame(matrix(NA, ncol = 13, nrow = 12))
 sd.val = data.frame(matrix(NA, ncol = 13, nrow = 12))
 for (h in c(1:length(all.data))) {
@@ -253,7 +261,7 @@ colnam = names(res.all[[1]])[-1]
 colnam[c(1,2)] <- paste(colnam[c(1,2)], ".0.5", sep = "") 
 colnames(mean.val) = colnam
 colnames(sd.val) = colnam
-rownam = c("TP", "FP", "TN", "FN", "TPR", "FPR", "TPw", "FPw", "PPV", "ACC", "F1", "TS")
+rownam = c("TP", "FP", "TN", "FN", "TPR", "FPR", "TPw", "FPw", "PPV", "PPVw", "F1", "F1w")
 rownames(mean.val) = rownam
 rownames(sd.val) = rownam
 
@@ -261,14 +269,14 @@ mean.data = mean.val[,order(colnames(mean.val))]
 sd.data = sd.val[,order(colnames(sd.val))]
 
 
-write.table(mean.data , 
+write.table(t(mean.data) , 
             file = paste0(path_results,'attribution/mean', outlier.mod, size.outlier, ".txt"), 
             sep="\t",
             col.names = TRUE,
             row.names = TRUE,
             quote=FALSE)
 
-write.table(sd.data, 
+write.table(t(sd.data), 
             file = paste0(path_results,'attribution/sd',outlier.mod, size.outlier, ".txt"), 
             sep="\t",
             col.names = TRUE,
@@ -456,3 +464,21 @@ legend("bottomright", c("true", "MethodI", "MethodII"),
 
 outlierPlot(SimData$Y,testI,mode="qq")
 outlierPlot(Y,testII,mode="residual")
+
+# Mclust
+jpeg(paste0(path_results,"attribution/mclust",outlier.mod, size.outlier, prob.outliers, ".jpeg" ),
+     width = 2000, height = 1000,res = 300)
+par(mar = c(2, 2, 2, 2))
+
+plot(SimData$Y, cex = 0.8, ann=FALSE)
+points(cluster.true, SimData$Y[cluster.true], cex = 0.8, col = "red", pch = 19)
+points(which(classif.outliers$classification == 1), SimData$Y[which(classif.outliers$classification == 1)], cex = 0.9, col = "blue", pch = 0)
+points(which(classif.outliers$classification == 3), SimData$Y[which(classif.outliers$classification == 3)], cex = 0.9, col = "green", pch = 0)
+
+legend("bottomright", c("true", "g1", "g3"), 
+       col=c("red","blue", "green"),
+       pch=c(19,0, 2),
+       inset=c(0,1), xpd=TRUE, horiz=TRUE, bty="n"
+)
+dev.off()
+

@@ -213,6 +213,19 @@ table(classif.outliers$classification)
 #aa=apply(classif.outliers$z,1,max) 
 plot(Y,col=classif.outliers$classification,pch=16,cex=0.8)
 
+#### Plot
+
+plot(Y,col=cluster,pch=16,cex=0.8)
+P = 3
+yseq=seq(min(Y),max(Y),0.001)
+f.per.cluster=matrix(0,ncol=length(yseq),nrow=P)
+for (p in 1:P){
+  f.per.cluster[p,]=dnorm(yseq,mu[p],sqrt(s2[p]))
+}
+hist(Y,breaks = 200,freq=FALSE)
+for (p in 1:P){
+  lines(yseq,f.per.cluster[p,],col=p)
+}
 
 
 #########
