@@ -217,35 +217,41 @@ scr.O <- function(x, method, estimator, fix.thres){
   }
   return(list(x = x.out, point.rm = candidate.out))
 }
-screen.O <- function(Y, name.var, method, iter, estimator, fix.thres, loes){
-  last.rm <- c()
+screen.O <- function(Y, name.var, method, iter, estimator, fix.thres,  global.mu, loes, loes.method){
+  last.rm <- list()
   removed <- 1
   y <- unlist(Y[name.var])
   plo <- list()
   i = 0
   x <- y
-  # normalized <- one.step.norm(Y, name.var = name.var, estimator = estimator, length.wind = 60, loes = loes)
-  normalized <- c()
+  normalized <- list()
+  mu.est <- list() 
+  sd.est <- list()
   while(length(removed) > 0){
     i <- i+1
     if(iter ==1){
-      x <- one.step.norm(Y, name.var = name.var, estimator = estimator, length.wind = 60, loes = loes)
+      normalise <- one.step.norm(Y, name.var = name.var, estimator = estimator, length.wind = 60, global.mu = global.mu,
+                                 loes = loes, loes.method = loes.method)
+      x <- normalise$norm.sig
       names(x) <- NULL
     }
-    re = scr.O(x, method = method, estimator = estimator, fix.thres)
+    normalized[[i]] <- x
+    mu.est[[i]] <- normalise$mu
+    sd.est[[i]] <- normalise$sd
+    re = scr.O(x, method = "def", estimator = estimator, fix.thres = 3)
     plo[[i]] <- x
     Y[re$point.rm, name.var] <- NA
     x <- unlist(Y[name.var])
-    last.rm <- c(last.rm,re$point.rm)
+    last.rm[[i]] <- re$point.rm
     removed <- re$point.rm
   }
   
   if(length(last.rm) != 0){
-    x.screened = y[-last.rm]
+    x.screened = y[-unlist(last.rm)]
   } else{
     x.screened = y
   }
-  return(list(data = x.screened, point.rm = last.rm, normalized = normalized))
+  return(list(data = x.screened, point.rm = last.rm, normalized = normalized, mu.est = mu.est, sd.est = sd.est))
 }
 # make some iteration with this block 
 # NEED TO SEE THE PLOT AFTER EACH ITERATION, WHY THEY REMOVE TOO MANY POINTS?

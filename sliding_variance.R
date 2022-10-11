@@ -94,14 +94,14 @@ RobEstiSlidingVariance.S <- function(Y, name.var, alpha, estimator, length.wind)
   return(sigma.est)
 }
 
-RobEstiSlidingVariance.WLS <- function(Y, name.var, alpha, length.wind){# require date in the dataset, return std at time t
+RobEstiSlidingVariance.WLS <- function(Y, name.var, alpha, length.wind, loes.method){# require date in the dataset, return std at time t
   Y1 <- tidyr::complete(Y, date = seq(min(Y$date), max(Y$date), by = "day"))
   x = unlist(Y1[name.var], use.names = FALSE)
   n = nrow(Y1)
   slide.var = rep(NA, n)
   times=1:n
   residus = x - median(x, na.rm = TRUE)
-  lissage=loess(residus^2~times,degree=1, span = length.wind/n, normalize = FALSE, na.action = na.exclude)
+  lissage=loess(residus^2~times,degree=1, span = length.wind/n, normalize = FALSE, na.action = na.exclude, family = loes.method)
   slide.var[which(is.na(x) == FALSE)] <- (na.omit(lissage$fitted))
   # linear regression of the variance for gaps  MAYBE REPLACE BY INTERPOLATION FUNCTION
   s = slide.var
@@ -235,29 +235,25 @@ sliding.mean <- function(Y, name.var, length.wind){
 }
 
 
-one.step.norm <- function(Y, name.var, estimator, length.wind, loes){
+one.step.norm <- function(Y, name.var, estimator, length.wind, global.mu, loes, loes.method){
   norm2 = rep(NA, nrow(Y))
   # slide.mean <- sliding.median(Y, name.var, length.wind)
   # slide.mean <- sliding.mean(Y, name.var, length.wind)
-  slide.mean = median(unlist(Y[name.var]), na.rm = TRUE)
+  if(global.mu == 1){
+    slide.mean = rep(median(unlist(Y[name.var]), na.rm = TRUE), nrow(Y))
+  }else{
+    slide.mean <- sliding.median(Y, name.var, length.wind = length.wind)
+  }
   if (loes == 1){
-    y = unlist(Y[name.var]) 
-    n=length(y)
-    times=1:n
-    residus = y - median(y, na.rm = TRUE)
-    lissage=loess(residus^2~times,degree=1, span = 60/n, normalize = FALSE, na.action = na.exclude)
-    slide.var <- rep(NA, n)
-    slide.var[which(is.na(y) == TRUE)] <- approx(times, predict(lissage), xout= which(is.na(y)==TRUE))$y
-    slide.var[which(is.na(y) == FALSE)] <- na.omit(lissage$fitted)
-    std.t <- sqrt(sapply(slide.var, function(x) ifelse(x>0, x, abs(x))))
-    w = 1/(std.t**2)
-    slide.mean = sum(y*w, na.rm = TRUE)/sum(w, na.rm = TRUE)
-    } else{
-    std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator, length.wind)
+    # w = 1/(std.t**2) to compute the weighted mean 
+    # slide.mean = sum(y*w, na.rm = TRUE)/sum(w, na.rm = TRUE)
+    std.t <- RobEstiSlidingVariance.WLS( Y, name.var, alpha = 0, length.wind = length.wind, loes.method = loes.method)
+  } else{
+    std.t <- RobEstiSlidingVariance.S(Y, name.var, alpha = 0, estimator = estimator, length.wind= length.wind)
   }
   # step 1: normalize by std and median
   norm1 <- unlist((Y[name.var] - slide.mean)/std.t)
-  return(norm1)
+  return(list(norm.sig = norm1, mu = slide.mean, sd = std.t))
 }
 
 loess.sd <- function(x, alpha){

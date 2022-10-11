@@ -317,3 +317,90 @@ save(data.all, file = paste0(path_results,"attribution/data.all_2years_", nearby
   
 
 
+
+
+# SCREEN A REAL TIME SERIES -----------------------------------------------
+case.name = c("albh.2015-12-29.bcns")
+station.ref = substr(case.name ,start = 1, stop = 4)
+station.near = substr(case.name ,start = 17, stop = 20)
+breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
+
+Y = data.cr[[case.name]]
+y = Y[which(Y$date > breakpoint %m+% years(-1) & Y$date <= breakpoint),]
+var.name = "gps1.era"
+
+met1 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, 
+                 loes = 0, loes.method ="", global.mu = 0)
+
+met2 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0,
+                 loes = 0, loes.method ="", global.mu = 1)
+
+met3 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, 
+                 loes = 1, loes.method ="gaussian", global.mu = 1)
+
+met4 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, 
+                 loes = 1,  loes.method = "symmetric", global.mu = 1)
+# visualize 
+list.method = list( met1, met2, met3, met4)
+
+Y1 <- tidyr::complete(y, date = seq(min(y$date), max(y$date), by = "day"))
+points(point.rm, a[point.rm], col = "blue")
+list.col = paste("iter", c(1:3), sep = "")
+colos = c("iter1" ="red", "iter2" = "yellow", "iter3" ="green")
+for (j in c(1:length(list.method))) {
+  method = list.method[[j]]
+  p <- ggplot(data = Y1, aes(x = date, y = gps1.era ))+
+    geom_line()+ theme_bw()
+  for (i in c(1:length(method$normalized))) {
+    print(i)
+    iter = i
+    mu1 = method$mu.est[[iter]]
+    sd1 = method$sd.est[[iter]]
+    data.i = data.frame(mu = mu1, lower = mu1 - 3*sd1, upper = mu1 + 3*sd1, date = y$date)
+    Y.i <- tidyr::complete( data.i, date = seq(min( data.i$date), max( data.i$date), by = "day"))
+    p <- p + geom_line(data = Y.i, aes(x = date, y = mu, colour=list.col[i]))
+    p <- p + geom_line(data = Y.i, aes(x = date, y = lower, colour=list.col[i]))
+    p <- p + geom_line(data = Y.i, aes(x = date, y = upper, colour=list.col[i]))
+    if(i < length(method$normalized)){
+      point.rm = method$point.rm[[iter]]
+      data.rm = data.frame(x0 = y$date[point.rm], y0 = y[point.rm, var.name])
+      p <- p + geom_point(data = data.rm, aes(x = x0, y = y0), colour=list.col[i], pch = i, cex = 2)
+    }
+  }
+  p <- p +scale_colour_manual(name="Line Color",
+                              values=colos)
+  p <- p + theme(axis.text = element_text(size = 15),
+                 axis.title = element_text(size=15,face="bold"),
+                 plot.subtitle = element_text(size = 15, face = "bold", colour = "black", vjust = -1))
+  jpeg(paste0(path_results,"attribution/" , case.name, ".screened.", j, ".jpeg"),
+       width = 3000, height = 1500,res = 300)
+ 
+  print(p)
+  dev.off()
+  
+}
+
+# first iteration
+# iter = 1
+# method = met1
+# norm1 = method$normalized[[iter]]
+# mu1 = method$mu.est[[iter]]
+# sd1 = method$sd.est[[iter]]
+# point.rm = method$point.rm[[iter]]
+# 
+# a = unlist(y[var.name])
+# plot(a, type = "l", ylim = c(-6, 4))
+# lines(mu1)
+# lines(mu1 + 3*sd1)
+# lines(mu1 - 3*sd1)
+
+
+
+
+
+
+
+
+
+
+
