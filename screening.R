@@ -343,31 +343,33 @@ met4 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimat
 # visualize 
 list.method = list( met1, met2, met3, met4)
 
-Y1 <- tidyr::complete(y, date = seq(min(y$date), max(y$date), by = "day"))
-list.col = paste("iter", c(1:3), sep = "")
-colos = c("iter1" ="red", "iter2" = "yellow", "iter3" ="green")
 for (j in c(1:length(list.method))) {
   method = list.method[[j]]
-  p <- ggplot(data = Y1, aes(x = date, y = gps1.era ))+
-    geom_line()+ theme_bw()
-  for (i in c(1:length(method$normalized))) {
-    print(i)
-    iter = i
-    mu1 = method$mu.est[[iter]]
-    sd1 = method$sd.est[[iter]]
-    data.i = data.frame(mu = mu1, lower = mu1 - 3*sd1, upper = mu1 + 3*sd1, date = y$date)
-    Y.i <- tidyr::complete( data.i, date = seq(min( data.i$date), max( data.i$date), by = "day"))
-    p <- p + geom_line(data = Y.i, aes(x = date, y = mu, colour=colos[i]))
-    p <- p + geom_line(data = Y.i, aes(x = date, y = lower, colour= colos[i]))
-    p <- p + geom_line(data = Y.i, aes(x = date, y = upper, colour= colos[i]))
-    if(i < length(method$normalized)){
-      point.rm = method$point.rm[[iter]]
-      data.rm = data.frame(x0 = y$date[point.rm], y0 = y[point.rm, var.name])
-      p <- p + geom_point(data = data.rm, aes(x = x0, y = y0, colour=list.col[i]), pch = i, cex = 2)
+  mu = as.data.frame(method$mu.est, col.names = paste("mu", c(1:length(method$mu.est))))
+  sd1 = as.data.frame(method$sd.est, col.names = paste("sd", c(1:length(method$mu.est))))
+  data.i = cbind(date = y$date, mu)
+  for(x in c(1:length(method$normalized))) {
+    data.i[paste("lower",x, sep = "")] = mu[,x] - 3* sd1[,x]
+    data.i[paste("upper",x, sep = "")] = mu[,x] + 3* sd1[,x]
+    series.rm <- rep(NA, length(mu[,x]))
+    if(x < length(method$normalized)){
+      series.rm[method$point.rm[[x]]] <- y[method$point.rm[[x]], var.name]
     }
+    data.i[paste("rm",x, sep = "")] = series.rm 
   }
-  p <- p +scale_colour_manual(name="colors",
-                              values=colos)
+  data.i$y = unlist(y[var.name])
+  
+  Y.i <- tidyr::complete( data.i, date = seq(min( data.i$date), max( data.i$date), by = "day"))
+  a = reshape2::melt(Y.i, id = "date")
+  gr = c(c(1:length(method$normalized)), rep(c(1:length(method$normalized)), each = 3), 0)
+  gr[c(1:length(method$normalized))*3+length(method$normalized)] <- 10
+  a$col <- as.factor(rep(gr, each = 365 ))
+  b = a[which(a$col == 10),]
+  d = a[which(a$col != 10),]
+  b$col <- as.factor(rep(c(1:length(method$normalized)), each = 365 ))
+  p <- ggplot(data = d, aes(x = date, y = value, group = variable))+
+    geom_line(aes(colour= col))+ theme_bw()
+  p <- p + geom_point( data = b, aes(y = value, colour= col), size=2)
   p <- p + theme(axis.text = element_text(size = 15),
                  axis.title = element_text(size=15,face="bold"),
                  plot.subtitle = element_text(size = 15, face = "bold", colour = "black", vjust = -1))
