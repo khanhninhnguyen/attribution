@@ -344,7 +344,6 @@ met4 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimat
 list.method = list( met1, met2, met3, met4)
 
 Y1 <- tidyr::complete(y, date = seq(min(y$date), max(y$date), by = "day"))
-points(point.rm, a[point.rm], col = "blue")
 list.col = paste("iter", c(1:3), sep = "")
 colos = c("iter1" ="red", "iter2" = "yellow", "iter3" ="green")
 for (j in c(1:length(list.method))) {
@@ -358,16 +357,16 @@ for (j in c(1:length(list.method))) {
     sd1 = method$sd.est[[iter]]
     data.i = data.frame(mu = mu1, lower = mu1 - 3*sd1, upper = mu1 + 3*sd1, date = y$date)
     Y.i <- tidyr::complete( data.i, date = seq(min( data.i$date), max( data.i$date), by = "day"))
-    p <- p + geom_line(data = Y.i, aes(x = date, y = mu, colour=list.col[i]))
-    p <- p + geom_line(data = Y.i, aes(x = date, y = lower, colour=list.col[i]))
-    p <- p + geom_line(data = Y.i, aes(x = date, y = upper, colour=list.col[i]))
+    p <- p + geom_line(data = Y.i, aes(x = date, y = mu, colour=colos[i]))
+    p <- p + geom_line(data = Y.i, aes(x = date, y = lower, colour= colos[i]))
+    p <- p + geom_line(data = Y.i, aes(x = date, y = upper, colour= colos[i]))
     if(i < length(method$normalized)){
       point.rm = method$point.rm[[iter]]
       data.rm = data.frame(x0 = y$date[point.rm], y0 = y[point.rm, var.name])
-      p <- p + geom_point(data = data.rm, aes(x = x0, y = y0), colour=list.col[i], pch = i, cex = 2)
+      p <- p + geom_point(data = data.rm, aes(x = x0, y = y0, colour=list.col[i]), pch = i, cex = 2)
     }
   }
-  p <- p +scale_colour_manual(name="Line Color",
+  p <- p +scale_colour_manual(name="colors",
                               values=colos)
   p <- p + theme(axis.text = element_text(size = 15),
                  axis.title = element_text(size=15,face="bold"),
