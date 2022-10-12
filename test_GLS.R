@@ -26,19 +26,20 @@ mu = rep(NA, nb.sim)
 alpha = 0
 sig.m = 1
 sig.v = 0.8
-T1 = n
+T1 = n*2
 a = cos(2*pi*(c(1:n)/T1))
-b = sig.m - sig.v*a
+b = 3*(sig.m - sig.v*a)
 
 x = as.matrix(rep(1, n))
-s0 = c(1, alpha^(c(1:(n-1))))
-Sig = (1/(1-alpha**2)) * toeplitz(s0)
-
+# s0 = c(1, alpha^(c(1:(n-1))))
+# Sig = (1/(1-alpha**2)) * toeplitz(s0)
+Sig = matrix(0, nrow = n, ncol = n)
+diag(Sig) <- b
 for (i in c(1:nb.sim)) {
   set.seed(i)
-  # y = as.matrix(rnorm(n, 0, 1)) 
+  # y = as.matrix(rnorm(n, 0, 1))
   # y = y * b
-  y = simulate.general(N = n, auto = 0, arma.model = c(0,0), burn.in = 0, hetero = 1, sigma = b,
+  y = simulate.general(N = n, auto = 0, arma.model = c(0,0), burn.in = 0, hetero = 1, sigma = sqrt(b),
                        monthly.var = 0)
   y = y + 1
   # mu[i] = sum(y/(b**2))/(sum(1/(b**2)))
@@ -49,8 +50,8 @@ for (i in c(1:nb.sim)) {
   
   fit1=lm(y~x)
   # e1=fit1$resid
-  hc=vcovHC(fit1,type="HC0")
-  V_HAC <- sandwich::NeweyWest(fit1)
+  hc=vcovHC(fit1,type="HC3")
+  V_HAC <- vcovHAC(fit1)
   
   # a = lmtest::coeftest(fit1, vcov. = hc)
   # res.hc = as.data.frame(a[, ])
@@ -63,7 +64,7 @@ summary(sqrt(res.var))
 apply(res, 2, sd)
 apply(sqrt(res.var), 2, sd)
 
-
+true.GLS = sum(b)/(n^2) - 1/sum(1/b)
 
 sum(y/(b**2))/(sum(1/(b**2)))
 
