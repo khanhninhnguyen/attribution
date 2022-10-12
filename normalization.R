@@ -31,24 +31,24 @@ for (i in c(1:nb.sim)) {
                        N = n,
                        gaps = 0,
                        outlier = 0,
-                       prob.outliers = 0.5,
+                       prob.outliers = 0.05,
                        size.outliers = 5)
   
   # 
   std.est <- RobEstiSlidingVariance.S(Y = data.frame(date = t.year, y = sim.ar), 
                                       name.var = "y", 
                                       alpha = 0, estimator = "Sca",
-                                      length.wind = 60)
+                                      length.wind = 30)
   
   std.est1 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year, y = sim.ar), 
                                           name.var = "y", 
                                           alpha = 0, 
-                                          length.wind = 60)
+                                          length.wind = 30, loes.method = "gaussian")
   
-  std.est2 <- RobEstiSlidingVariance.log.WLS (Y = data.frame(date = t.year, y = sim.ar),
+  std.est2 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year, y = sim.ar),
                                           name.var = "y",
                                           alpha = 0,
-                                          length.wind = 60)
+                                          length.wind = 30, loes.method = "symmetric")
 
   res1[i,] <- std.est
   res2[i,] <- std.est1
@@ -74,10 +74,10 @@ MSE3 = (colMeans(res3) -std.t  )^2 +  apply(res2,2,var)
 # plot(t.year, s2, col = "red")
 # plot(t.year, s1, col = "blue")
 
-dat = data.frame( t = t.year, true = std.t, MW.ScaleTau = s1, loess = s2, log.loess = s3,
-                  bias.MW.ScaleTau = abs(s1 - std.t), bias.loess = abs(s2 - std.t),  bias.log.loess = abs(s3 - std.t))
+dat = data.frame( t = t.year, true = std.t, MW.ScaleTau = s1, loess.g = s2, loess.s = s3,
+                  bias.MW.ScaleTau = abs(s1 - std.t), bias.loess.g = abs(s2 - std.t),  bias.loess.s = abs(s3 - std.t))
 a = reshape2::melt(dat, id = "t")
-jpeg(paste0(path_results,"attribution/variances/bias.model1",list.sd[case], ".Loess.60.log.add10.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/bias.model2",list.sd[case], ".Loess.60.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = t, y = value, col = variable)) + 
   geom_line()+
@@ -91,9 +91,9 @@ b = as.numeric(res2 %>% summarise_if(is.numeric, sd))
 d = as.numeric(res3 %>% summarise_if(is.numeric, sd))
 
 
-dat = data.frame( t = t.year, MW.ScaleTau = a, loess = b, log.loess = d)
+dat = data.frame( t = t.year, MW.ScaleTau = a, loess.g = b, loess.s = d)
 a = reshape2::melt(dat, id = "t")
-jpeg(paste0(path_results,"attribution/variances/SD.model1",list.sd[case], ".Loess.60.log.add10.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/SD.model2",list.sd[case], ".Loess.60.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = t, y = value, col = variable)) + 
   geom_line()+
@@ -102,5 +102,22 @@ ggplot(data = a, aes(x = t, y = value, col = variable)) +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size=15,face="bold"))
 dev.off()
+
+dat = data.frame( t = t.year, MW.ScaleTau = MSE1, loess.g = MSE2, loess.s = MSE3)
+a = reshape2::melt(dat, id = "t")
+jpeg(paste0(path_results,"attribution/variances/MSE2",list.sd[case], ".Loess.60.jpeg" ),
+     width = 3000, height = 1500,res = 300)
+ggplot(data = a, aes(x = t, y = value, col = variable)) + 
+  geom_line()+
+  theme_bw()+
+  ylab("MSE")+
+  theme(axis.text = element_text(size = 15),
+        axis.title = element_text(size=15,face="bold"))
+dev.off()
+
+
+
+
+
 
 

@@ -20,10 +20,15 @@ ols.func <- function(Y, X){
 # homoskedatic 
 nb.sim = 10000
 n = 10
-res = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
+res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 mu = rep(NA, nb.sim)
-alpha = 0.5
+alpha = 0
+sig.m = 1
+sig.v = 0.8
+T1 = n
+a = cos(2*pi*(c(1:n)/T1))
+b = sig.m - sig.v*a
 
 x = as.matrix(rep(1, n))
 s0 = c(1, alpha^(c(1:(n-1))))
@@ -33,7 +38,7 @@ for (i in c(1:nb.sim)) {
   set.seed(i)
   # y = as.matrix(rnorm(n, 0, 1)) 
   # y = y * b
-  y = simulate.general(N = n, auto = 1, arma.model = c(alpha,0), burn.in = 1000, hetero = 0, sigma = 1,
+  y = simulate.general(N = n, auto = 0, arma.model = c(0,0), burn.in = 0, hetero = 1, sigma = b,
                        monthly.var = 0)
   y = y + 1
   # mu[i] = sum(y/(b**2))/(sum(1/(b**2)))
@@ -45,10 +50,12 @@ for (i in c(1:nb.sim)) {
   fit1=lm(y~x)
   # e1=fit1$resid
   hc=vcovHC(fit1,type="HC0")
+  V_HAC <- sandwich::NeweyWest(fit1)
+  
   # a = lmtest::coeftest(fit1, vcov. = hc)
   # res.hc = as.data.frame(a[, ])
   
-  res[i,] <- c(beta.gls, beta.ols, as.numeric(hc))
+  res[i,] <- c(beta.gls, beta.ols, as.numeric(hc), as.numeric(V_HAC))
   # res.var[i,] <- c(sum((y - mean(y))^2)/(n-1), sum((y - mean(y))^2)/(n-1))
 }
 summary(res)
@@ -57,11 +64,7 @@ apply(res, 2, sd)
 apply(sqrt(res.var), 2, sd)
 
 
-sig.m = 1
-sig.v = 0.8
-T1 = n
-a = cos(2*pi*(c(1:n)/T1))
-b = sig.m - sig.v*a
+
 sum(y/(b**2))/(sum(1/(b**2)))
 
 

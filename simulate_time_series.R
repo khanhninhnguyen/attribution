@@ -47,6 +47,7 @@ simulate.general <- function(N, auto, arma.model, burn.in = 0,
   sim.series = Y.sim[(burn.in+1):N] 
   
   n = length(sim.series)
+  cluster.true <- rep(1, n)
   if (outlier.model == 1) {
     outliers = sample(c(-size.outliers,size.outliers,0), n, replace=TRUE,prob=c(prob.outliers/2,prob.outliers/2,1-prob.outliers))
     pos.outliers=which(outliers!=0)
