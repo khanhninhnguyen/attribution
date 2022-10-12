@@ -20,7 +20,7 @@ ols.func <- function(Y, X){
 # homoskedatic 
 nb.sim = 10000
 n = 10
-res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
+res = data.frame(matrix(NA, ncol = 6, nrow = nb.sim))
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 mu = rep(NA, nb.sim)
 alpha = 0
@@ -28,13 +28,14 @@ sig.m = 1
 sig.v = 0.8
 T1 = n*2
 a = cos(2*pi*(c(1:n)/T1))
-b = 3*(sig.m - sig.v*a)
+b = (sig.m - sig.v*a)
 
 x = as.matrix(rep(1, n))
 # s0 = c(1, alpha^(c(1:(n-1))))
 # Sig = (1/(1-alpha**2)) * toeplitz(s0)
 Sig = matrix(0, nrow = n, ncol = n)
 diag(Sig) <- b
+r<-rep(NA, nb.sim)
 for (i in c(1:nb.sim)) {
   set.seed(i)
   # y = as.matrix(rnorm(n, 0, 1))
@@ -45,18 +46,24 @@ for (i in c(1:nb.sim)) {
   # mu[i] = sum(y/(b**2))/(sum(1/(b**2)))
  
   beta.ols = ols.func(X = x, Y = y)
-  # Sig = b*diag(length(y)) heteroskedastic 
-  beta.gls = gls.func(Y = y, X = x, sigma.matrix = Sig)
+  r[i] <- beta.ols
+  # # Sig = b*diag(length(y)) heteroskedastic 
+  # beta.gls = gls.func(Y = y, X = x, sigma.matrix = Sig)
   
   fit1=lm(y~x)
   # e1=fit1$resid
-  hc=vcovHC(fit1,type="HC3")
+  hc0=vcovHC(fit1,type="HC0")
+  hc1=vcovHC(fit1,type="HC1")
+  hc2=vcovHC(fit1,type="HC2")
+  hc3=vcovHC(fit1,type="HC3")
+  sandwich.1 = sandwich(fit1, bread. = bread(fit1), meat. = meat(fit1))
+  
   V_HAC <- vcovHAC(fit1)
   
   # a = lmtest::coeftest(fit1, vcov. = hc)
   # res.hc = as.data.frame(a[, ])
-  
-  res[i,] <- c(beta.gls, beta.ols, as.numeric(hc), as.numeric(V_HAC))
+  res[i,] <- c(as.numeric(hc0), as.numeric(hc1), as.numeric(hc2), as.numeric(hc3), as.numeric(sandwich.1), as.numeric(V_HAC))
+  # res[i,] <- c(beta.gls, beta.ols, as.numeric(hc), as.numeric(V_HAC))
   # res.var[i,] <- c(sum((y - mean(y))^2)/(n-1), sum((y - mean(y))^2)/(n-1))
 }
 summary(res)
@@ -67,7 +74,8 @@ apply(sqrt(res.var), 2, sd)
 true.GLS = sum(b)/(n^2) - 1/sum(1/b)
 
 sum(y/(b**2))/(sum(1/(b**2)))
-
+sqrt(solve(t(x)%*%Sig%*%x))
+solve(t(x)%*%x)%*%t(x)%*%Sig%*%x%*%solve(t(x)%*%x)
 
 # compute the true covariance matrix of ARMA 
 inv.s = solve(Sig)
