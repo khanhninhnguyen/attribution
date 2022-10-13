@@ -28,7 +28,7 @@ sig.m = 1
 sig.v = 0.8
 T1 = n*2
 a = cos(2*pi*(c(1:n)/T1))
-b = (sig.m - sig.v*a)
+b = 10*(sig.m - sig.v*a)
 
 x = as.matrix(rep(1, n))
 # s0 = c(1, alpha^(c(1:(n-1))))
@@ -40,8 +40,8 @@ for (i in c(1:nb.sim)) {
   set.seed(i)
   # y = as.matrix(rnorm(n, 0, 1))
   # y = y * b
-  y = simulate.general(N = n, auto = 0, arma.model = c(0,0), burn.in = 0, hetero = 1, sigma = sqrt(b),
-                       monthly.var = 0)
+  y = simulate.general(N = n, auto = 0, arma.model = c(0,0), burn.in = 0, hetero = 1, sigma = c(1:12),
+                       monthly.var = 1)
   y = y + 1
   # mu[i] = sum(y/(b**2))/(sum(1/(b**2)))
  
@@ -74,8 +74,6 @@ apply(sqrt(res.var), 2, sd)
 true.GLS = sum(b)/(n^2) - 1/sum(1/b)
 
 sum(y/(b**2))/(sum(1/(b**2)))
-sqrt(solve(t(x)%*%Sig%*%x))
-solve(t(x)%*%x)%*%t(x)%*%Sig%*%x%*%solve(t(x)%*%x)
 
 # compute the true covariance matrix of ARMA 
 inv.s = solve(Sig)
@@ -107,4 +105,20 @@ lmtest::coeftest(fit.signal, sandwich::NeweyWest(fit.signal, lag = 1))[, ]
 
 
 print(lmtest::coeftest(fit1, vcov. = hc1))
+
+
+for (i in c(1:nb.sim)) {
+  set.seed(i)
+  # y = as.matrix(rnorm(n, 0, 1))
+  # y = y * b
+  y = simulate.general(N = n, auto = 0, arma.model = c(0,0), burn.in = 0, hetero = 1, sigma = sqrt(b),
+                       monthly.var = 0)
+  y = y + 1
+  
+  fit1=lm(y~x)
+  r[i] <- fit1$coefficients[1]
+}
+
+
+
 
