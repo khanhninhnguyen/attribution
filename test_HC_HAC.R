@@ -13,7 +13,7 @@ ols.func <- function(Y, X){
 }
 
 nb.sim = 10000
-n = 100
+n = 10
 sig.m = 1
 sig.v = 0.8
 T1 = n*2
@@ -27,7 +27,7 @@ Sig = matrix(0, nrow = n, ncol = n)
 diag(Sig) <- true.var
 
 var.beta.OLS = solve(t(x)%*%x)%*%t(x)%*%Sig%*%x%*%solve(t(x)%*%x)
-var.beta.GLS = solve(t(x)%*%Sig%*%x)
+var.beta.GLS = solve(t(x)%*%solve(Sig)%*%x)
 
 
 for (i in c(1:nb.sim)) {
@@ -53,6 +53,13 @@ for (i in c(1:nb.sim)) {
 }
 
 summary(res)
-apply(res, 2, sd)
+apply(res, 2, var)
 summary(res.beta)
-apply(res.beta, 2, sd)
+apply(res.beta, 2, var)
+
+a = 10+0.125*(50+60*(c(1:100)))
+b = 0.25*exp(0.04*(50+60*(c(1:10))))
+
+
+
+
