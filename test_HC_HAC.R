@@ -63,3 +63,31 @@ b = 0.25*exp(0.04*(50+60*(c(1:10))))
 
 
 
+n1 = 100000
+r1 = data.frame(matrix(NA, nrow = n1, ncol = 10))
+r2 = data.frame(matrix(NA, nrow = n1, ncol = 10))
+
+for (i in c(1:n1)) {
+  x = rnorm(10, 0 , 1)
+  z = x-mean(x)
+  r1[i,] <- x
+  r2[i,] <- z
+}
+
+a1 = colMeans(r1)
+a2 = colMeans(r2)
+mean(a1)
+mean(a2)
+
+apply(r1, 2, var)
+
+mean(apply(r2, 2, sd))
+
+
+
+
+
+
+
+
+

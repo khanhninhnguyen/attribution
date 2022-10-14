@@ -24,28 +24,29 @@ choose_model <- function(x){
 model.out = 4
 P = choose_model(model.out)
 for (l in c(1:length(var.list))) {
-  n0 = 60
-  prob.outliers = var.list[l]
-  print(prob.outliers)
+  n0 = 10
+  # prob.outliers = var.list[l]
+  # print(prob.outliers)
   sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
-  rho = 0.9
+  rho = 0
   theta = 0
   off.set = 0
   ratio = sqrt((1 + 2*theta*rho + theta**2)/(1 - rho**2))
   for (i in 1:nb.sim) {
     set.seed(i)
     # x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
-    # x <- rnorm(n = n0, mean = 0, sd =1)
-    x <- arima.sim(model = list(ar = rho), n = n0, sd = 1, n.start = 10000)
-    x[(floor(n0/2)+1):n0] <- x[(floor(n0/2)+1):n0]+off.set
-    x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
+    x <- rnorm(n = n0, mean = 0, sd =1)
+    # x <- arima.sim(model = list(ar = rho), n = n0, sd = 1, n.start = 10000)
+    # x[(floor(n0/2)+1):n0] <- x[(floor(n0/2)+1):n0]+off.set
+    # x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
     # alpha.e = arima(x, order = c(1,0,0), method = "ML")$coef[1]
     # a = diff(x)
-    sigma[i,1] <- (var(x))*(1-rho^2)
-    sigma[i,2] <- mad(x)*sqrt(1-rho^2)
-    sigma[i,3] <- robustbase::Sn(x)*sqrt(1-rho^2)
-    sigma[i,4] <- robustbase::Qn(x)*sqrt(1-rho^2)
-    sigma[i,5] <- robustbase::scaleTau2(x)*sqrt(1-rho^2)
+    # if it is AR(1) add this factor on the estimator : *sqrt(1-rho^2)
+    sigma[i,1] <- sd(x)
+    sigma[i,2] <- mad(x)
+    sigma[i,3] <- robustbase::Sn(x)
+    sigma[i,4] <- robustbase::Qn(x)
+    sigma[i,5] <- robustbase::scaleTau2(x)
     # sigma[i,1] = sd(a)/sqrt(2-2*alpha.e)
     # sigma[i,2] <- mad(a)/sqrt(2-2*alpha.e)
     # sigma[i,3] <- robustbase::Sn(a)/sqrt(2-2*alpha.e)
@@ -189,14 +190,14 @@ for (l in c(1:length(var.list))) {
 }
 
 
-# compare moving window vs loess:
-nb.sim = 1000
+# compare moving window vs loess:---------------------------
+nb.sim = 10000
 list.sd = seq(0.2,0.8, 0.2)
 length.month1 = c(31,28,31,30,31,30,31,31,30,31,30,31)
 L = 365
 n = 365
 t = c(1:n)
-std.t = list.sd[1]*2*sin(2*pi*t/L-pi/2)/2 +1
+std.t = list.sd[4]*2*sin(2*pi*t/L-pi/2)/2 +1
 std = std.t[seq(1,365,length.out = 12)]
 res1 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
 res2 <- data.frame(matrix(NA, nrow = nb.sim, ncol = 365))
@@ -204,8 +205,9 @@ t0 <- as.Date("2021-01-01", format = "%Y-%m-%d" )
 t.year <- seq(t0, t0+364,1)
 for (i in c(1:nb.sim)) {
   set.seed(i)
-  sim.ar <- simulate.series.2(mean.1 = 0, sigma.1 = std,
-                              N = n,  arma.model = c(0, 0), length.month = length.month1)
+  sim.ar <- rnorm(n,0,1)
+  # sim.ar <- simulate.series.2(mean.1 = 0, sigma.1 = std,
+  #                             N = n,  arma.model = c(0, 0), length.month = length.month1)
   # SimData = SimulatedSeries(n = n, 
   #                           P = choose_model(1), 
   #                           prob.outliers = 0.1,
@@ -221,7 +223,7 @@ for (i in c(1:nb.sim)) {
   std.est1 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year, y = sim.ar), 
                                           name.var = "y", 
                                           alpha = 0, 
-                                          length.wind = 60)
+                                          length.wind = 60, loes.method = "gaussian")
   res1[i,] <- std.est
   res2[i,] <- std.est1
   
@@ -233,7 +235,9 @@ s2 <- colMeans(res2)
 
 lines(t.year, s1)
 plot(t.year, s2)
-dat = data.frame( t = t.year, true = std.t, MW.ScaleTau = s1, loess = s2)
+
+sd.c = (1-1/n)
+dat = data.frame( t = t.year, true = rep(sd.c,n), MW.ScaleTau = s1, loess = s2)
 a = reshape2::melt(dat, id = "t")
 jpeg(paste0(path_results,"attribution/variances/bias.model1.0.2.Loess60.jpeg" ),
      width = 3000, height = 1500,res = 300)
