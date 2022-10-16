@@ -21,13 +21,13 @@ choose_model <- function(x){
   else if(x == 6){ P = 1 } # no outlier
   return(P)
 }
-model.out = 4
+model.out = 1
 P = choose_model(model.out)
 for (l in c(1:length(var.list))) {
-  n0 = 10
-  # prob.outliers = var.list[l]
+  n0 = 100
+  prob.outliers = var.list[l]
   # print(prob.outliers)
-  sigma = data.frame(matrix(NA, ncol =5, nrow = nb.sim))
+  sigma = data.frame(matrix(NA, ncol = 6, nrow = nb.sim))
   rho = 0
   theta = 0
   off.set = 0
@@ -46,16 +46,17 @@ for (l in c(1:length(var.list))) {
     sigma[i,2] <- mad(x)
     sigma[i,3] <- robustbase::Sn(x)
     sigma[i,4] <- robustbase::Qn(x)
-    sigma[i,5] <- robustbase::scaleTau2(x)
+    sigma[i,5] <- robustbase::scaleTau2(x, sigma0 = sd(x))
+    sigma[i,6] <- robustbase::scaleTau2(x)
     # sigma[i,1] = sd(a)/sqrt(2-2*alpha.e)
     # sigma[i,2] <- mad(a)/sqrt(2-2*alpha.e)
     # sigma[i,3] <- robustbase::Sn(a)/sqrt(2-2*alpha.e)
     # sigma[i,4] <- robustbase::Qn(a)/sqrt(2-2*alpha.e)
     # sigma[i,5] <- robustbase::scaleTau2(a)/sqrt(2-2*alpha.e)
   }
-  colnames(sigma) <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
-  std <- sapply(c(1:5), function(x) IQR(sigma[,x]))
-  bias <- sapply(c(1:5), function(x) mean(sigma[,x])-1)
+  colnames(sigma) <- c("SD", "MAD", "Sn", "Qn","ScaleTAu","ScaleTAu1")
+  std <- sapply(c(1:6), function(x) IQR(sigma[,x]))
+  bias <- sapply(c(1:6), function(x) mean(sigma[,x])-1)
   res$sdt[[l]] <- std
   res$bias[[l]] <- bias
   # b = data.frame(estimator = rep(colnames(sigma), each = nb.sim), std = unlist(sigma))
@@ -102,7 +103,7 @@ colnames(iqr) <- as.character(var.list)
 # ratio.l = sqrt((1 + 2*theta*rho.list + theta**2)/(1 - rho.list**2))
 # true.bias <- iqr[1,1]*ratio.l
 # iqr <- rbind(iqr, c(true.bias))
-iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu","ScaleTAu1")
 a = reshape2::melt(iqr, id ="est")
 data.plot <- data.frame()
 jpeg(paste0(path_results,"attribution/variances/IQR.model",model.out, "rho = ", rho, " theta = ", theta, "out.size = ",  size.outliers, "offset = ", off.set, prob.outliers,"60.jpeg" ),
@@ -120,7 +121,7 @@ iqr = as.data.frame(res$bias)
 colnames(iqr) <- as.character(var.list)
 # true.bias <- sample.b 
 # iqr <- rbind(iqr, c(true.bias))
-iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu")
+iqr$est <- c("SD", "MAD", "Sn", "Qn","ScaleTAu","ScaleTAu1")
 a = reshape2::melt(iqr, id ="est")
 lim1 = floor(min(a$value)*10)/10
 lim2 = ceiling(max(a$value)*10)/10
