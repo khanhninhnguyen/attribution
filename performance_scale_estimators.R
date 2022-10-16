@@ -32,10 +32,13 @@ for (l in c(1:length(var.list))) {
   theta = 0
   off.set = 0
   ratio = sqrt((1 + 2*theta*rho + theta**2)/(1 - rho**2))
+  s <- c()
   for (i in 1:nb.sim) {
     set.seed(i)
     # x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
     x <- rnorm(n = n0, mean = 0, sd =1)
+    f <- qnorm(3/4)*(1-0.7612/n0 - 1.123/(n0^2))
+    s <- c(s, f)
     # x <- arima.sim(model = list(ar = rho), n = n0, sd = 1, n.start = 10000)
     # x[(floor(n0/2)+1):n0] <- x[(floor(n0/2)+1):n0]+off.set
     # x[(floor(n0*3/4)+1):n0] <- x[(floor(n0*3/4)+1):n0]+off.set
@@ -43,11 +46,11 @@ for (l in c(1:length(var.list))) {
     # a = diff(x)
     # if it is AR(1) add this factor on the estimator : *sqrt(1-rho^2)
     sigma[i,1] <- sd(x)
-    sigma[i,2] <- mad(x)
+    sigma[i,2] <- mad(x, constant = 1/f)
     sigma[i,3] <- robustbase::Sn(x)
     sigma[i,4] <- robustbase::Qn(x)
-    sigma[i,5] <- robustbase::scaleTau2(x, sigma0 = sd(x))
-    sigma[i,6] <- robustbase::scaleTau2(x)
+    sigma[i,5] <- robustbase::scaleTau2(x, sigma0 = mad(x, constant = 1/f), consistency = TRUE)
+    sigma[i,6] <- robustbase::scaleTau2(x, consistency = TRUE)
     # sigma[i,1] = sd(a)/sqrt(2-2*alpha.e)
     # sigma[i,2] <- mad(a)/sqrt(2-2*alpha.e)
     # sigma[i,3] <- robustbase::Sn(a)/sqrt(2-2*alpha.e)
