@@ -256,11 +256,11 @@ one.step.norm <- function(Y, name.var, estimator, length.wind, global.mu, loes, 
   return(list(norm.sig = norm1, mu = slide.mean, sd = std.t))
 }
 
-loess.sd <- function(x, alpha){
+loess.sd <- function(x, alpha,loes.method){
   n=length(x)
   times=1:n
   residus = x - median(x, na.rm = TRUE)
-  lissage=loess(residus^2~times,degree=1, span = alpha, normalize = TRUE, na.action = na.exclude)
+  lissage=loess(residus^2~times,degree=1, span = alpha, normalize = TRUE, na.action = na.exclude, family = loes.method)
   slide.var <- rep(NA, n)
   slide.var[which(is.na(x) == TRUE)] <- approx(times, predict(lissage), xout= which(is.na(x)==TRUE))$y
   slide.var[which(is.na(x) == FALSE)] <- na.omit(lissage$fitted)
@@ -271,11 +271,13 @@ loess.sd <- function(x, alpha){
 my.estimator <- function(estimator,x){
   x1 = na.omit(x)
   if(estimator == "mad"){
-    y = mad(x1)
+    n0 = length(x1)
+    f <- qnorm(3/4)*(1-0.7612/n0 - 1.123/(n0^2))
+    y = mad(x1, constant = 1/f)
   }else if(estimator == "Qn"){
     y = robustbase::Qn(x1)
   }else if(estimator == "Sca"){
-    y = robustbase::scaleTau2(x1)
+    y = robustbase::scaleTau2(x1, consistency = "finiteSample")
   }
   return(y)
 }

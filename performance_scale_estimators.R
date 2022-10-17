@@ -23,8 +23,8 @@ choose_model <- function(x){
 }
 model.out = 1
 P = choose_model(model.out)
-for (l in c(1:length(var.list))) {
-  n0 = 100
+for (l in c(1:length(var.list))) { 
+  n0 = 60
   prob.outliers = var.list[l]
   # print(prob.outliers)
   sigma = data.frame(matrix(NA, ncol = 6, nrow = nb.sim))
@@ -35,8 +35,8 @@ for (l in c(1:length(var.list))) {
   s <- c()
   for (i in 1:nb.sim) {
     set.seed(i)
-    # x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
-    x <- rnorm(n = n0, mean = 0, sd =1)
+    x = SimulatedSeries(n = n0, P = P, prob.outliers = prob.outliers, size.outliers = size.outliers, rho = rho, theta = theta)$Y
+    # x <- rnorm(n = n0, mean = 0, sd =1)
     f <- qnorm(3/4)*(1-0.7612/n0 - 1.123/(n0^2))
     s <- c(s, f)
     # x <- arima.sim(model = list(ar = rho), n = n0, sd = 1, n.start = 10000)
@@ -49,8 +49,8 @@ for (l in c(1:length(var.list))) {
     sigma[i,2] <- mad(x, constant = 1/f)
     sigma[i,3] <- robustbase::Sn(x)
     sigma[i,4] <- robustbase::Qn(x)
-    sigma[i,5] <- robustbase::scaleTau2(x, sigma0 = mad(x, constant = 1/f), consistency = TRUE)
-    sigma[i,6] <- robustbase::scaleTau2(x, consistency = TRUE)
+    sigma[i,5] <- robustbase::scaleTau2(x)
+    sigma[i,6] <- robustbase::scaleTau2(x, consistency = "finiteSample")
     # sigma[i,1] = sd(a)/sqrt(2-2*alpha.e)
     # sigma[i,2] <- mad(a)/sqrt(2-2*alpha.e)
     # sigma[i,3] <- robustbase::Sn(a)/sqrt(2-2*alpha.e)
@@ -266,5 +266,23 @@ ggplot(data = a, aes(x = t, y = value, col = variable)) +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size=15,face="bold"))
 dev.off()
+
+
+# z-Score -----------------------------------------------------------------
+r1 <- data.frame(matrix(NA, ncol = 10, nrow = nb.sim))
+r2 <- data.frame(matrix(NA, ncol = 10, nrow = nb.sim))
+
+for (i in c(1:nb.sim)) {
+  x = rnorm(10, 0, 1)
+  z = x - mean(x)
+  r1[i,] <- x
+  r2[i,] <- z
+}
+
+mean(apply(r1, 2, sd))
+mean(apply(r2, 2, robustbase::scaleTau2))
+mean(apply(r2, 2, sd))
+
+
 
 

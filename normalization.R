@@ -3,7 +3,7 @@ source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"simulate_time_series.R"))
 
 # compare moving window vs loess:
-nb.sim = 1000
+nb.sim = 10000
 list.sd = seq(0.2,0.8, 0.2)
 length.month1 = c(31,28,31,30,31,30,31,31,30,31,30,31)
 L = 365
@@ -30,29 +30,29 @@ for (i in c(1:nb.sim)) {
                        sigma = std.t,
                        N = n,
                        gaps = 0,
-                       outlier = 0,
-                       prob.outliers = 0.05,
-                       size.outliers = 5)
-  
-  # 
-  std.est <- RobEstiSlidingVariance.S(Y = data.frame(date = t.year, y = sim.ar), 
-                                      name.var = "y", 
+                       outlier = 1,
+                       prob.outliers = 0.1,
+                       size.outliers = 3)
+  # sim.ar = rnorm(n, 0, 1)
+
+  std.est <- RobEstiSlidingVariance.S(Y = data.frame(date = t.year[1:n], y = sim.ar),
+                                      name.var = "y",
                                       alpha = 0, estimator = "Sca",
-                                      length.wind = 30)
-  
-  std.est1 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year, y = sim.ar), 
-                                          name.var = "y", 
-                                          alpha = 0, 
-                                          length.wind = 30, loes.method = "gaussian")
-  
-  std.est2 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year, y = sim.ar),
+                                      length.wind = 60)
+
+  std.est1 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year[1:n], y = sim.ar),
                                           name.var = "y",
                                           alpha = 0,
-                                          length.wind = 30, loes.method = "symmetric")
+                                          length.wind = 60, loes.method = "gaussian")
 
-  res1[i,] <- std.est
-  res2[i,] <- std.est1
-  res3[i,] <- std.est2
+  std.est2 <- RobEstiSlidingVariance.WLS (Y = data.frame(date = t.year[1:n], y = sim.ar),
+                                          name.var = "y",
+                                          alpha = 0,
+                                          length.wind = 60, loes.method = "symmetric")
+
+  res1[i,] <- std.est 
+  res2[i,] <- std.est1 
+  res3[i,] <- loess.sd(sim.ar, alpha = 1, loes.method = "symmetric")[30]
 
 }
 
@@ -66,6 +66,7 @@ sd1 = apply(res1,2,sd)
 sd2 = apply(res1,2,sd)
 sd3 = apply(res1,2,sd)
 
+# std.t = rep(1, n)
 MSE1 = (colMeans(res1) -std.t  )^2 +  apply(res1,2,var)
 MSE2 = (colMeans(res2) -std.t  )^2 +  apply(res2,2,var)
 MSE3 = (colMeans(res3) -std.t  )^2 +  apply(res2,2,var)
@@ -77,7 +78,7 @@ MSE3 = (colMeans(res3) -std.t  )^2 +  apply(res2,2,var)
 dat = data.frame( t = t.year, true = std.t, MW.ScaleTau = s1, loess.g = s2, loess.s = s3,
                   bias.MW.ScaleTau = abs(s1 - std.t), bias.loess.g = abs(s2 - std.t),  bias.loess.s = abs(s3 - std.t))
 a = reshape2::melt(dat, id = "t")
-jpeg(paste0(path_results,"attribution/variances/bias.model2",list.sd[case], ".Loess.60.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/bias.model2",list.sd[case], ".Loess.0.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = t, y = value, col = variable)) + 
   geom_line()+
@@ -93,7 +94,7 @@ d = as.numeric(res3 %>% summarise_if(is.numeric, sd))
 
 dat = data.frame( t = t.year, MW.ScaleTau = a, loess.g = b, loess.s = d)
 a = reshape2::melt(dat, id = "t")
-jpeg(paste0(path_results,"attribution/variances/SD.model2",list.sd[case], ".Loess.60.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/SD.model2",list.sd[case], ".Loess.0.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = t, y = value, col = variable)) + 
   geom_line()+
@@ -105,7 +106,7 @@ dev.off()
 
 dat = data.frame( t = t.year, MW.ScaleTau = MSE1, loess.g = MSE2, loess.s = MSE3)
 a = reshape2::melt(dat, id = "t")
-jpeg(paste0(path_results,"attribution/variances/MSE2",list.sd[case], ".Loess.60.jpeg" ),
+jpeg(paste0(path_results,"attribution/variances/MSE2",list.sd[case], ".Loess.0.jpeg" ),
      width = 3000, height = 1500,res = 300)
 ggplot(data = a, aes(x = t, y = value, col = variable)) + 
   geom_line()+
@@ -114,6 +115,13 @@ ggplot(data = a, aes(x = t, y = value, col = variable)) +
   theme(axis.text = element_text(size = 15),
         axis.title = element_text(size=15,face="bold"))
 dev.off()
+
+
+
+
+
+
+
 
 
 
