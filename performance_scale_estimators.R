@@ -271,10 +271,24 @@ dev.off()
 # z-Score -----------------------------------------------------------------
 r1 <- data.frame(matrix(NA, ncol = 10, nrow = nb.sim))
 r2 <- data.frame(matrix(NA, ncol = 10, nrow = nb.sim))
-
+L = 365
+n = 365
+t = c(1:n)
+case = 4
+std.t = list.sd[case]*2*sin(2*pi*t/L-pi/2)/2 +1
+std = std.t[seq(1,365,length.out = 10)]
 for (i in c(1:nb.sim)) {
-  x = rnorm(10, 0, 1)
-  z = x - mean(x)
+  x = simulate.general(auto = 0,
+                            burn.in = 0,
+                            arma.model = c(0,0),
+                            hetero = 1,
+                            monthly.var = 0,
+                            sigma = std.t,
+                            N = 10,
+                            gaps = 0,
+                            outlier = 1,
+                            prob.outliers = 0.1,
+                            size.outliers = 3)  z = x - mean(x)
   r1[i,] <- x
   r2[i,] <- z
 }

@@ -5,7 +5,7 @@ six.series <- list()
 
 # Read nearby stations, distance, list of breakpoints
 distances <- get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData")))
-nearby_list <- get(load(file = paste0("list_nearby", nearby_ver, ".RData")))
+nearby_list <- get(load(file = paste0(path_results, "attribution/","list_nearby", nearby_ver, ".RData")))
 nearby_list1 <- nearby_list[which(is.na(nearby_list$Level1) == FALSE),]
 window.thres <- 1
 
@@ -18,8 +18,10 @@ for (j in c(1:nrow(nearby_list1))){
   
   for (k in c(1:nrow(seg.ref))) {
     breakpoint <- seg.ref$detected[k]
-    begin.point <- breakpoint %m+% years(-window.thres)   
-    end.point <- breakpoint %m+% years(window.thres)
+    # begin.point <- breakpoint %m+% years(-window.thres)   
+    # end.point <- breakpoint %m+% years(window.thres)
+    begin.point <- breakpoint - 364
+    end.point <- breakpoint + 365
     
     for (l in c(1:length(nearby.list.j))) {
       series.near <- read.series(path_series = path_series_nearby, station = nearby.list.j[l], na.rm = 1, add.full = 0)
@@ -32,26 +34,23 @@ for (j in c(1:nrow(nearby_list1))){
       series.near$GPS <- series.near$GPS*(exp(-5*(10**-4)*ver.dist)) ## change to the new correction: iwv(z1) = iwv(z2) exp(-0.0005/(z1-z2))
       series.near$ERAI <- series.near$ERAI*(exp(-5*(10**-4)*ver.dist))
       # join 2 data frame
-      both = inner_join(series.ref,series.near, by = "date")  # checked
-      both <- both[which(both$date > begin.point & both$date <= end.point),]
+      # both <- both[which(both$date > begin.point & both$date <= end.point),]
       # limit the raw series 
       series.ref <- series.ref[which(series.ref$date > begin.point & series.ref$date <= end.point),]
       series.near <- series.near[which(series.near$date > begin.point & series.near$date <= end.point),]
+      series.ref <- tidyr::complete(series.ref, date = seq(begin.point, end.point, by = "day"))
+      series.near <- tidyr::complete(series.near, date = seq(begin.point, end.point, by = "day"))
+      both = inner_join(series.ref,series.near, by = "date")  # checked
       
       if(nrow(both) >0){
         # save 4 series  ----------------------------------------------------------
-        four.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- list(date1 = series.ref$date,
-                                                                                                          GPS = series.ref$GPS,
-                                                                                                          ERA = series.ref$ERAI,
-                                                                                                          date2 = series.near$date,
-                                                                                                          GPS1 = series.near$GPS,
-                                                                                                          ERA1 = series.near$ERAI)
-        # four_series_frame <- data.frame(date = both$date,
-        #                                 GPS = both$GPS.x,
-        #                                 ERA = both$ERAI.x,
-        #                                 GPS1 = both$GPS.y,
-        #                                 ERA1 = both$ERAI.y)
-        save(four.series, 
+        four_series_frame <- data.frame(date = both$date,
+                                        GPS = both$GPS.x,
+                                        ERA = both$ERAI.x,
+                                        GPS1 = both$GPS.y,
+                                        ERA1 = both$ERAI.y)
+
+        write.table(four.series, 
                     file = paste0(path_results, "attribution/four_series/", station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yrs.txt"),
                     sep = "\t", quote = FALSE)
         
