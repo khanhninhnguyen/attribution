@@ -275,7 +275,8 @@ dev.off()
 # FINAL SCREENING  --------------------------------------------------------
 
 # read data : can be paired or not 
-data.in = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"paired.normalized.RData")))
+data.in = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
+                                  window.thres,"year_", nearby_ver,".RData")))
 for (i in c(1:length(data.in))) {
   case.name = names(data.in)[i]
   station.ref = substr(case.name ,start = 1, stop = 4)

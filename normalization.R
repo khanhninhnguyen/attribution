@@ -52,7 +52,7 @@ for (i in c(1:nb.sim)) {
 
   res1[i,] <- std.est 
   res2[i,] <- std.est1 
-  res3[i,] <- loess.sd(sim.ar, alpha = 1, loes.method = "symmetric")[30]
+  res3[i,] <- std.est2
 
 }
 

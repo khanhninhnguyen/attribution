@@ -282,17 +282,21 @@ screen.O1 <- function(y, method,estimator){
   }
   return(list(data = x.screened, point.rm = last.rm))
 }
+
 my.estimator <- function(estimator,x){
   x1 = na.omit(x)
   if(estimator == "mad"){
-    y = mad(x1)
+    n0 = length(x1)
+    f <- qnorm(3/4)*(1-0.7612/n0 - 1.123/(n0^2))
+    y = mad(x1, constant = 1/f)
   }else if(estimator == "Qn"){
     y = robustbase::Qn(x1)
   }else if(estimator == "Sca"){
-    y = robustbase::scaleTau2(x1)
+    y = robustbase::scaleTau2(x1, consistency = "finiteSample")
   }
   return(y)
 }
+
 scr.O1 <- function(x, method, estimator, fix.thres){ # make it 2 sides 
   n = length(x)
   mean0 = median(x, na.rm = TRUE)

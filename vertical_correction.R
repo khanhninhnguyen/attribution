@@ -1,4 +1,5 @@
 # Vertical correction for the nearby data in forming 6 series of differences 
+# output include the four series of the raw without matching day main and nearby
 four.series <- list()
 six.series <- list()
 
@@ -6,7 +7,7 @@ six.series <- list()
 distances <- get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData")))
 nearby_list <- get(load(file = paste0("list_nearby", nearby_ver, ".RData")))
 nearby_list1 <- nearby_list[which(is.na(nearby_list$Level1) == FALSE),]
-window.thres <- 2
+window.thres <- 1
 
 # Read list nearby 
 for (j in c(1:nrow(nearby_list1))){
@@ -33,20 +34,24 @@ for (j in c(1:nrow(nearby_list1))){
       # join 2 data frame
       both = inner_join(series.ref,series.near, by = "date")  # checked
       both <- both[which(both$date > begin.point & both$date <= end.point),]
+      # limit the raw series 
+      series.ref <- series.ref[which(series.ref$date > begin.point & series.ref$date <= end.point),]
+      series.near <- series.near[which(series.near$date > begin.point & series.near$date <= end.point),]
       
       if(nrow(both) >0){
         # save 4 series  ----------------------------------------------------------
-        four.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- list(date = both$date,
-                                                                                                          GPS = both$GPS.x,
-                                                                                                          ERA = both$ERAI.x,
-                                                                                                          GPS1 = both$GPS.y,
-                                                                                                          ERA1 = both$ERAI.y)
-        four_series_frame <- data.frame(date = both$date,
-                                        GPS = both$GPS.x,
-                                        ERA = both$ERAI.x,
-                                        GPS1 = both$GPS.y,
-                                        ERA1 = both$ERAI.y)
-        write.table(four_series_frame, 
+        four.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- list(date1 = series.ref$date,
+                                                                                                          GPS = series.ref$GPS,
+                                                                                                          ERA = series.ref$ERAI,
+                                                                                                          date2 = series.near$date,
+                                                                                                          GPS1 = series.near$GPS,
+                                                                                                          ERA1 = series.near$ERAI)
+        # four_series_frame <- data.frame(date = both$date,
+        #                                 GPS = both$GPS.x,
+        #                                 ERA = both$ERAI.x,
+        #                                 GPS1 = both$GPS.y,
+        #                                 ERA1 = both$ERAI.y)
+        save(four.series, 
                     file = paste0(path_results, "attribution/four_series/", station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yrs.txt"),
                     sep = "\t", quote = FALSE)
         
@@ -62,7 +67,7 @@ for (j in c(1:nrow(nearby_list1))){
         }
         six.diff$date <- both$date
         six.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- six.diff
-
+        #ADD 6 SERIES OF DIFFERENECES WITH FULL DATA INTO R DATA, IN CASE WE DON'T WANT TO LOSE INFORMATION DUE TO THE MATCHING BETWEEN MAIN AND NEARBY
         write.table(six_series_frame, 
                     file = paste0(path_results, "attribution/six_series/",station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yrs.txt"),
                     sep = "\t", quote = FALSE)
