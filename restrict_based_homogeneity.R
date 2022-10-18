@@ -1,5 +1,5 @@
 library("lubridate")       # Install & load lubridate package
-window.thres <- 2 # window period
+window.thres <- 1 # window period
 # we use the breakpoints from segmentation directly, with flag validation or outlier (80 days)
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
 # remove data in cluster of breakpoint or breakpoint from the ne --------
@@ -67,11 +67,11 @@ for (i in c(1:length(data.cr))) {
   nearby.seg = meta.compare.near[which(meta.compare.near$name == station.near),]
   
   # list breakpoints in the period
-  begin = breakpoint %m+% years(-window.thres)   
-  fin = breakpoint %m+% years(window.thres)
+  begin = breakpoint - 364
+  fin = breakpoint + 365
   
-  list.brp.main = station.seg$detected[which(station.seg$detected > begin & station.seg$detected < fin & station.seg$noise ==0)]
-  list.brp.near = nearby.seg$detected[which(nearby.seg$detected > begin & nearby.seg$detected < fin)]
+  list.brp.main = station.seg$detected[which(station.seg$detected >= begin & station.seg$detected < fin & station.seg$noise ==0)]
+  list.brp.near = nearby.seg$detected[which(nearby.seg$detected >= begin & nearby.seg$detected < fin)]
   
   list.all.brp <- c(list.brp.main, list.brp.near)
   station.data = as.data.frame(data.cr[[i]])
@@ -92,7 +92,7 @@ for (i in c(1:length(data.cr))) {
     }
   }
   # check to remove all other breaks 
-  list.others = list.all.brp[which(list.all.brp > begin & list.all.brp < fin)]
+  list.others = list.all.brp[which(list.all.brp >= begin & list.all.brp < fin)]
   list.others.ord = sort(unique(list.others), decreasing = FALSE)
   if(length(list.others.ord )>1){ 
     ind.brp = which(list.others.ord == breakpoint)
@@ -117,6 +117,6 @@ save(last.list.remove, file = paste0(path_results,"attribution/restricted_by_clo
 save(data.cr, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",window.thres,"year_", nearby_ver,".RData"))
 
 
-
+# checked results, all removed points is replaced by NA including the date column
 
 

@@ -9,6 +9,7 @@ nearby_list <- get(load(file = paste0(path_results, "attribution/","list_nearby"
 nearby_list1 <- nearby_list[which(is.na(nearby_list$Level1) == FALSE),]
 window.thres <- 1
 
+test <- c()
 # Read list nearby 
 for (j in c(1:nrow(nearby_list1))){
   station.ref.j = nearby_list1$ref.sta[j]
@@ -36,40 +37,41 @@ for (j in c(1:nrow(nearby_list1))){
       # join 2 data frame
       # both <- both[which(both$date > begin.point & both$date <= end.point),]
       # limit the raw series 
-      series.ref <- series.ref[which(series.ref$date > begin.point & series.ref$date <= end.point),]
-      series.near <- series.near[which(series.near$date > begin.point & series.near$date <= end.point),]
+      series.ref <- series.ref[which(series.ref$date >= begin.point & series.ref$date <= end.point),]
+      series.near <- series.near[which(series.near$date >= begin.point & series.near$date <= end.point),]
       series.ref <- tidyr::complete(series.ref, date = seq(begin.point, end.point, by = "day"))
       series.near <- tidyr::complete(series.near, date = seq(begin.point, end.point, by = "day"))
       both = inner_join(series.ref,series.near, by = "date")  # checked
+      test <- c(test, which(both$date == breakpoint))
       
-      if(nrow(both) >0){
+      condi1 = length(which(is.na(both$signal.y) == FALSE))
+      if(condi1 >100){
         # save 4 series  ----------------------------------------------------------
         four_series_frame <- data.frame(date = both$date,
                                         GPS = both$GPS.x,
                                         ERA = both$ERAI.x,
                                         GPS1 = both$GPS.y,
                                         ERA1 = both$ERAI.y)
-
-        write.table(four.series, 
-                    file = paste0(path_results, "attribution/four_series/", station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yrs.txt"),
+        four.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- four_series_frame
+        
+        write.table(four_series_frame, 
+                    file = paste0(path_results, "attribution/four_series/", station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yr.txt"),
                     sep = "\t", quote = FALSE)
         
-        six.diff <- list()
         six_series_frame <- data.frame (date = both$date)
         
         for (m in 1:6) {
           name.test = list.test[m]
           var1 = diff.var(c(name.test))[1]
           var2 = diff.var(c(name.test))[2]
-          six.diff[[name.test]] <- both[,c(var1)] - both[,c(var2)]
           six_series_frame[name.test] <- both[,c(var1)] - both[,c(var2)]
         }
-        six.diff$date <- both$date
-        six.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- six.diff
+        six.series[[paste0(station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l])]] <- six_series_frame
         #ADD 6 SERIES OF DIFFERENECES WITH FULL DATA INTO R DATA, IN CASE WE DON'T WANT TO LOSE INFORMATION DUE TO THE MATCHING BETWEEN MAIN AND NEARBY
         write.table(six_series_frame, 
-                    file = paste0(path_results, "attribution/six_series/",station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yrs.txt"),
+                    file = paste0(path_results, "attribution/six_series/",station.ref.j,".",as.character( breakpoint), ".", nearby.list.j[l], window.thres, "yr.txt"),
                     sep = "\t", quote = FALSE)
+        
       }
     }
   }
