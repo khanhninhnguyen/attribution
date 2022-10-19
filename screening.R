@@ -337,23 +337,15 @@ station.ref = substr(case.name ,start = 1, stop = 4)
 station.near = substr(case.name ,start = 17, stop = 20)
 breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
 
-Y = data.cr[[case.name]]
-y = Y[which(Y$date > breakpoint %m+% years(-1) & Y$date <= breakpoint),]
-var.name = "gps1.era"
+Y = data.in[[case.name]]
+y = Y[which(Y$date > (breakpoint-364) & Y$date <= breakpoint),]
+var.name = "gps.era"
 
 met1 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, 
                  loes = 0, loes.method ="", global.mu = 0)
 
-met2 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0,
-                 loes = 0, loes.method ="", global.mu = 1)
-
-met3 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, 
-                 loes = 1, loes.method ="gaussian", global.mu = 1)
-
-met4 <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, 
-                 loes = 1,  loes.method = "symmetric", global.mu = 1)
 # visualize 
-list.method = list( met1, met2, met3, met4)
+list.method = list( met1)
 
 for (j in c(1:length(list.method))) {
   method = list.method[[j]]
@@ -371,7 +363,7 @@ for (j in c(1:length(list.method))) {
   }
   data.i$y = unlist(y[var.name])
   
-  Y.i <- tidyr::complete( data.i, date = seq(min( data.i$date), max( data.i$date), by = "day"))
+  Y.i <- data.i
   a = reshape2::melt(Y.i, id = "date")
   gr = c(c(1:length(method$normalized)), rep(c(1:length(method$normalized)), each = 3), 0)
   gr[c(1:length(method$normalized))*3+length(method$normalized)] <- 10

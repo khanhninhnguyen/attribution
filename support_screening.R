@@ -346,3 +346,57 @@ scr.O1 <- function(x, method, estimator, fix.thres){ # make it 2 sides
   }
   return(list(x = x.out, point.rm = candidate.out))
 }
+
+# plot function
+
+plot_screening <- function(case.name, data.in, var.name, side){
+  station.ref = substr(case.name ,start = 1, stop = 4)
+  station.near = substr(case.name ,start = 17, stop = 20)
+  breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
+  
+  Y = data.in[[case.name]]
+  if(side == "bef"){
+    y = subset(Y, Y$date <= breakpoint)
+    y <- tidyr::complete(y, date = seq((breakpoint-364), breakpoint, by = "day"))
+  }else{
+    y = subset(Y, Y$date > breakpoint)
+    y <- tidyr::complete(y, date = seq((breakpoint+1), (breakpoint+365), by = "day"))
+  }
+  var.name =  var.name
+  
+  method <- screen.O(Y = y, name.var = var.name, method = 'sigma', iter = 1, estimator = "Sca", fix.thres = 0, 
+                     loes = 0, loes.method ="", global.mu = 0)
+  mu = as.data.frame(method$mu.est, col.names = paste("mu", c(1:length(method$mu.est))))
+  sd1 = as.data.frame(method$sd.est, col.names = paste("sd", c(1:length(method$mu.est))))
+  data.i = cbind(date = y$date, mu)
+  for(x in c(1:length(method$normalized))) {
+    data.i[paste("lower",x, sep = "")] = mu[,x] - 3* sd1[,x]
+    data.i[paste("upper",x, sep = "")] = mu[,x] + 3* sd1[,x]
+    series.rm <- rep(NA, length(mu[,x]))
+    if(x < length(method$normalized)){
+      series.rm[unlist(method$point.rm[[x]])] <- unlist(y[method$point.rm[[x]], var.name])
+    }
+    data.i[paste("rm",x, sep = "")] = series.rm 
+  }
+  data.i$y = unlist(y[var.name])
+  
+  Y.i <- data.i
+  a = reshape2::melt(Y.i, id = "date")
+  gr = c(c(1:length(method$normalized)), rep(c(1:length(method$normalized)), each = 3), 0)
+  gr[c(1:length(method$normalized))*3+length(method$normalized)] <- 10
+  a$col <- as.factor(rep(gr, each = 365 ))
+  b = a[which(a$col == 10),]
+  d = a[which(a$col != 10),]
+  b$col <- as.factor(rep(c(1:length(method$normalized)), each = 365 ))
+  p <- ggplot(data = d, aes(x = date, y = value, group = variable))+
+    geom_line(aes(colour= col))+ theme_bw()
+  p <- p + geom_point( data = b, aes(y = value, colour= col), size=2)
+  p <- p + theme(axis.text = element_text(size = 15),
+                 axis.title = element_text(size=15,face="bold"),
+                 plot.subtitle = element_text(size = 15, face = "bold", colour = "black", vjust = -1))
+  jpeg(paste0(path_results,"attribution/" , case.name,side, ".screened.", ".jpeg"),
+       width = 3000, height = 1500,res = 300)
+  
+  print(p)
+  dev.off()
+}

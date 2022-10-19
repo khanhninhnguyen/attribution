@@ -22,8 +22,9 @@ bef.out = sapply(c(1:length(bef.outl)), function(x) length(unlist(bef.outl[[x]])
 aft.outl = aft[unique.ind]
 aft.out = sapply(c(1:length(aft.outl)), function(x) length(unlist(aft.outl[[x]])))
 
-ind = 621
- 
+which.max(aft.out)
+ind.sus =84
+ind = unique.ind[ind.sus]
 case.name = names(dat)[ind]
 y = data.in[[case.name]]
 plot(y$gps.era, type = "l")
@@ -31,5 +32,11 @@ list.out.bef = unlist(outl[[ind ]]$bef$gps.era)
 list.out.aft = unlist(outl[[ind ]]$aft$gps.era) +365
 points(list.out.bef, y$gps.era[list.out.bef], col = "red")
 points(list.out.aft, y$gps.era[list.out.aft], col = "red")
+
+# plot an individual case to investigate 
+
+plot_screening(case.name =  case.name, data.in = data.in, var.name = "gps.era", side = "aft")
+plot_screening(case.name =  case.name, data.in = data.in, var.name = "gps.era", side = "bef")
+
 
 

@@ -51,7 +51,8 @@ save(data, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_", 
 
 
 
-# Remove all breakpoint in +/- 1 year excluding the crenel ----------------
+# Remove all breakpoint in +/- 1 year excluding the crenel different restriction for different test----------------
+
 meta.compare.near =  get(load(file = paste0(path_results,"validation/",nb_test.near,"-",criterion,"metacompa",screen.value="",".RData")))
 data.cr <- get(load(file = paste0(path_results,"attribution/six_diff_series_rm_crenel_",window.thres,"year_", nearby_ver,".RData")))
 
@@ -91,7 +92,7 @@ for (i in c(1:length(data.cr))) {
       station.data[which(station.data$date < max(period.rm) & station.data$date > min(period.rm)), -7] <- NA
     }
   }
-  # check to remove all other breaks 
+  # check to remove all other breaks in the four series combined the main and nearby 
   list.others = list.all.brp[which(list.all.brp >= begin & list.all.brp < fin)]
   list.others.ord = sort(unique(list.others), decreasing = FALSE)
   if(length(list.others.ord )>1){ 
@@ -99,12 +100,38 @@ for (i in c(1:length(data.cr))) {
     close.left = list.others.ord[ind.brp-1]
     close.right = list.others.ord[ind.brp+1]
     if(length(close.left) > 0){ # may create NA because the point does not exist
-      station.data[which(station.data$date < close.left), -7] <- NA
+      station.data[which(station.data$date < close.left),list.test[c(2,3,4,6)]] <- NA
       list.sim.brp[(nrow(list.sim.brp)+1),c(1,3)] <- c(i, as.character(close.left))
     }
     if(length(close.right) > 0){ # may create NA because the point does not exist
-      station.data[which(station.data$date > close.right), -7] <- NA
+      station.data[which(station.data$date > close.right), list.test[c(2,3,4,6)]] <- NA
       list.sim.brp[(nrow(list.sim.brp)+1),c(1,4)] <- c(i, as.character(close.right))
+    }
+  }
+  # check to remove all other breaks in the main series
+  list.main.ord = sort(unique(list.brp.main), decreasing = FALSE)
+  if(length( list.main.ord  )>1){ 
+    ind.brp = which( list.main.ord  == breakpoint)
+    close.left =  list.main.ord [ind.brp-1]
+    close.right =  list.main.ord [ind.brp+1]
+    if(length(close.left) > 0){ # may create NA because the point does not exist
+      station.data[which(station.data$date < close.left),list.test[c(1)]] <- NA
+    }
+    if(length(close.right) > 0){ # may create NA because the point does not exist
+      station.data[which(station.data$date > close.right), list.test[c(1)]] <- NA
+    }
+  }
+  # check to remove all other breaks in the main series
+  list.near.ord = sort(unique(c( breakpoint, list.brp.near)), decreasing = FALSE)
+  if(length( list.near.ord  )>1){ 
+    ind.brp = which( list.near.ord  == breakpoint)
+    close.left =  list.near.ord [ind.brp-1]
+    close.right =  list.main.ord [ind.brp+1]
+    if(length(close.left) > 0){ # may create NA because the point does not exist
+      station.data[which(station.data$date < close.left),list.test[c(5)]] <- NA
+    }
+    if(length(close.right) > 0){ # may create NA because the point does not exist
+      station.data[which(station.data$date > close.right), list.test[c(5)]] <- NA
     }
   }
   data.cr[[i]] <- station.data
