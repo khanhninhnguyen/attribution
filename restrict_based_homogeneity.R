@@ -126,7 +126,7 @@ for (i in c(1:length(data.cr))) {
   if(length( list.near.ord  )>1){ 
     ind.brp = which( list.near.ord  == breakpoint)
     close.left =  list.near.ord [ind.brp-1]
-    close.right =  list.main.ord [ind.brp+1]
+    close.right =  list.near.ord [ind.brp+1]
     if(length(close.left) > 0){ # may create NA because the point does not exist
       station.data[which(station.data$date < close.left),list.test[c(5)]] <- NA
     }
