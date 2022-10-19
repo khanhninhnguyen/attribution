@@ -37,11 +37,11 @@ for (j in c(1:nrow(nearby_list1))){
       # join 2 data frame
       # both <- both[which(both$date > begin.point & both$date <= end.point),]
       # limit the raw series 
-      series.ref <- series.ref[which(series.ref$date >= begin.point & series.ref$date <= end.point),]
-      series.near <- series.near[which(series.near$date >= begin.point & series.near$date <= end.point),]
-      series.ref <- tidyr::complete(series.ref, date = seq(begin.point, end.point, by = "day"))
-      series.near <- tidyr::complete(series.near, date = seq(begin.point, end.point, by = "day"))
-      both = inner_join(series.ref,series.near, by = "date")  # checked
+      series.ref1 <- series.ref[which(series.ref$date >= begin.point & series.ref$date <= end.point),]
+      series.near1 <- series.near[which(series.near$date >= begin.point & series.near$date <= end.point),]
+      series.ref1 <- tidyr::complete(series.ref1, date = seq(begin.point, end.point, by = "day"))
+      series.near1 <- tidyr::complete(series.near1, date = seq(begin.point, end.point, by = "day"))
+      both = inner_join(series.ref1,series.near1, by = "date")  # checked
       test <- c(test, which(both$date == breakpoint))
       
       condi1 = length(which(is.na(both$signal.y) == FALSE))

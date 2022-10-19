@@ -186,7 +186,6 @@ scr.O <- function(x, method, estimator, fix.thres){
     down = -fix.thres
     mean0 = 0
   }
-  print(c(up,down))
   candidate <- which(x<down | x>up)
   if (length(candidate) >0){
     # reorder ind of removal 
@@ -238,7 +237,7 @@ screen.O <- function(Y, name.var, method, iter, estimator, fix.thres,  global.mu
     normalized[[i]] <- x
     mu.est[[i]] <- normalise$mu
     sd.est[[i]] <- normalise$sd
-    re = scr.O(x, method = "def", estimator = estimator, fix.thres = 3)
+    re = scr.O(x, method = method, estimator = estimator, fix.thres = 0)
     plo[[i]] <- x
     Y[re$point.rm, name.var] <- NA
     x <- unlist(Y[name.var])
@@ -247,7 +246,8 @@ screen.O <- function(Y, name.var, method, iter, estimator, fix.thres,  global.mu
   }
   
   if(length(last.rm) != 0){
-    x.screened = y[-unlist(last.rm)]
+    x.screened = y
+    x.screened[unlist(last.rm)] <- NA
   } else{
     x.screened = y
   }

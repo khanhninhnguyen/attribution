@@ -47,7 +47,7 @@ short.list = list.cluster.removed[!duplicated(list.cluster.removed),]
 save(short.list, file = paste0(path_results,"attribution/removed_possible_crenel_",window.thres,"year_", nearby_ver,".RData"))
 save(data, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_", window.thres,"year_",nearby_ver,".RData"))
 
-
+#NOTE: data after restriction is lost of date in the crenel, in the next step, we need to complete data by date again 
 
 
 
