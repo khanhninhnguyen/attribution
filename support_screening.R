@@ -394,7 +394,8 @@ plot_screening <- function(case.name, data.in, var.name, side){
   p <- p + theme(axis.text = element_text(size = 15),
                  axis.title = element_text(size=15,face="bold"),
                  plot.subtitle = element_text(size = 15, face = "bold", colour = "black", vjust = -1))
-  jpeg(paste0(path_results,"attribution/" , case.name,side, ".screened.", ".jpeg"),
+  p <- p +ylim(-6,7)
+  jpeg(paste0(path_results,"attribution/" , case.name,side, ".screened.",var.name, ".jpeg"),
        width = 3000, height = 1500,res = 300)
   
   print(p)
