@@ -21,7 +21,7 @@ Test_OLS_vcovhac <- function(Data.mod){
   pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
   p.max <- max(pval.hac.without.intercept)
   
-  while ((p.max>threshold) & (length(list.para)>=1)){
+  while ((p.max>threshold) & (length(list.para)>1)){
     names.max <- rownames(fit.hac.without.NA)[pval.hac.without.intercept==p.max]
     list.para <-list.para[!(list.para %in% names.max)] 
     mod.X <-  list.para %>% str_c(collapse = "+")
@@ -76,9 +76,6 @@ Test_FGLS <- function(Data.mod){
   }
   return(list(res.gls=res.gls,predicted=fit.gls$fitted))
 }
-  
-
-
 
 plot.predict <- function(res,Data.mod,one.year,date){
   na.Y <- which(is.na(Data.mod$signal))
@@ -96,6 +93,46 @@ plot.predict <- function(res,Data.mod,one.year,date){
 }
 
 
+Test_OLS_vcovhac_1step <- function(Data.mod){
+  # OLS estimates
+  list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
+  mod.X <-  list.para %>% str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
+  
+  fit.ols <- lm(mod.expression,data=Data.mod)
+  names(fit.ols$coefficients)[which(names(fit.ols$coefficients)=="JumpRight")]="Jump"
+  
+  # covariance matrix HAC
+  L <- round(dim(Data.mod)[1]^(1/4))
+  vcov.para=sandwich::NeweyWest(fit.ols, lag = L)
+  
+  # Test with vcov (HAC)
+  fit.hac=lmtest::coeftest(fit.ols,df=Inf,vcov.=vcov.para)[, ] %>% as.data.frame()
+  
+  
+  # Selection parameter by parameter (the intercept will never be removed)
+  # threshold <- 0.01
+  # fit.hac.without.NA <- fit.hac[!(rownames(fit.hac) %in% "(Intercept)"),]
+  # pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
+  # p.max <- max(pval.hac.without.intercept)
+  
+  # while ((p.max>threshold) & (length(list.para)>1)){
+  #   names.max <- rownames(fit.hac.without.NA)[pval.hac.without.intercept==p.max]
+  #   list.para <-list.para[!(list.para %in% names.max)] 
+  #   mod.X <-  list.para %>% str_c(collapse = "+")
+  #   mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
+  #   
+  #   fit.ols <- lm(eval(mod.expression),data=Data.mod)
+  #   vcov.para=sandwich::NeweyWest(fit.ols, lag = L)
+  #   fit.hac=lmtest::coeftest(fit.ols,df=Inf,vcov.=vcov.para)[, ] %>% as.data.frame()
+  #   row.names(fit.hac)[which(row.names(fit.hac)=="JumpRight")]="Jump"
+  #   
+  #   fit.hac.without.NA <- fit.hac[!(rownames(fit.hac) %in% "(Intercept)"),]
+  #   pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
+  #   p.max <- max(pval.hac.without.intercept)
+  # }
+  return(list(fit.hac=fit.hac,predicted=fit.ols$fitted.values))
+}
 
 
 

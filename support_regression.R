@@ -20,11 +20,10 @@ Test_OLS_vcovhac <- function(Data.mod){
   fit.hac.without.NA <- fit.hac[!(rownames(fit.hac) %in% "(Intercept)"),]
   pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
   p.max <- max(pval.hac.without.intercept)
-  
-  while ((p.max>threshold) & (length(list.para)>=1)){
+  while ((p.max>threshold) & (length(list.para)>1)){
     names.max <- rownames(fit.hac.without.NA)[pval.hac.without.intercept==p.max]
-    list.para <-list.para[!(list.para %in% names.max)] 
-    mod.X <-  list.para %>% str_c(collapse = "+")
+    list.para <- list.para[!(list.para %in% names.max)] 
+    mod.X <- list.para %>% str_c(collapse = "+")
     mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
     
     fit.ols <- lm(eval(mod.expression),data=Data.mod)
