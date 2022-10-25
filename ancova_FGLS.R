@@ -38,29 +38,31 @@ for (k in list.ind) {
   ########################
   # Test on the OLS estimate with the HAC covariance and selection of the 
   # significant parameters
-  # res.hac <- Test_OLS_vcovhac_1step(Data.mod)
+  res.hac <- Test_OLS_vcovhac(Data.mod)
   ####################################
   # Test on the FGLS estimate with a ARMA(1,1) model
-  res.fgls <- Test_FGLS(Data.mod)
-
-  tot.res[[name.dataset]] <- list(hac = round(res.fgls$res.gls, digits = 5),
-                                  predicted = res.fgls$predicted)
+  # res.fgls <- Test_FGLS(Data.mod)
+  # 
+  tot.res[[name.dataset]] <- list(hac = round(res.hac$fit.hac, digits = 5),
+                                  predicted = res.hac$predicted)
+  # tot.res[[name.dataset]] <- list(hac = round(res.fgls$res.gls, digits = 5),
+  #                                 predicted = res.fgls$predicted)
   #                                 fgls = round(res.fgls$res.gls, digits = 5))
   print(k)
 }
 
-save(tot.res, file = paste0(path_results, "attribution/GPS.ERA.gls.mean_test.RData"))
+save(tot.res, file = paste0(path_results, "attribution/GPS.ERA.mean_test.RData"))
 
 r <- rep(NA, length(tot.res))
 for (i in c(1:length(tot.res))) {
   resi = tot.res[[i]]$hac
-  r[i] <- resi$`Pr(>|z|)`[ which(rownames(a) == "Jump")]
+  r[i] <- resi$`Pr(>|z|)`[ which(rownames(resi) == "Jump")]
 
 }
 
 # plot results to investigate 
 
-plot_HAC <- function(case.name, tot.res, data.in, name.var ){
+plot_HAC <- function(case.name, tot.res, data.in, name.var, ver ){
   Y = data.in[[case.name]]
   res.i = tot.res[[case.name]]
   Y$predict = rep(NA, 365*2)
@@ -68,9 +70,9 @@ plot_HAC <- function(case.name, tot.res, data.in, name.var ){
   data.plot <- data.frame(date = Y$date, name.var = Y[name.var], predicted = Y$predict)
   a = reshape2::melt(data.plot, id = "date")
   
-  jpeg(paste0(path_results,"attribution/OLS.HAC/", case.name, ".jpeg" ),
+  jpeg(paste0(path_results,"attribution/OLS.HAC/", case.name, ver, ".jpeg" ),
        width = 3000, height = 1500,res = 300)
-  ggplot(data = a, aes(x = date, y = value, col = variable)) + 
+  p <- ggplot(data = a, aes(x = date, y = value, col = variable)) + 
     geom_line()+theme_bw()+
     geom_vline(xintercept = Y$date[365], size = 0.2)+
     ylab(name.var)+
@@ -78,9 +80,56 @@ plot_HAC <- function(case.name, tot.res, data.in, name.var ){
       subtitle =  paste(rownames(res.i$hac),  res.i$hac$Estimate, res.i$hac$`Pr(>|z|)`, collapse = ", ", sep = "; "))+ 
     theme(axis.text = element_text(size = 15),
           axis.title = element_text(size=15,face="bold"))
+  print(p)
   dev.off()
   
 }
+
+
+# investigate the difference between selection and nonselection -----------
+
+
+selec = get(load(file = paste0(path_results, "attribution/GPS.ERA.mean_test.RData")))
+full = get(load(file = paste0(path_results, "attribution/GPS1.ERA1.mean_test.RData")))
+
+hac.sel <- sapply(c(1:length(selec)), function(x){
+  res.i = selec[[x]]$hac
+  ind = which(rownames(res.i) == "Jump")
+  if(length(ind) == 0){
+    NA
+  }else{
+    unlist(res.i$`Pr(>|z|)`[ind])
+  }
+})
+
+hac.sel <- unlist(hac.sel)
+hac.full <- sapply(c(1:length(full)), function(x){
+  res.i = full[[x]]$hac
+  ind = which(rownames(res.i) == "Jump")
+  if(length(ind) == 0){
+    NA
+  }else{
+    unlist(res.i$`Pr(>|z|)`[ind])
+  }
+})
+
+
+for (j in c(1:(length(unique.ind)-1))) {
+  beg=unique.ind[j]
+  end=unique.ind[j+1]
+  for (k in c(beg:end)) {
+    which(hac.full)
+  }
+}
+
+
+
+
+
+
+
+
+
 
 
 
