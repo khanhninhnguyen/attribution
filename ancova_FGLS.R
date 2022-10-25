@@ -91,6 +91,7 @@ plot_HAC <- function(case.name, tot.res, data.in, name.var, ver ){
 
 selec = get(load(file = paste0(path_results, "attribution/GPS.ERA.mean_test.RData")))
 full = get(load(file = paste0(path_results, "attribution/GPS1.ERA1.mean_test.RData")))
+# full = get(load(file = paste0(path_results, "attribution/GPS.ERA.1step.mean_test.RData")))
 
 hac.sel <- sapply(c(1:length(selec)), function(x){
   res.i = selec[[x]]$hac
@@ -113,13 +114,11 @@ hac.full <- sapply(c(1:length(full)), function(x){
   }
 })
 
-
+r = c()
 for (j in c(1:(length(unique.ind)-1))) {
   beg=unique.ind[j]
   end=unique.ind[j+1]
-  for (k in c(beg:end)) {
-    which(hac.full)
-  }
+  r <- c(r, length(which(hac.full[beg:end]<0.05))/(end-beg))
 }
 
 
