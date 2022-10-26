@@ -27,7 +27,7 @@ for (k in list.ind) {
   # Contruction of the dataset 
   Data.mod <- Y.with.NA %>% dplyr::select(name.series,date) %>%
     rename(signal=name.series) %>% 
-    mutate(Jump=c(rep("Left",one.year),rep("Right",one.year))) %>% 
+    mutate(Jump=c(rep(0,one.year),rep(1,one.year))) %>% 
     mutate(complete.time=1:(2*one.year)) %>% 
     mutate(Xt=complete.time-one.year/2) %>% 
     dplyr::select(-date)
@@ -43,15 +43,14 @@ for (k in list.ind) {
   # Test on the FGLS estimate with a ARMA(1,1) model
   # res.fgls <- Test_FGLS(Data.mod)
   # 
-  tot.res[[name.dataset]] <- list(hac = round(res.hac$fit.hac, digits = 5),
-                                  predicted = res.hac$predicted)
+  tot.res[[name.dataset]] <- res.hac
   # tot.res[[name.dataset]] <- list(hac = round(res.fgls$res.gls, digits = 5),
   #                                 predicted = res.fgls$predicted)
   #                                 fgls = round(res.fgls$res.gls, digits = 5))
   print(k)
 }
 
-save(tot.res, file = paste0(path_results, "attribution/GPS.ERA.mean_test.RData"))
+save(tot.res, file = paste0(path_results, "attribution/",name.series,".mean_test.RData"))
 
 r <- rep(NA, length(tot.res))
 for (i in c(1:length(tot.res))) {
@@ -77,7 +76,11 @@ plot_HAC <- function(case.name, tot.res, data.in, name.var, ver ){
     geom_vline(xintercept = Y$date[365], size = 0.2)+
     ylab(name.var)+
     labs(title = case.name, 
-      subtitle =  paste(rownames(res.i$hac),  res.i$hac$Estimate, res.i$hac$`Pr(>|z|)`, collapse = ", ", sep = "; "))+ 
+      subtitle =  
+        paste(rownames(res.i$fit.hac),  
+              round(res.i$fit.hac$Estimate, digits = 4), 
+              round(res.i$fit.hac$`Pr(>|z|)`, digits = 4), 
+              collapse = ", ", sep = "; "))+ 
     theme(axis.text = element_text(size = 15),
           axis.title = element_text(size=15,face="bold"))
   print(p)
@@ -89,13 +92,13 @@ plot_HAC <- function(case.name, tot.res, data.in, name.var, ver ){
 # investigate the difference between selection and nonselection -----------
 
 
-selec = get(load(file = paste0(path_results, "attribution/GPS.ERA.mean_test.RData")))
+selec = get(load(file = paste0(path_results, "attribution/", name.series, ".mean_test.RData")))
 full = get(load(file = paste0(path_results, "attribution/GPS1.ERA1.mean_test.RData")))
 # full = get(load(file = paste0(path_results, "attribution/GPS.ERA.1step.mean_test.RData")))
 
 hac.sel <- sapply(c(1:length(selec)), function(x){
-  res.i = selec[[x]]$hac
-  ind = which(rownames(res.i) == "Jump")
+  res.i = selec[[x]]$fit.hac
+  ind = which(rownames(res.i) == "Xt")
   if(length(ind) == 0){
     NA
   }else{
@@ -121,15 +124,19 @@ for (j in c(1:(length(unique.ind)-1))) {
   r <- c(r, length(which(hac.full[beg:end]<0.05))/(end-beg))
 }
 
+ind.list = which(hac.sel<0.05)
+
+for (j in ind.list) {
+  plot_HAC(case.name = names(selec)[j], tot.res = selec, data.in = dat, name.var = name.series, ver = "s")
+}
+
+
+a = Data.mod[c(1:365),(-2)]
+summary(lm( signal~., data = a))
 
 
 
 
-
-
-
-
-
-
+a = Data.mod
 
 

@@ -8,8 +8,9 @@ Test_OLS_vcovhac <- function(Data.mod){
   names(fit.ols$coefficients)[which(names(fit.ols$coefficients)=="JumpRight")]="Jump"
   
   # covariance matrix HAC
-  L <- round(dim(Data.mod)[1]^(1/4))
-  vcov.para=sandwich::NeweyWest(fit.ols, lag = L)
+  # L <- round(dim(Data.mod)[1]^(1/4))
+  # vcov.para=sandwich::NeweyWest(fit.ols, lag = L)
+  vcov.para=sandwich::kernHAC(fit.ols,prewhite = FALSE,kernel = "Quadratic Spectral",approx = "ARMA(1,1)", sandwich = TRUE)
   
   # Test with vcov (HAC)
   fit.hac=lmtest::coeftest(fit.ols,df=Inf,vcov.=vcov.para)[, ] %>% as.data.frame()
@@ -28,15 +29,15 @@ Test_OLS_vcovhac <- function(Data.mod){
     mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
     
     fit.ols <- lm(eval(mod.expression),data=Data.mod)
-    vcov.para=sandwich::NeweyWest(fit.ols, lag = L)
+    vcov.para=sandwich::kernHAC(fit.ols,prewhite = FALSE,kernel = "Quadratic Spectral",approx = "ARMA(1,1)", sandwich = TRUE)
     fit.hac=lmtest::coeftest(fit.ols,df=Inf,vcov.=vcov.para)[, ] %>% as.data.frame()
-    row.names(fit.hac)[which(row.names(fit.hac)=="JumpRight")]="Jump"
+    # row.names(fit.hac)[which(row.names(fit.hac)=="JumpRight")]="Jump"
     
     fit.hac.without.NA <- fit.hac[!(rownames(fit.hac) %in% "(Intercept)"),]
     pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
     p.max <- max(pval.hac.without.intercept)
   }
-  return(list(fit.hac=fit.hac,predicted=fit.ols$fitted.values))
+  return(list(fit.hac = fit.hac, fit.ols = fit.ols, vcov.para = vcov.para, predicted = fit.ols$fitted.values))
 }
 
 
