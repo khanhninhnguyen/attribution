@@ -21,8 +21,8 @@ for (j in c(1:nrow(nearby_list1))){
     breakpoint <- seg.ref$detected[k]
     # begin.point <- breakpoint %m+% years(-window.thres)   
     # end.point <- breakpoint %m+% years(window.thres)
-    begin.point <- breakpoint - 364
-    end.point <- breakpoint + 365
+    begin.point <- breakpoint - (window.thres*365 -1)
+    end.point <- breakpoint + window.thres*365
     
     for (l in c(1:length(nearby.list.j))) {
       series.near <- read.series(path_series = path_series_nearby, station = nearby.list.j[l], na.rm = 1, add.full = 0)

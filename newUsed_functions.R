@@ -132,7 +132,7 @@ Test_OLS_vcovhac_1step <- function(Data.mod){
   #   pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
   #   p.max <- max(pval.hac.without.intercept)
   # }
-  return(list(fit.hac=fit.hac,predicted=fit.ols$fitted.values))
+  return(list(fit.hac=fit.hac,predicted=fit.ols$fitted.values, fit.ols = fit.ols, vcov.para = vcov.para))
 }
 
 

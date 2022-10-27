@@ -1,5 +1,5 @@
 library("lubridate")       # Install & load lubridate package
-window.thres <- 1 # window period
+window.thres <- 10 # window period
 # we use the breakpoints from segmentation directly, with flag validation or outlier (80 days)
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
 # remove data in cluster of breakpoint or breakpoint from the ne --------
@@ -68,8 +68,8 @@ for (i in c(1:length(data.cr))) {
   nearby.seg = meta.compare.near[which(meta.compare.near$name == station.near),]
   
   # list breakpoints in the period
-  begin = breakpoint - 364
-  fin = breakpoint + 365
+  begin = breakpoint - (window.thres*365-1)
+  fin = breakpoint + window.thres*365
   
   list.brp.main = station.seg$detected[which(station.seg$detected >= begin & station.seg$detected < fin & station.seg$noise ==0)]
   list.brp.near = nearby.seg$detected[which(nearby.seg$detected >= begin & nearby.seg$detected < fin)]
@@ -82,6 +82,7 @@ for (i in c(1:length(data.cr))) {
     diff.nb = list.brp.near - breakpoint
     con = length(which(abs(diff.nb) < 10))
     if(con>0){
+      break
       ind.remove = which(abs(diff.nb) < 10)
       list.point.rm = list.brp.near[ind.remove]
       point.rm.ind = which.max(abs(list.point.rm - breakpoint))
@@ -89,7 +90,7 @@ for (i in c(1:length(data.cr))) {
       list.sim.brp[(nrow(list.sim.brp)+1),c(1:2)] <- c(i, as.character(point.rm))
       list.all.brp <- c(list.brp.main, list.brp.near[-ind.remove])
       period.rm <- c( breakpoint,point.rm)
-      station.data[which(station.data$date < max(period.rm) & station.data$date > min(period.rm)), -7] <- NA
+      station.data[which(station.data$date < max(period.rm) & station.data$date > min(period.rm)), list.test[c(2,3,4,6)]] <- NA
     }
   }
   # check to remove all other breaks in the four series combined the main and nearby 
