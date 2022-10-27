@@ -146,5 +146,5 @@ save(data.cr, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_
 
 
 # checked results, all removed points is replaced by NA including the date column
-
+#######   cCHECK WHY RESULT CONTAIN DATA FRAME AND LIST, WHY NOT CONSISTENT??????????????
 
