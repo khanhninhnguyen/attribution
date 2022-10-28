@@ -85,9 +85,9 @@ plot.predict(predicted,Data.mod,one.year,date)
 # # plot of the solution
 # plot.predict(res.fgls,Data.mod,one.year,date)
 
-a = dat$`alic.2011-06-08.20na`
+a = dat1$`alic.2011-06-08.20na`[c(3286:4015),]
 
-win.thres = 10
+win.thres = 1
 # Contruction of the dataset 
 Data.mod <- a %>% dplyr::select(name.series,date) %>%
   rename(signal=name.series) %>% 

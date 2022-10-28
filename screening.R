@@ -4,7 +4,7 @@ source(paste0(path_code_att,"support_screening.R"))
 ##### Study in the raw data #####
 # This function is used for data screening
 # first normalized data ---------------------------------
-window.thres = 10
+window.thres = 1
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
 name.var = list.test[2]

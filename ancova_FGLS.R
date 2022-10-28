@@ -4,7 +4,8 @@ library(attempt)
 library(nlme)
 
 source(paste0(path_code_att, "newUsed_functions.R"))
-dat  = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"screened.RData")))
+win.thres = 1
+dat  = get(load(file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
 
@@ -27,9 +28,9 @@ for (k in list.ind) {
   # Contruction of the dataset 
   Data.mod <- Y.with.NA %>% dplyr::select(name.series,date) %>%
     rename(signal=name.series) %>% 
-    mutate(Jump=c(rep(0,one.year),rep(1,one.year))) %>% 
-    mutate(complete.time=1:(2*one.year)) %>% 
-    mutate(Xt=complete.time-one.year/2) %>% 
+    mutate(Jump=c(rep(0,one.year*win.thres),rep(1,one.year*win.thres))) %>% 
+    mutate(complete.time=1:(2*one.year*win.thres)) %>% 
+    mutate(Xt=complete.time-one.year*win.thres/2) %>% 
     dplyr::select(-date)
   for (i in 1:4){
     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
