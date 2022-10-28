@@ -33,12 +33,18 @@ for (i in c(1:length(data))) {
       name.test = list.test[m]
       station.data = as.data.frame(data[[i]])
       remove.ind = which(station.data$date <= end.cluster & station.data$date > start.cluster)
-      station.data[remove.ind,-7] <- NA
+      station.data[remove.ind,c(list.test[list.test != ("gps1.era1")])] <- NA
       data[[i]] <- station.data
     }
   }
 }
 
+### Remove the data set that have very small number of points (sum<100)
+
+length.data = sapply(c(1:length(data)), function(x){ nrow(na.omit(data[[x]])) 
+})
+name.removed.stations = names(data)[which(length.data <1000)]
+data[name.removed.stations] <- NULL
 
 # list cluster removed: 
 
@@ -82,7 +88,6 @@ for (i in c(1:length(data.cr))) {
     diff.nb = list.brp.near - breakpoint
     con = length(which(abs(diff.nb) < 10))
     if(con>0){
-      break
       ind.remove = which(abs(diff.nb) < 10)
       list.point.rm = list.brp.near[ind.remove]
       point.rm.ind = which.max(abs(list.point.rm - breakpoint))

@@ -1,9 +1,9 @@
 # THIS PROG USED TO STUDY THE RESULT OF SCREENING ON THE REAL DATA 
-window.thres = 1
+window.thres = 10
 data.in = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
-dat  = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"screened.RData")))
-outl =  get(load(file = paste0(path_results,"attribution/list.outlier_1year_", nearby_ver,"screened.RData")))
+dat  = get(load(file = paste0(path_results,"attribution/data.all_", window.thres,"years_", nearby_ver,"screened.RData")))
+outl =  get(load(file = paste0(path_results,"attribution/list.outlier_",  window.thres,"years_", nearby_ver,"screened.RData")))
 
 # check the screening on gps-era 
 bef = sapply(c(1:length(outl)), function(x) outl[[x]]$bef$gps1.era1)
@@ -18,9 +18,9 @@ unique.ind = match(unique(all.cases.ind), all.cases.ind )
 
 gps.era.dat = dat[unique.ind]
 bef.outl = bef[unique.ind]
-bef.out = sapply(c(1:length(bef.outl)), function(x) length(unlist(bef.outl[[x]])))
+bef.out = sapply(c(1:length(bef.outl)), function(x) length(unlist(bef.outl[[x]]))/length(na.omit(gps.era.dat[[x]]$gps.era)))
 aft.outl = aft[unique.ind]
-aft.out = sapply(c(1:length(aft.outl)), function(x) length(unlist(aft.outl[[x]])))
+aft.out = sapply(c(1:length(aft.outl)), function(x) length(unlist(aft.outl[[x]]))/length(na.omit(gps.era.dat[[x]]$gps.era)))
 
 which(bef.out > 8)
 ind.sus = 94

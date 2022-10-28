@@ -134,9 +134,6 @@ for (j in ind.list) {
 a = Data.mod[c(1:365),(-2)]
 summary(lm( signal~., data = a))
 
-
-
-
 a = Data.mod
 
 

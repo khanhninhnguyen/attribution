@@ -135,5 +135,44 @@ Test_OLS_vcovhac_1step <- function(Data.mod){
   return(list(fit.hac=fit.hac,predicted=fit.ols$fitted.values, fit.ols = fit.ols, vcov.para = vcov.para))
 }
 
+Test_OLS_vcovhac <- function(Data.mod){
+  # OLS estimates
+  list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
+  mod.X <-  list.para %>% str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
+  
+  fit.ols <- lm(mod.expression,data=Data.mod)
+  names(fit.ols$coefficients)[which(names(fit.ols$coefficients)=="JumpRight")]="Jump"
+  
+  # covariance matrix HAC
+  vcov.para=sandwich::kernHAC(fit.ols,prewhite = FALSE,kernel = "Quadratic Spectral",approx = "ARMA(1,1)", sandwich = TRUE)
+  
+  # Test with vcov (HAC)
+  fit.hac=lmtest::coeftest(fit.ols,df=Inf,vcov.=vcov.para)[, ] %>% as.data.frame()
+  
+  
+  # Selection parameter by parameter (the intercept will never be removed)
+  threshold <- 0.01
+  fit.hac.without.NA <- fit.hac[!(rownames(fit.hac) %in% "(Intercept)"),]
+  pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
+  p.max <- max(pval.hac.without.intercept)
+  
+  while ((p.max>threshold) & (length(list.para)>1)){
+    names.max <- rownames(fit.hac.without.NA)[pval.hac.without.intercept==p.max]
+    list.para <-list.para[!(list.para %in% names.max)] 
+    mod.X <-  list.para %>% str_c(collapse = "+")
+    mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
+    
+    fit.ols <- lm(eval(mod.expression),data=Data.mod)
+    vcov.para=sandwich::kernHAC(fit.ols,prewhite = FALSE,kernel = "Quadratic Spectral",approx = "ARMA(1,1)", sandwich = TRUE)
+    fit.hac=lmtest::coeftest(fit.ols,df=Inf,vcov.=vcov.para)[, ] %>% as.data.frame()
+    # row.names(fit.hac)[which(row.names(fit.hac)=="JumpRight")]="Jump"
+    
+    fit.hac.without.NA <- fit.hac[!(rownames(fit.hac) %in% "(Intercept)"),]
+    pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
+    p.max <- max(pval.hac.without.intercept)
+  }
+  return(list(fit.hac = fit.hac, fit.ols = fit.ols, vcov.para = vcov.para, predicted = fit.ols$fitted.values))
+}
 
 

@@ -4,7 +4,7 @@ source(paste0(path_code_att,"support_screening.R"))
 ##### Study in the raw data #####
 # This function is used for data screening
 # first normalized data ---------------------------------
-window.thres = 1
+window.thres = 10
 data.cr = get(load( file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",
                                   window.thres,"year_", nearby_ver,".RData")))
 name.var = list.test[2]
@@ -284,11 +284,11 @@ for (i in c(1:length(data.in))) {
   case.name = names(data.in)[i]
   station.ref = substr(case.name ,start = 1, stop = 4)
   station.near = substr(case.name ,start = 17, stop = 20)
-  data.i = data.in[[i]]
+  data.i = as.data.frame(data.in[[i]])
   breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
-  begin = breakpoint - 364
-  fin = breakpoint + 365
-  data.i = series.near1 <- tidyr::complete(data.i, date = seq(begin, fin, by = "day"))
+  begin = breakpoint - (window.thres*365-1)
+  fin = breakpoint + window.thres*365
+  data.i = tidyr::complete(data.i, date = seq(begin, fin, by = "day"))
   
   # screen only series has data 
   before1 = na.omit(data.i[which(data.i$date <= breakpoint),])
@@ -327,8 +327,8 @@ for (i in c(1:length(data.in))) {
     list.outlier[[case.name]] <- list(bef = bef.outlier, aft = aft.outlier)
   }
 }
-save(data.all, file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"screened.RData"))
-save(list.outlier, file = paste0(path_results,"attribution/list.outlier_1year_", nearby_ver,"screened.RData"))
+save(data.all, file = paste0(path_results,"attribution/data.all_", window.thres,"years_", nearby_ver,"screened.RData"))
+save(list.outlier, file = paste0(path_results,"attribution/list.outlier_",  window.thres,"years_", nearby_ver,"screened.RData"))
 
   
 # SCREEN A REAL TIME SERIES -----------------------------------------------
