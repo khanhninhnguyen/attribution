@@ -62,11 +62,16 @@ for (i in c(1:length(tot.res))) {
 
 # plot results to investigate 
 
-plot_HAC <- function(case.name, tot.res, data.in, name.var, ver ){
-  Y = data.in[[case.name]]
-  res.i = tot.res[[case.name]]
-  Y$predict = rep(NA, 365*2)
-  Y$predict[which(is.na(Y[name.var]) == FALSE)] <- res.i$predicted
+plot_HAC <- function(case.name, res.i, data.in, name.var, ver){
+  Y.with.na = data.in
+  Y.without.na = Y.with.na[which(is.na(Y.with.na[name.var])==FALSE),]
+  start.day = min(Y.without.na$date)
+  end.day = max(Y.without.na$date)
+  print(paste(start.day, end.day))
+  Y = Y.with.na[which(Y.with.na$date >= start.day & Y.with.na$date <= end.day),]
+  breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
+  Y$predict = rep(NA, nrow(Y))
+  Y$predict[which(is.na(Y[name.var]) == FALSE)] <- as.numeric(res.i$predicted)
   data.plot <- data.frame(date = Y$date, name.var = Y[name.var], predicted = Y$predict)
   a = reshape2::melt(data.plot, id = "date")
   
@@ -74,7 +79,7 @@ plot_HAC <- function(case.name, tot.res, data.in, name.var, ver ){
        width = 3000, height = 1500,res = 300)
   p <- ggplot(data = a, aes(x = date, y = value, col = variable)) + 
     geom_line()+theme_bw()+
-    geom_vline(xintercept = Y$date[365], size = 0.2)+
+    geom_vline(xintercept = Y$date[which(Y$date == breakpoint)], size = 0.2)+
     ylab(name.var)+
     labs(title = case.name, 
       subtitle =  

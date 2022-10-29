@@ -8,7 +8,8 @@ library(attempt)
 library(nlme)
 
 source(paste0(path_code_att, "newUsed_functions.R"))
-dat  = get(load(file = paste0(path_results,"attribution/data.all_1year_", nearby_ver,"screened.RData")))
+win.thres = 10
+dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
 
@@ -19,8 +20,8 @@ gps.era.dat = dat[unique.ind]
 
 data.test = gps.era.dat
 list.ind = c(1:length(data.test))
-tot.res <- data.frame(matrix(NA, ncol = 3, nrow = length(list.ind)))
-
+tot.res <- data.frame(matrix(NA, ncol = 4, nrow = length(list.ind)))
+Res <- list()
 for (k in list.ind) {
   name.dataset = names(data.test)[k]
   Y.with.NA = data.test[[k]]
@@ -29,9 +30,9 @@ for (k in list.ind) {
   # Contruction of the dataset 
   Data.mod <- Y.with.NA %>% dplyr::select(name.series,date) %>%
     rename(signal=name.series) %>% 
-    mutate(Jump=c(rep(0,one.year),rep(1,one.year))) %>% 
-    mutate(complete.time=1:(2*one.year)) %>% 
-    mutate(Xt=complete.time-one.year/2) %>% 
+    mutate(Jump=c(rep(0,one.year*win.thres),rep(1,one.year*win.thres))) %>% 
+    mutate(complete.time=1:(2*one.year*win.thres)) %>% 
+    mutate(Xt=complete.time-one.year*win.thres/2) %>% 
     dplyr::select(-date)
   for (i in 1:4){
     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
@@ -39,29 +40,39 @@ for (k in list.ind) {
   Data.mod <- Data.mod %>% dplyr::select(-complete.time)
   res.hac.1step <- Test_OLS_vcovhac_1step(Data.mod)
   res.hac <- Test_OLS_vcovhac(Data.mod)
-  tot.res[k,2] = car::vif(res.hac.1step$fit.ols)[1]
+  tot.res[k,4] = car::vif(res.hac.1step$fit.ols)[1]
   ind.jump = which(rownames(res.hac$fit.hac) == "Jump")
-  if(length(rownames(res.hac$fit.hac)) >2){
-    if( length(ind.jump) !=0){
+  ind.Xt = which(rownames(res.hac$fit.hac) == "Xt")
+  
+  if(length(rownames(res.hac$fit.hac)) > 2){
+    if( length(ind.jump) != 0){
+      if(length(ind.Xt) != 0){
+        ind.j = which(colnames(res.hac$vcov.para) == "Jump")
+        ind.i = which(rownames(res.hac$vcov.para) == "Xt") 
+        tot.res[k,1] =  res.hac$vcov.para[ind.i,ind.j]/(sqrt(res.hac$vcov.para[ind.i,ind.i]*res.hac$vcov.para[ind.j,ind.j]))
+      }
       tot.res[k,3] <- car::vif(res.hac$fit.ols)[ind.jump]
     }else{tot.res[k,3] =  NA }
-  }else{tot.res[k,3] =  -1 }
+  }else{
+    tot.res[k,1] =  -2 
+    tot.res[k,3] =  -1 
+    }
   
   # res.hac <- Test_OLS_vcovhac(Data.mod)
   ########################
   # compute the correlation between regressors: jump and trend 
-  tot.res[k,1] = res.hac.1step$vcov.para[3,2]/(sqrt(res.hac.1step$vcov.para[2,2]*res.hac.1step$vcov.para[3,3]))
+  tot.res[k,2] = res.hac.1step$vcov.para[3,2]/(sqrt(res.hac.1step$vcov.para[2,2]*res.hac.1step$vcov.para[3,3]))
   # tot.res[[name.dataset]] <- res.hac
-  # tot.res[[name.dataset]] <- list(hac = round(res.fgls$res.gls, digits = 5),
-  #                                 predicted = res.fgls$predicted)
-  #                                 fgls = round(res.fgls$res.gls, digits = 5))
+  Res[[name.dataset]] <- list(full = res.hac.1step, selec = res.hac)
   print(k)
 }
+save(Res, file = paste0(path_results, "attribution/all.hac.", win.thres, "years.RData"))
 
-colnames(tot.res) <- c("corr", "VIF.full", "VIF.selected")
-hist(tot.res[,1] , breaks =50, main = "Histogram of the covariance", xlab = "")
-hist(tot.res[,2] , breaks =200, main = "Histogram of the VIF with all variables", xlab = "", xlim = c(0,50))
-hist(tot.res[,3] , breaks =50, main = "Histogram of the VIF after variable selection", xlab = "", xlim = c(0,50))
-save(tot.res, file = paste0(path_results, "attribution/multicolinear.2years.RData"))
+colnames(tot.res) <- c("corr.selected", "corr.full","VIF.selected", "VIF.full")
+hist(tot.res[,1] , breaks =50, main = "Histogram of the covariance after variable selection ", xlab = "")
+hist(tot.res[,2] , breaks =50, main = "Histogram of the covariance before variable selection ", xlab = "")
+hist(tot.res[,3] , breaks =50, main = "Histogram of the VIF with all variables", xlab = "", xlim = c(0,50))
+hist(tot.res[,4], xlim = c(0,50), breaks =100, main = "Histogram of the VIF after variable selection", xlab = "")
+save(tot.res, file = paste0(path_results, "attribution/multicolinear.", win.thres, "years.RData"))
 
 
