@@ -8,7 +8,7 @@ library(attempt)
 library(nlme)
 
 source(paste0(path_code_att, "newUsed_functions.R"))
-win.thres = 1
+win.thres = 10
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
@@ -77,7 +77,7 @@ save(tot.res, file = paste0(path_results, "attribution/multicolinear.", win.thre
 
 
 # analyze results ---------------------------------------------------------
-win.thres = 1
+win.thres = 10
 res = get(load(file = paste0(path_results, "attribution/all.hac.", win.thres, "years.RData")))
 
 sig.com <- function(x, ver, vari.name){
@@ -104,7 +104,8 @@ ind.plot = ind.plot[-which(ind.plot %in% c(69, 124, 125, 138))]
 for (j in ind.plot) {
   vif.f = round(car::vif( res[[j]][["full"]]$fit.ols)[1], digits = 1)
   # vif.s = round(car::vif( res[[j]][["selec"]]$fit.ols)[1], digits = 1)
-  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["full"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "1yf", add.subtitle = vif.f)
-  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "1ys", add.subtitle = "")
+  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["full"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10yf", add.subtitle = vif.f)
+  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10ys", add.subtitle = "")
 }
 
+a = names(data.test)[ind.plot]
