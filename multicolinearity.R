@@ -76,3 +76,24 @@ hist(tot.res[,4], xlim = c(0,50), breaks =100, main = "Histogram of the VIF afte
 save(tot.res, file = paste0(path_results, "attribution/multicolinear.", win.thres, "years.RData"))
 
 
+# analyze results ---------------------------------------------------------
+win.thres = 1
+res = get(load(file = paste0(path_results, "attribution/all.hac.", win.thres, "years.RData")))
+
+sig.com <- function(x, ver, vari.name){
+  out = rep(NA, length(x))
+  for (i in c(1:length(x))) {
+    res.i = x[[i]][[ver]]$fit.hac
+    ind = which(rownames(res.i) == vari.name)
+    if(length(ind) == 0){
+      out[i] = NA
+    }else{
+      out[i] = unlist(res.i$`Pr(>|z|)`[ind])
+    }
+  }
+  return(out)
+}
+hac.sel <- sig.com(res, ver = "full", vari.name = "Jump")
+
+
+
