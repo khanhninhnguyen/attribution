@@ -8,7 +8,7 @@ library(attempt)
 library(nlme)
 
 source(paste0(path_code_att, "newUsed_functions.R"))
-win.thres = 10
+win.thres = 1
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
@@ -93,7 +93,18 @@ sig.com <- function(x, ver, vari.name){
   }
   return(out)
 }
-hac.sel <- sig.com(res, ver = "full", vari.name = "Jump")
+hac.full <- sig.com(res, ver = "full", vari.name = "Jump")
+hac.sel <- sig.com(res, ver = "selec", vari.name = "Jump")
 
+hac.full.x <- sig.com(res, ver = "full", vari.name = "Xt")
+hac.sel.x <- sig.com(res, ver = "selec", vari.name = "Xt")
 
+ind.plot = which(hac.sel.x<0.01)
+ind.plot = ind.plot[-which(ind.plot %in% c(69, 124, 125, 138))]
+for (j in ind.plot) {
+  vif.f = round(car::vif( res[[j]][["full"]]$fit.ols)[1], digits = 1)
+  # vif.s = round(car::vif( res[[j]][["selec"]]$fit.ols)[1], digits = 1)
+  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["full"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "1yf", add.subtitle = vif.f)
+  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "1ys", add.subtitle = "")
+}
 

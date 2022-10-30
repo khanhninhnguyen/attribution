@@ -135,3 +135,40 @@ Test_OLS_vcovhac_1step <- function(Data.mod){
   return(list(fit.hac=fit.hac,predicted=fit.ols$fitted.values, fit.ols = fit.ols, vcov.para = vcov.para))
 }
 
+plot_HAC <- function(case.name, res.i, data.in, name.var, ver, add.subtitle ){
+  Y.with.na = data.in
+  Y.without.na = Y.with.na[which(is.na(Y.with.na[name.var])==FALSE),]
+  start.day = min(Y.without.na$date)
+  end.day = max(Y.without.na$date)
+  print(paste(start.day, end.day))
+  Y = Y.with.na[which(Y.with.na$date >= start.day & Y.with.na$date <= end.day),]
+  breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
+  Y$predict = rep(NA, nrow(Y))
+  Y$predict[which(is.na(Y[name.var]) == FALSE)] = as.numeric(res.i$predicted)
+  data.plot <- data.frame(date = Y$date, name.var = Y[name.var], predicted = Y$predict)
+  a = reshape2::melt(data.plot, id = "date")
+  subtitle.plot = paste0( paste(rownames(res.i$fit.hac),  
+                        round(res.i$fit.hac$Estimate, digits = 4), 
+                        round(res.i$fit.hac$`Pr(>|z|)`, digits = 4), 
+                        collapse = ", ", sep = "; "), "  VIF: ", add.subtitle)
+  
+  
+  jpeg(paste0(path_results,"attribution/OLS.HAC/", case.name, ver, ".jpeg" ),
+       width = 3000, height = 1500,res = 300)
+  p <- ggplot(data = a, aes(x = date, y = value, col = variable)) + 
+    geom_line()+theme_bw()+
+    geom_vline(xintercept = Y$date[which(Y$date == breakpoint)], size = 0.2)+
+    ylab(name.var)+
+    labs(title = case.name, 
+         subtitle = wrapper(subtitle.plot, 130))+ 
+    theme(axis.text = element_text(size = 15),
+          axis.title = element_text(size=15,face="bold"))
+  print(p)
+  dev.off()
+  
+}
+
+wrapper <- function(x, ...) 
+{
+  paste(strwrap(x, ...), collapse = "\n")
+}
