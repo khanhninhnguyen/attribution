@@ -69,15 +69,17 @@ for (k in list.ind) {
 save(Res, file = paste0(path_results, "attribution/all.hac.", win.thres, "years.RData"))
 
 colnames(tot.res) <- c("corr.selected", "corr.full","VIF.selected", "VIF.full")
+# tot.res[,1] <- if_else(is.na(tot.res[,1]), -2, tot.res[,1])
 hist(tot.res[,1] , breaks =50, main = "Histogram of the covariance after variable selection ", xlab = "")
 hist(tot.res[,2] , breaks =50, main = "Histogram of the covariance before variable selection ", xlab = "")
-hist(tot.res[,3] , breaks =50, main = "Histogram of the VIF with all variables", xlab = "", xlim = c(0,50))
-hist(tot.res[,4], xlim = c(0,50), breaks =100, main = "Histogram of the VIF after variable selection", xlab = "")
+hist(tot.res[,3] , breaks =50, main = "Histogram of the VIF after variable selection", xlab = "")
+hist(tot.res[,4] , breaks =50, main = "Histogram of the VIF before variable selection", xlab = "")
 save(tot.res, file = paste0(path_results, "attribution/multicolinear.", win.thres, "years.RData"))
 
 
 # analyze results ---------------------------------------------------------
-win.thres = 10
+# plot individual cases
+win.thres = 1
 res = get(load(file = paste0(path_results, "attribution/all.hac.", win.thres, "years.RData")))
 
 sig.com <- function(x, ver, vari.name){
@@ -104,8 +106,13 @@ ind.plot = ind.plot[-which(ind.plot %in% c(69, 124, 125, 138))]
 for (j in ind.plot) {
   vif.f = round(car::vif( res[[j]][["full"]]$fit.ols)[1], digits = 1)
   # vif.s = round(car::vif( res[[j]][["selec"]]$fit.ols)[1], digits = 1)
-  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["full"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10yf", add.subtitle = vif.f)
-  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10ys", add.subtitle = "")
+  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["full"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "1yf", add.subtitle = vif.f)
+  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "1ys", add.subtitle = "")
 }
 
 a = names(data.test)[ind.plot]
+# histogram of VIF
+
+tot.res = get(load( file = paste0(path_results, "attribution/multicolinear.", win.thres=1, "years.RData")))
+tot.res$corr.selected[which(is.na(tot.res$corr.selected) == TRUE)]<- -2
+
