@@ -8,7 +8,7 @@ library(attempt)
 library(nlme)
 
 source(paste0(path_code_att, "newUsed_functions.R"))
-win.thres = 10
+win.thres = 1
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
@@ -113,6 +113,9 @@ for (j in ind.plot) {
 a = names(data.test)[ind.plot]
 # histogram of VIF
 
-tot.res = get(load( file = paste0(path_results, "attribution/multicolinear.", win.thres=1, "years.RData")))
+tot.res = get(load( file = paste0(path_results, "attribution/multicolinear.", win.thres=10, "years.RData")))
 tot.res$corr.selected[which(is.na(tot.res$corr.selected) == TRUE)]<- -2
+tot.res[which(tot.res$VIF.selected>3),]
 
+a = names(data.test)[which(tot.res$VIF.selected>3)]
+tot.res[which(names(data.test) %in% a),]
