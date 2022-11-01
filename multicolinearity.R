@@ -79,7 +79,7 @@ save(tot.res, file = paste0(path_results, "attribution/multicolinear.", win.thre
 
 # analyze results ---------------------------------------------------------
 # plot individual cases
-win.thres = 10
+win.thres = 1
 res = get(load(file = paste0(path_results, "attribution/all.hac.", win.thres, "years.RData")))
 
 sig.com <- function(x, ver, vari.name){
@@ -105,7 +105,7 @@ ind.plot = which(hac.sel.x<0.01)
 ind.plot = ind.plot[-which(ind.plot %in% c(69, 124, 125, 138))]
 for (j in ind.plot) {
   vif.f = round(car::vif( res[[j]][["full"]]$fit.ols)[1], digits = 1)
-  vif.s = round(car::vif( res[[j]][["selec"]]$fit.ols)[1], digits = 1)
+  # vif.s = round(car::vif( res[[j]][["selec"]]$fit.ols)[1], digits = 1)
   plot_HAC(case.name = names(res)[j], res.i = res[[j]][["full"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10yf", add.subtitle = vif.f)
   plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10ys", add.subtitle = vif.s)
 }
@@ -113,7 +113,7 @@ for (j in ind.plot) {
 a = names(data.test)[ind.plot]
 # histogram of VIF
 
-tot.res = get(load( file = paste0(path_results, "attribution/multicolinear.", win.thres=10, "years.RData")))
+tot.res = get(load( file = paste0(path_results, "attribution/multicolinear.", win.thres=1, "years.RData")))
 tot.res$corr.selected[which(is.na(tot.res$corr.selected) == TRUE)]<- -2
 tot.res[which(tot.res$VIF.selected>3),]
 
@@ -121,4 +121,27 @@ a = names(data.test)[which(tot.res$VIF.selected>3)]
 tot.res[which(names(data.test) %in% a),]
 
 
+# check the VIF of jump and trend -----------------------------------------
+
+Res <- data.frame(matrix(NA, nrow = length(list.ind), ncol = 10))
+for (k in list.ind) {
+  name.dataset = names(data.test)[k]
+  Y.with.NA = data.test[[k]]
+  date.detected.break = as.Date(substr(name.dataset,start = 6, stop = 15) , format = "%Y-%m-%d")
+  
+  # Contruction of the dataset 
+  Data.mod <- Y.with.NA %>% dplyr::select(name.series,date) %>%
+    rename(signal=name.series) %>% 
+    mutate(Jump=c(rep(0,one.year*win.thres),rep(1,one.year*win.thres))) %>% 
+    mutate(complete.time=1:(2*one.year*win.thres)) %>% 
+    mutate(Xt=complete.time-one.year*win.thres/2) %>% 
+    dplyr::select(-date)
+  for (i in 1:4){
+    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+  }
+  Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+  res.hac.1step <- Test_OLS_vcovhac_1step(Data.mod)
+  Res[k,] = car::vif( res.hac.1step$fit.ols)
+}
+tot.res$VIF.selected[which(is.na(tot.res$VIF.selected)==TRUE)] <- -1
 
