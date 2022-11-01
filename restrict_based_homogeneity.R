@@ -49,16 +49,21 @@ data[name.removed.stations] <- NULL
 # list cluster removed: 
 
 short.list = list.cluster.removed[!duplicated(list.cluster.removed),]
+all.cases.name = names(data)
+all.cases.ind = sapply(c(1:length(all.cases.name)), function(x) substr(all.cases.name[x],start = 1, stop = 15))
+list.case.remove = paste(short.list$station, short.list$end, sep = ".")
+case.remove.ind = which(all.cases.ind %in% list.case.remove)
+data.last = data[-case.remove.ind]
 
 save(short.list, file = paste0(path_results,"attribution/removed_possible_crenel_",window.thres,"year_", nearby_ver,".RData"))
-save(data, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_", window.thres,"year_",nearby_ver,".RData"))
+save(data.last, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_", window.thres,"year_",nearby_ver,".RData"))
 
 #NOTE: data after restriction is lost of date in the crenel, in the next step, we need to complete data by date again 
 
 
 
 # Remove all breakpoint in +/- 1 year excluding the crenel different restriction for different test----------------
-
+list.cre = get(load(file = paste0(path_results,"attribution/removed_possible_crenel_",window.thres,"year_", nearby_ver,".RData")))
 meta.compare.near =  get(load(file = paste0(path_results,"validation/",nb_test.near,"-",criterion,"metacompa",screen.value="",".RData")))
 data.cr <- get(load(file = paste0(path_results,"attribution/six_diff_series_rm_crenel_",window.thres,"year_", nearby_ver,".RData")))
 
@@ -77,7 +82,13 @@ for (i in c(1:length(data.cr))) {
   begin = breakpoint - (window.thres*365-1)
   fin = breakpoint + window.thres*365
   
-  list.brp.main = station.seg$detected[which(station.seg$detected >= begin & station.seg$detected < fin & station.seg$noise ==0)]
+  list.brp.main = station.seg$detected[which(station.seg$detected >= begin & station.seg$detected < fin)]
+  # remove all second points of crenels
+  cre = which(list.cre$station == station.ref)
+  if(length(cre) >0){
+    station.cre = as.Date(list.cre$end[cre])
+    list.brp.main =  list.brp.main[which(list.brp.main %in% station.cre == FALSE)]
+  }
   list.brp.near = nearby.seg$detected[which(nearby.seg$detected >= begin & nearby.seg$detected < fin)]
   
   list.all.brp <- c(list.brp.main, list.brp.near)
@@ -127,7 +138,7 @@ for (i in c(1:length(data.cr))) {
       station.data[which(station.data$date > close.right), list.test[c(1)]] <- NA
     }
   }
-  # check to remove all other breaks in the main series
+  # check to remove all other breaks in the nearby series
   list.near.ord = sort(unique(c( breakpoint, list.brp.near)), decreasing = FALSE)
   if(length( list.near.ord  )>1){ 
     ind.brp = which( list.near.ord  == breakpoint)
