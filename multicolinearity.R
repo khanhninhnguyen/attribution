@@ -208,9 +208,9 @@ vif.HAC1 <- function(mod, vcov.matrix, ...) {
 }
 
 Data.mod$signal = rnorm(n = 730, mean = 0, sd = 1)
-
-
-
-
+a = as.matrix(Data.mod[,-1])
+cov.m = solve(t(a)%*%a) # OLS case
+R = cov2cor(cov.m)
+R.inv = solve(R[-1,-1])
 
 
