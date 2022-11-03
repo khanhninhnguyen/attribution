@@ -175,3 +175,42 @@ vif.HAC <- function(mod, vcov.matrix, ...) {
   else result[, 3] <- result[, 1]^(1/(2 * result[, 2]))
   return(list(VIF = result, R = R))
 }
+
+vif.HAC1 <- function(mod, vcov.matrix, ...) {
+  if (any(is.na(coef(mod)))) 
+    stop ("there are aliased coefficients in the model")
+  v <- vcov.matrix
+  assign <- attr(model.matrix(mod), "assign")
+  if (names(coefficients(mod)[1]) == "(Intercept)") {
+    v <- v[-1, -1]
+    assign <- assign[-1]
+  }
+  else warning("No intercept: vifs may not be sensible.")
+  terms <- labels(terms(mod))
+  n.terms <- length(terms)
+  if (n.terms < 2) stop("model contains fewer than 2 terms")
+  R <- cov2cor(v)
+  detR <- det(R)
+  result <- matrix(0, n.terms, 3)
+  rownames(result) <- terms
+  colnames(result) <- c("GVIF", "Df", "GVIF^(1/(2*Df))")
+  for (term in 1:n.terms) {
+    subs <- which(assign != term)
+    for (sub in subs) {
+      result[sub, 1] <- det(as.matrix(R[1, 1])) *
+        det(as.matrix(R[sub, sub])) / detR
+      result[sub, 2] <- length(sub)
+    }
+  }
+  if (all(result[, 2] == 1)) result <- result[, 1]
+  else result[, 3] <- result[, 1]^(1/(2 * result[, 2]))
+  return(list(VIF = result, R = R))
+}
+
+Data.mod$signal = rnorm(n = 730, mean = 0, sd = 1)
+
+
+
+
+
+
