@@ -206,9 +206,19 @@ vif.HAC1 <- function(mod, vcov.matrix, ...) {
   else result[, 3] <- result[, 1]^(1/(2 * result[, 2]))
   return(list(VIF = result, R = R))
 }
+one.year = 365
+win.thres = 10
+y = rnorm(n = 730, 0, 1)
+Data.mod <- data.frame( signal = rep(1, one.year*win.thres*2)) %>%
+  mutate(Jump=c(rep(0,one.year*win.thres),rep(1,one.year*win.thres))) %>% 
+  mutate(complete.time=1:(2*one.year*win.thres)) %>% 
+  mutate(Xt=complete.time-one.year*win.thres/2)
+for (i in 1:4){
+  eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+}
+Data.mod <- Data.mod %>% dplyr::select(-complete.time)
 
-Data.mod$signal = rnorm(n = 730, mean = 0, sd = 1)
-a = as.matrix(Data.mod[,-1])
+a = as.matrix(Data.mod)
 cov.m = solve(t(a)%*%a) # OLS case
 R = cov2cor(cov.m)
 R.inv = solve(R[-1,-1])
