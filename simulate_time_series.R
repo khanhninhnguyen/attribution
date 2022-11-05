@@ -2,7 +2,7 @@
 # input: auto, hetero, sigma, arma.model, length N, burn.in, 
 # sigma of heteroskedatic case inclus N
 # sigma in the monthlyvar = 1 case inclus 12 elements 
-simulate.general <- function(N, auto, arma.model, burn.in = 0, 
+simulate.general <- function(N, arma.model, burn.in = 0, 
                              hetero, sigma, monthly.var = 1,
                              gaps = 0, 
                              outlier.model = 0, prob.outliers = 0, size.outliers = 0){
@@ -69,14 +69,13 @@ simulate.general <- function(N, auto, arma.model, burn.in = 0,
 
 
 # set.seed(1)
-# a = simulate.general(auto = 1, 
-#                      burn.in = 200*4,
-#                      arma.model = c(0.5,0),
-#                      hetero = 1,
-#                      monthly.var = 0,
-#                      sigma = c(rep(c(1,3), each =100)),
-#                      N = 200,
-#                      gaps = 0,
-#                      outlier = 2, 
-#                      prob.outliers = 0.5,
-#                      size.outliers = 5)
+a = simulate.general(burn.in = 1000,
+                     arma.model = c(0.5,0),
+                     hetero = 1,
+                     monthly.var = 0,
+                     sigma = c(rep(c(1,3), each =100)),
+                     N = 200,
+                     gaps = 0,
+                     outlier = 0,
+                     prob.outliers = 0,
+                     size.outliers = 0)

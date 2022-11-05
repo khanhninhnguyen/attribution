@@ -233,19 +233,37 @@ for ( i in c(1:length(res))){
 
 
 # check probability of confusion situation --------------------------------
-nb.sim = 100000
+nb.sim = 10000
 n = 7300
 res <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 res.coef <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 for (j in c(1:nb.sim)) {
   set.seed(j)
-  signal = rnorm(n, 0, 1)
+  noise.j = simulate.general(burn.in = 10000,
+                             arma.model = c(0.5,0),
+                             hetero = 0,
+                             monthly.var = 0,
+                             sigma = 1,
+                             N = n,
+                             gaps = 0,
+                             outlier = 0,
+                             prob.outliers = 0,
+                             size.outliers = 0)
+  signal = c(-1824: 5475)*0.0001 + noise.j
+  # signal = rnorm(n, 0, 1)
+  signal[3651:7300] = signal[3651:7300] - 0.7
   Data.mod <- data.frame(y = signal, trend = c(-1824: 5475), mu = rep(c(0,1), each = (n/2)))
   lr <- lm(y~., data = Data.mod)
   summa = coeftest(lr)[, ] %>% as.data.frame()
   res[j,] <- summa$`Pr(>|t|)`
   res.coef[j,] <- lr$coefficients
 }
+table(res$X3 <0.05 & res$X2>0.05)
+table(res$X3 >0.05 & res$X2<0.05)
+table(res$X3 >0.05 & res$X2>0.05)
+table(res$X3 <0.05 & res$X2<0.05)
+
+table(res.coef$X3*res.coef$X2 >0)
 
 
 
