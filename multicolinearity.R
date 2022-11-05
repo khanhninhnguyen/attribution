@@ -228,4 +228,25 @@ r= rep(NA, length(res))
 for ( i in c(1:length(res))){ 
   a = res[[i]]$full$fit.hac$Estimate
   r[i] = a[2]*a[3]
-  }
+}
+
+
+
+# check probability of confusion situation --------------------------------
+nb.sim = 100000
+n = 7300
+res <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
+res.coef <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
+for (j in c(1:nb.sim)) {
+  set.seed(j)
+  signal = rnorm(n, 0, 1)
+  Data.mod <- data.frame(y = signal, trend = c(-1824: 5475), mu = rep(c(0,1), each = (n/2)))
+  lr <- lm(y~., data = Data.mod)
+  summa = coeftest(lr)[, ] %>% as.data.frame()
+  res[j,] <- summa$`Pr(>|t|)`
+  res.coef[j,] <- lr$coefficients
+}
+
+
+
+
