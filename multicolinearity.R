@@ -82,7 +82,7 @@ save(tot.res, file = paste0(path_results, "attribution/multicolinear.", win.thre
 win.thres = 10
 res = get(load(file = paste0(path_results, "attribution/all.hac.", win.thres, "years.RData")))
 
-sig.com <- function(x, ver, vari.name){
+sig.com <- function(x, ver, vari.name, feature){
   out = rep(NA, length(x))
   for (i in c(1:length(x))) {
     res.i = x[[i]][[ver]]$fit.hac
@@ -90,16 +90,16 @@ sig.com <- function(x, ver, vari.name){
     if(length(ind) == 0){
       out[i] = NA
     }else{
-      out[i] = unlist(res.i$`Pr(>|z|)`[ind])
+      out[i] = round(unlist(res.i[ind, feature]), digits = 5)
     }
   }
   return(out)
 }
-hac.full <- sig.com(res, ver = "full", vari.name = "Jump")
-hac.sel <- sig.com(res, ver = "selec", vari.name = "Jump")
+hac.full <- sig.com(res, ver = "full", vari.name = "Jump", feature = "Pr(>|z|)")
+hac.sel <- sig.com(res, ver = "selec", vari.name = "Jump", feature = "Pr(>|z|)")
 hac.sel[which(is.na(hac.sel)==TRUE)] <- 1
-hac.full.x <- sig.com(res, ver = "full", vari.name = "Xt")
-hac.sel.x <- sig.com(res, ver = "selec", vari.name = "Xt")
+hac.full.x <- sig.com(res, ver = "full", vari.name = "Xt", feature = "Pr(>|z|)")
+hac.sel.x <- sig.com(res, ver = "selec", vari.name = "Xt", feature = "Pr(>|z|)")
 
 ind.plot = which(hac.sel.x<0.01)
 ind.plot = ind.plot[-which(ind.plot %in% c(69, 124, 125, 138))]
@@ -234,13 +234,14 @@ for ( i in c(1:length(res))){
 
 # check probability of confusion situation --------------------------------
 nb.sim = 10000
-n = 7300
+n = 2860 # mean length of long time series 
+t = c(1:n) - n/4
 res <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 res.coef <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 for (j in c(1:nb.sim)) {
   set.seed(j)
   noise.j = simulate.general(burn.in = 10000,
-                             arma.model = c(0.5,0),
+                             arma.model = c(0,0),
                              hetero = 0,
                              monthly.var = 0,
                              sigma = 1,
@@ -249,10 +250,10 @@ for (j in c(1:nb.sim)) {
                              outlier = 0,
                              prob.outliers = 0,
                              size.outliers = 0)
-  signal = c(-1824: 5475)*0.0001 + noise.j
+  signal = t*0.0001 + noise.j
   # signal = rnorm(n, 0, 1)
-  signal[3651:7300] = signal[3651:7300] - 0.7
-  Data.mod <- data.frame(y = signal, trend = c(-1824: 5475), mu = rep(c(0,1), each = (n/2)))
+  signal[(n/2+1):n] = signal[(n/2+1):n] - 0.37
+  Data.mod <- data.frame(y = signal, trend = t, mu = rep(c(0,1), each = (n/2)))
   lr <- lm(y~., data = Data.mod)
   summa = coeftest(lr)[, ] %>% as.data.frame()
   res[j,] <- summa$`Pr(>|t|)`
@@ -263,8 +264,22 @@ table(res$X3 >0.05 & res$X2<0.05)
 table(res$X3 >0.05 & res$X2>0.05)
 table(res$X3 <0.05 & res$X2<0.05)
 
-table(res.coef$X3*res.coef$X2 >0)
+table(res.coef$X3< 0 & res.coef$X2 >0)
 
 
 
+
+
+
+# check the confusion in the real data ------------------------------------
+
+jump.est <- sig.com(res, ver = "full", vari.name = "Jump", feature = "Estimate")
+trend.est <- sig.com(res, ver = "full", vari.name = "Xt", feature = "Estimate")
+jump.p <- sig.com(res, ver = "full", vari.name = "Jump", feature = "Pr(>|z|)")
+trend.p <- sig.com(res, ver = "full", vari.name = "Xt", feature = "Pr(>|z|)")
+
+length(which(jump.p < 0.05 & trend.p<0.05))
+length(which(jump.p < 0.05 & trend.p>0.05))
+length(which(jump.p > 0.05 & trend.p<0.05))
+length(which(jump.p > 0.05 & trend.p>0.05))
 
