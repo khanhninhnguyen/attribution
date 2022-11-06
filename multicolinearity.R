@@ -105,9 +105,9 @@ ind.plot = which(hac.sel.x<0.01)
 ind.plot = ind.plot[-which(ind.plot %in% c(69, 124, 125, 138))]
 for (j in ind.plot) {
   vif.f = round(car::vif( res[[j]][["full"]]$fit.ols)[1], digits = 1)
-  vif.s = round(car::vif( res[[j]][["selec"]]$fit.ols)[1], digits = 1)
+  # vif.s = round(car::vif( res[[j]][["selec"]]$fit.ols)[1], digits = 1)
   plot_HAC(case.name = names(res)[j], res.i = res[[j]][["full"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10yf", add.subtitle = vif.f)
-  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10ys", add.subtitle = vif.s)
+  plot_HAC(case.name = names(res)[j], res.i = res[[j]][["selec"]], data.in = dat[[names(res)[j]]], name.var = "gps.era", ver = "10ys", add.subtitle = "")
 }
 
 a = names(data.test)[ind.plot]
@@ -277,9 +277,9 @@ jump.est <- sig.com(res, ver = "full", vari.name = "Jump", feature = "Estimate")
 trend.est <- sig.com(res, ver = "full", vari.name = "Xt", feature = "Estimate")
 jump.p <- sig.com(res, ver = "full", vari.name = "Jump", feature = "Pr(>|z|)")
 trend.p <- sig.com(res, ver = "full", vari.name = "Xt", feature = "Pr(>|z|)")
-
-length(which(jump.p < 0.05 & trend.p<0.05))
-length(which(jump.p < 0.05 & trend.p>0.05))
-length(which(jump.p > 0.05 & trend.p<0.05))
-length(which(jump.p > 0.05 & trend.p>0.05))
+length.data = sapply(c(1:length(data.test)), function(x) length(na.omit(data.test[[x]]$gps.era)))
+length.data[which(jump.p < 0.05 & trend.p<0.05)]
+length.data[which(jump.p < 0.05 & trend.p>0.05)]
+length.data[which(jump.p > 0.05 & trend.p<0.05)]
+length.data[which(jump.p > 0.05 & trend.p>0.05)]
 
