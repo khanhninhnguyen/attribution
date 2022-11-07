@@ -240,35 +240,40 @@ t = c(1:n) - n/4
 res <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 res.coef <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 trend.0 = 0.0001
-mu0 = -0.27
+mu0 = -0.36
 ar = 0
-for (j in c(1:nb.sim)) {
-  set.seed(j)
-  noise.j = simulate.general(burn.in = 10000,
-                             arma.model = c(ar,0),
-                             hetero = 0,
-                             monthly.var = 0,
-                             sigma = 1,
-                             N = n,
-                             gaps = 0,
-                             outlier = 0,
-                             prob.outliers = 0,
-                             size.outliers = 0)
-  signal = t*trend.0 + noise.j
-  # signal = rnorm(n, 0, 1)
-  signal[(n/2+1):n] = signal[(n/2+1):n] + mu0
-  Data.mod <- data.frame(y = signal, trend = t, mu = rep(c(0,1), each = (n/2)))
-  lr <- lm(y~., data = Data.mod)
-  summa = coeftest(lr)[, ] %>% as.data.frame()
-  res[j,] <- summa$`Pr(>|t|)`
-  res.coef[j,] <- lr$coefficients
+sd0 = 0.7
+tot.res <- data.frame(matrix(NA, ncol= 4, nrow = 5))
+for (k in c(1:6)) {
+  for (j in c(1:nb.sim)) {
+    set.seed(j)
+    noise.j = simulate.general(burn.in = 10000,
+                               arma.model = c(ar,0),
+                               hetero = 0,
+                               monthly.var = 0,
+                               sigma = sd0,
+                               N = n,
+                               gaps = 0,
+                               outlier = 0,
+                               prob.outliers = 0,
+                               size.outliers = 0)
+    signal = t*trend.0 + noise.j
+    # signal = rnorm(n, 0, 1)
+    signal[(n/2+1):n] = signal[(n/2+1):n] + mu0[k]
+    Data.mod <- data.frame(y = signal, trend = t, mu = rep(c(0,1), each = (n/2)))
+    lr <- lm(y~., data = Data.mod)
+    summa = coeftest(lr)[, ] %>% as.data.frame()
+    res[j,] <- summa$`Pr(>|t|)`
+    res.coef[j,] <- lr$coefficients
+  }
+  tot.res[k,1] = length(which(res$X3 <0.05 & res$X2>0.05))
+  tot.res[k,2] = length(which(res$X3 >0.05 & res$X2>0.05))
+  tot.res[k,3] = length(which(res$X3 <0.05 & res$X2<0.05))
+  tot.res[k,4] = length(which(res$X3 >0.05 & res$X2<0.05))
 }
-table(res$X3 <0.05 & res$X2>0.05)
-table(res$X3 >0.05 & res$X2<0.05)
-table(res$X3 >0.05 & res$X2>0.05)
-table(res$X3 <0.05 & res$X2<0.05)
-
-table(res.coef$X3< 0 & res.coef$X2 >0)
+tot.res$jump.val = mu0
+a = reshape2::melt(tot.res, id = "jump.val")
+ggplot(data = a, aes(x = jump.val, y = value/nb.sim, col=variable))+geom_point()+theme_bw()+ylab("Proportion of significant estimates")+xlab("Jump")
 
 a = which(res$X3 <0.05 & res$X2<0.05)
 b = res.coef[a,]
@@ -291,3 +296,4 @@ length(which(jump.p < 0.05 & trend.p<0.05))
 length(which(jump.p < 0.05 & trend.p>0.05))
 length(which(jump.p > 0.05 & trend.p<0.05))
 length(which(jump.p > 0.05 & trend.p>0.05))
+
