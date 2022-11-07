@@ -233,15 +233,19 @@ for ( i in c(1:length(res))){
 
 
 # check probability of confusion situation --------------------------------
+source(paste0(path_code_att, "simulate_time_series.R"))
 nb.sim = 10000
 n = 2860 # mean length of long time series 
 t = c(1:n) - n/4
 res <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 res.coef <- data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
+trend.0 = 0.0001
+mu0 = -0.27
+ar = 0
 for (j in c(1:nb.sim)) {
   set.seed(j)
   noise.j = simulate.general(burn.in = 10000,
-                             arma.model = c(0,0),
+                             arma.model = c(ar,0),
                              hetero = 0,
                              monthly.var = 0,
                              sigma = 1,
@@ -250,9 +254,9 @@ for (j in c(1:nb.sim)) {
                              outlier = 0,
                              prob.outliers = 0,
                              size.outliers = 0)
-  signal = t*0.0001 + noise.j
+  signal = t*trend.0 + noise.j
   # signal = rnorm(n, 0, 1)
-  signal[(n/2+1):n] = signal[(n/2+1):n] - 0.37
+  signal[(n/2+1):n] = signal[(n/2+1):n] + mu0
   Data.mod <- data.frame(y = signal, trend = t, mu = rep(c(0,1), each = (n/2)))
   lr <- lm(y~., data = Data.mod)
   summa = coeftest(lr)[, ] %>% as.data.frame()
@@ -266,20 +270,24 @@ table(res$X3 <0.05 & res$X2<0.05)
 
 table(res.coef$X3< 0 & res.coef$X2 >0)
 
-
-
-
+a = which(res$X3 <0.05 & res$X2<0.05)
+b = res.coef[a,]
+table(b$X2*b$X3<0)
 
 
 # check the confusion in the real data ------------------------------------
-
-jump.est <- sig.com(res, ver = "full", vari.name = "Jump", feature = "Estimate")
-trend.est <- sig.com(res, ver = "full", vari.name = "Xt", feature = "Estimate")
-jump.p <- sig.com(res, ver = "full", vari.name = "Jump", feature = "Pr(>|z|)")
-trend.p <- sig.com(res, ver = "full", vari.name = "Xt", feature = "Pr(>|z|)")
+ver = "full"
+jump.est <- sig.com(res, ver = ver, vari.name = "Jump", feature = "Estimate")
+trend.est <- sig.com(res, ver = ver, vari.name = "Xt", feature = "Estimate")
+jump.p <- sig.com(res, ver = ver, vari.name = "Jump", feature = "Pr(>|z|)")
+trend.p <- sig.com(res, ver = ver, vari.name = "Xt", feature = "Pr(>|z|)")
 length.data = sapply(c(1:length(data.test)), function(x) length(na.omit(data.test[[x]]$gps.era)))
 length.data[which(jump.p < 0.05 & trend.p<0.05)]
 length.data[which(jump.p < 0.05 & trend.p>0.05)]
 length.data[which(jump.p > 0.05 & trend.p<0.05)]
 length.data[which(jump.p > 0.05 & trend.p>0.05)]
 
+length(which(jump.p < 0.05 & trend.p<0.05))
+length(which(jump.p < 0.05 & trend.p>0.05))
+length(which(jump.p > 0.05 & trend.p<0.05))
+length(which(jump.p > 0.05 & trend.p>0.05))

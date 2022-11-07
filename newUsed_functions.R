@@ -17,7 +17,7 @@ Test_OLS_vcovhac <- function(Data.mod){
   
   
   # Selection parameter by parameter (the intercept will never be removed)
-  threshold <- 0.01
+  threshold <- 0.05
   fit.hac.without.NA <- fit.hac[!(rownames(fit.hac) %in% "(Intercept)"),]
   pval.hac.without.intercept=fit.hac.without.NA$`Pr(>|z|)`
   p.max <- max(pval.hac.without.intercept)
