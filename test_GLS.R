@@ -121,18 +121,19 @@ for (i in c(1:nb.sim)) {
 
 
 # comparison between OLS and OLS+HAC --------------------------------------
-n = 720
+n = 100
 nb.sim = 10000
 mu0=1
 x = c(1:n) - n/2
 res <- data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
+sigma0 = seq(0.1, 1, length.out = n)
 for (i in c(1:nb.sim)) {
   set.seed(i)
-  y = simulate.general(N = n, arma.model = c(0.8,-0.5), burn.in = 0, hetero = 0, sigma = 0.4,
+  y = simulate.general(N = n, arma.model = c(0.8,-0.5), burn.in = 0, hetero = 1, sigma = sigma0,
                        monthly.var = 0)
   y = y 
   fit.ols = lm(y~1)
-  vcov.hac = sandwich::kernHAC(fit.ols,prewhite = FALSE,kernel = "Quadratic Spectral",approx = "ARMA(1,1)", sandwich = TRUE)
+  vcov.hac = sandwich::kernHAC(fit.ols,prewhite = FALSE,kernel = "Quadratic Spectral", sandwich = TRUE)
   vcov.ols = vcov(fit.ols)
   res[i,1] = vcov.ols
   res[i,2] = vcov.hac
@@ -142,9 +143,11 @@ for (i in c(1:nb.sim)) {
   res[i,4] = fit.hac[4,]
 }
 t = rep(1, n)
-v = ar1_cor(n, 0.5)
+# v = ar1_cor(n, 0.5)
+v = matrix(0, ncol = n, nrow = n)
+diag(v) = sigma0
 1/(t(t) %*% t)
-t(t) %*%v %*% t
+1/(t(t) %*% t)* (t(t) %*%v %*% t)*1/(t(t) %*% t)
 
 
 
