@@ -458,4 +458,8 @@ Right <- (one.year+1):(2*one.year)
 lines(Data.mod$Xt[Right],Data.mod$signal[Right],col="blue")
 lines(Data.mod$Xt[Right],signal.predicted[Right],col="blue")
 
+if(length(a)){
+  print("1")
+}else{ print ('2')}
+
 
