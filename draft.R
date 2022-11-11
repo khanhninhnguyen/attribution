@@ -462,4 +462,11 @@ if(length(a)){
   print("1")
 }else{ print ('2')}
 
+vf1Fixed <- varFixed( ~ sin1+cos1 )
+vf1 <- Initialize(vf1Fixed, data = dataMod)
+varWeights( vf1)
+
+
+
+
 
