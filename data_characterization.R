@@ -12,9 +12,10 @@ all.cases.name = names(dat)
 all.cases.ind = sapply(c(1:length(all.cases.name)), function(x) substr(all.cases.name[x],start = 1, stop = 15))
 unique.ind = match(unique(all.cases.ind), all.cases.ind )
 gps.era.dat = dat[unique.ind]
+data.test = gps.era.dat 
 n = length(data.test)
 sd.all <- rep(NA, n)
-data.test = gps.era.dat
+offset.all <- rep(NA, n)
 for (k in c(1:n)) {
   name.dataset = names(data.test)[k]
   Y.with.NA = data.test[[k]]
@@ -32,8 +33,19 @@ for (k in c(1:n)) {
   }
   Data.mod <- Data.mod %>% dplyr::select(-complete.time)
   res.hac.1step <- Test_OLS_vcovhac_1step(Data.mod)
-  sd.all[k] = sd(res.hac.1step$fit.ols$residuals)
+  offset.all[k] = res.hac.1step$fit.hac$Estimate[2]
 }
+
+# from the moving window
+
+sd.all= get(load( file = paste0(path_results,"attribution/sd.all_",  win.thres,"years_", nearby_ver,"screened.RData")))
+# filter only gps-era unique
+sd.gpsera= sd.all[unique.ind]
+mean.bef = sapply(c(1:length(sd.gpsera)), function(x) mean(unlist(sd.gpsera[[x]]$bef[name.series])^2, na.rm = TRUE))
+var.bef = sapply(c(1:length(sd.gpsera)), function(x) var(unlist(sd.gpsera[[x]]$bef[name.series])^2, na.rm = TRUE))
+mean.aft = sapply(c(1:length(sd.gpsera)), function(x) mean(unlist(sd.gpsera[[x]]$aft[name.series])^2, na.rm = TRUE))
+var.aft = sapply(c(1:length(sd.gpsera)), function(x) var(unlist(sd.gpsera[[x]]$aft[name.series])^2, na.rm = TRUE))
+all.var = data.frame(mean.bef, mean.aft, var.bef, var.aft)
 # autocorrelation  --------------------------------------------------------
 
 
