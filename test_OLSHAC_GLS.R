@@ -2,33 +2,34 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 library(sandwich)
 # initial condition ---------------------------------------------------------
-nb.sim = 10000
-n = 200
+nb.sim = 1000
+n = 2000
 sig.m = 0.6
-sig.v = 0.1
-T1 = n/2
-a = cos(2*pi*(c(1:n)/T1))
+sig.v = 0.4
+T1 = n/6
+a = cos(2*pi*(c(1:n)/T1) )
 var.t = (sig.m - sig.v*a)
 res = data.frame(matrix(NA, ncol = 6, nrow = nb.sim))
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 t = c(1:n)-n/2
 # off.set = c(0.1, 0.2, 0.3, 0.4, 0.5)
-ar.val = 0.3
-offset = c(0.1, 0.2, 0.3, 0.4, 0.5)
+
 # comparison with heteroskedasticity --------------------------------------
 #### IID case with the estimated variance in GLS
+offset = seq(0, 0.5, 0.1)
 param.test = offset
-Res.fin = data.frame(matrix(NA, ncol = 4, nrow = length(param.test)))
+Res.fin = data.frame(matrix(NA, ncol = 3, nrow = length(param.test)))
 for (l in c(1:length(param.test))) {
-  offset  = param.test[l]
+  off.set = param.test[l]
   tot.res <- list()
   coef.res <- list()
   var.res <- list()
+  # plot(var.t)
   for (i in c(1:nb.sim)) {
     set.seed(i)
-    y = simulate.general(N = n, arma.model = c(ar.val,0), burn.in = 1000, hetero = 1, sigma = sqrt(var.t),
-                         monthly.var = 0)
-    y[(n/2):n] <- y[(n/2):n] + offset
+    y = simulate.general(N = n, arma.model = c(0,0), burn.in =0, hetero = 0, sigma = sqrt(sig.m),
+                                   monthly.var = 0)
+    y[(n/2):n] <- y[(n/2):n] + off.set
     Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = var.t, t = t)
     
     # Test with vcov (HAC)
@@ -39,38 +40,96 @@ for (l in c(1:length(param.test))) {
     fit.ols=lmtest::coeftest(ols.fit,df=(n-1))[, ] %>% as.data.frame()
 
     # Test with gls
-    et = ols.fit$residuals^2
-    Data.mod.e = data.frame(signal = et, sin1 = sin(2*pi*t/T1), cos1 = cos(2*pi*t/T1))
-    lm.et = lm(signal~., data = Data.mod.e)
-    var.e = fitted(lm.et)
-    gls.fit = gls(signal~jump, data = Data.mod, correlation = corAR1(form = ~t), weights = varFixed(value = ~var.e ))
-    fit.gls=lmtest::coeftest(gls.fit,df=(n-1))[, ] %>% as.data.frame()
-    gls.fit.true = gls(signal~jump, data = Data.mod,  correlation = corAR1(form = ~t), weights = varFixed(value = ~var.t ))
+    # et = ols.fit$residuals^2
+    # Data.mod.e = data.frame(signal = et, sin1 = sin(2*pi*t/T1), cos1 = cos(2*pi*t/T1))
+    # lm.et = lm(signal~., data = Data.mod.e)
+    # var.e = fitted(lm.et)
+    # gls.fit = gls(signal~jump, data = Data.mod, correlation = corAR1( form = ~t), weights = varFixed(value = ~var.e ))
+    # fit.gls=lmtest::coeftest(gls.fit,df=(n-1))[, ] %>% as.data.frame()
+    gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  NULL, weights = NULL)
     fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
     
-    tot.res[[i]] = list(fit.hac =fit.hac, fit.gls= fit.gls, fit.ols = fit.ols, fit.gls.true = fit.gls.true)
-    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit$coefficients)
-    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit$varBeta, hac = vcov.para)
-    # tot.res[[i]] = list(fit.gls.true = fit.gls.true)
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = fit.gls.true)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit.true$coefficients)
+    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit.true$varBeta, hac = vcov.para)
+
+  }
+  # significance level
+  pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[2,4]))
+  pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[2,4]))
+  pval.gls.true <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls.true[2,4]))
+  p.val = c(length(which(pval.ols>0.05)),
+            length(which(pval.gls.true>0.05)), length(which(pval.hac>0.05)))
+  Res.fin[l,] = p.val
+  # r[[l]] = length(which( pval.gls>0.05))
+}
+
+# save(Res.fin, file = paste0(path_results, "res.RData"))
+colnames(Res.fin) <- c("ols", "gls.t", "hac")
+res = (nb.sim - Res.fin)/nb.sim
+res$delta = param.test
+dat.plot =reshape2::melt(res, id = "delta")
+ggplot(dat.plot, aes(x = delta, y = value, col = variable))+
+  geom_point() + theme_bw()+
+  ylab("Significant jumps predicted rate")
+# var (beta)
+var.df = data.frame(ols = unlist(sapply(c(1:nb.sim), function(x) var.res[[x]]$ols[1,1])),
+                    hac = unlist(sapply(c(1:nb.sim), function(x) var.res[[x]]$hac[1,1])),
+                    gls = unlist(sapply(c(1:nb.sim), function(x) var.res[[x]]$gls[1,1])))
+summary(var.df)
+
+# comparison in the AR(1) -------------------------------------------------
+ar.val = seq(0, 0.8, 0.2)
+# offset = seq(0.1, 0.5, 0.1)
+param.test = ar.val
+off.set = 0
+Res.fin = data.frame(matrix(NA, ncol = 3, nrow = length(param.test)))
+# ar = 0.3
+for (l in c(1:length(param.test))) {
+  tot.res <- list()
+  coef.res <- list()
+  var.res <- list()
+  ar = param.test[l]
+  for (i in c(1:nb.sim)) {
+    set.seed(i)
+    y = simulate.general(N = n, arma.model = c(ar,0), burn.in = 1000, hetero = 0, sigma = sqrt(sig.m),
+                         monthly.var = 0)
+    y[(n/2):n] <- y[(n/2):n] + off.set
+    Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = var.t, t = t)
+    
+    # Test with vcov (HAC)
+    ols.fit = lm(signal~jump, data = Data.mod)
+    vcov.para=sandwich::kernHAC(ols.fit,prewhite = FALSE,kernel = "Quadratic Spectral", sandwich = TRUE)
+    fit.hac=lmtest::coeftest(ols.fit,df=(n-1),vcov.=vcov.para)[, ] %>% as.data.frame()
+    fit.ols=lmtest::coeftest(ols.fit,df=(n-1))[, ] %>% as.data.frame()
+  
+    gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  corAR1(form = ~t), weights = NULL)
+    fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
+    
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = fit.gls.true)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit.true$coefficients)
+    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit.true$varBeta, hac = vcov.para)
     
   }
   # significance level
   pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[2,4]))
   pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[2,4]))
-  pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls[2,4]))
   pval.gls.true <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls.true[2,4]))
-  p.val = c(length(which(pval.ols>0.05)), length(which(pval.gls>0.05)), 
+  p.val = c(length(which(pval.ols>0.05)),
             length(which(pval.gls.true>0.05)), length(which(pval.hac>0.05)))
   Res.fin[l,] = p.val
-  # r[[l]] = length(which( pval.gls>0.05))
 }
-colnames(Res.fin) <- c("ols", "gls", "gls.t", "hac")
+
+save(Res.fin, file = paste0(path_results, "res.2000.RData"))
+colnames(Res.fin) <- c("ols", "gls.t", "hac")
 res = (nb.sim - Res.fin)/nb.sim
-Res.fin$offset = param.test
-dat.plot =reshape2::melt(res, id = "offset")
-ggplot(dat.plot, aes(x = offset, y = (1-value/nb.sim), col = variable))+
+name.x = "jump"
+# res = Res.fin/nb.sim
+res[name.x] = param.test
+dat.plot =reshape2::melt(res, id = name.x)
+ggplot(dat.plot, aes(x = jump, y = value, col = variable))+
   geom_point() + theme_bw()+
-  ylab("TPR")
+  ylab("True positive rate")
 # var (beta)
 var.df = data.frame(ols = unlist(sapply(c(1:nb.sim), function(x) var.res[[x]]$ols[1,1])),
                     hac = unlist(sapply(c(1:nb.sim), function(x) var.res[[x]]$hac[1,1])),
@@ -78,16 +137,142 @@ var.df = data.frame(ols = unlist(sapply(c(1:nb.sim), function(x) var.res[[x]]$ol
 summary(var.df)
 
 
-x = as.matrix(rep(1,n))
-ols.v = var(y)/(t(x) %*% x)
-xtx_inv <- solve(t(x) %*% x)
-
-xtx_inv
-hac.v = xtx_inv %*% t(x) %*% diag(var.t) %*% x %*% xtx_inv
-hac.v
-
-# comparison in the AR(1) -------------------------------------------------
-
 # comparison in ARMA(1,1) -------------------------------------------------
+
+for (l in c(1:length(param.test))) {
+  tot.res <- list()
+  coef.res <- list()
+  var.res <- list()
+  
+  for (i in c(1:nb.sim)) {
+    set.seed(i)
+    # y = trend*t + simulate.general(N = n, arma.model = c(ar,0), burn.in = 1000, hetero = 1, sigma = sqrt(var.t),
+    #                      monthly.var = 0)
+    y = simulate.general(N = n, arma.model = c(ar.val,0), burn.in = 1000, hetero = 1, sigma = sqrt(var.t),
+                         monthly.var = 0)
+    y[(n/2):n] <- y[(n/2):n] + off.set
+    Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = var.t, t = t)
+    
+    # Test with vcov (HAC)
+    ols.fit = lm(signal~jump, data = Data.mod)
+    vcov.para=sandwich::kernHAC(ols.fit,prewhite = FALSE,kernel = "Quadratic Spectral", sandwich = TRUE)
+    # vcov.para=sandwich::vcovHC(ols.fit, type = "HC3")
+    fit.hac=lmtest::coeftest(ols.fit,df=(n-1),vcov.=vcov.para)[, ] %>% as.data.frame()
+    fit.ols=lmtest::coeftest(ols.fit,df=(n-1))[, ] %>% as.data.frame()
+    
+    # Test with gls
+    # et = ols.fit$residuals^2
+    # Data.mod.e = data.frame(signal = et, sin1 = sin(2*pi*t/T1), cos1 = cos(2*pi*t/T1))
+    # lm.et = lm(signal~., data = Data.mod.e)
+    # var.e = fitted(lm.et)
+    # gls.fit = gls(signal~jump, data = Data.mod, correlation = corAR1( form = ~t), weights = varFixed(value = ~var.e ))
+    # fit.gls=lmtest::coeftest(gls.fit,df=(n-1))[, ] %>% as.data.frame()
+    gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  corAR1(form = ~t), weights = varFixed(value = ~var.t ))
+    fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
+    
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = fit.gls.true)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit.true$coefficients)
+    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit.true$varBeta, hac = vcov.para)
+    
+  }
+  # significance level
+  pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[2,4]))
+  pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[2,4]))
+  pval.gls.true <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls.true[2,4]))
+  p.val = c(length(which(pval.ols>0.05)),
+            length(which(pval.gls.true>0.05)), length(which(pval.hac>0.05)))
+  Res.fin[l,] = p.val
+  # r[[l]] = length(which( pval.gls>0.05))
+}
+
+
+# heteroskedastic noise ---------------------------------------------------
+# offset = seq(0.1, 0.5, 0.1)
+off.set = 0.3
+var.all = seq(0, 0.5, 0.1)
+param.test = var.all
+Res.fin = data.frame(matrix(NA, ncol = 3, nrow = length(param.test)))
+for (l in c(1:length(param.test))) {
+  sig.v = param.test[l]
+  tot.res <- list()
+  coef.res <- list()
+  var.res <- list()
+  var.t = (sig.m - sig.v*a)
+  plot(var.t)
+  for (i in c(1:nb.sim)) {
+    set.seed(i)
+
+    y = simulate.general(N = n, arma.model = c(0,0), burn.in = 1000, hetero = 1, sigma = sqrt(var.t),
+                         monthly.var = 0)
+    y[(n/2):n] <- y[(n/2):n] + off.set
+    Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = var.t, t = t)
+    
+    # Test with vcov (HAC)
+    ols.fit = lm(signal~jump, data = Data.mod)
+    vcov.para=sandwich::kernHAC(ols.fit,prewhite = FALSE,kernel = "Quadratic Spectral", sandwich = TRUE)
+    fit.hac=lmtest::coeftest(ols.fit,df=(n-1),vcov.=vcov.para)[, ] %>% as.data.frame()
+    fit.ols=lmtest::coeftest(ols.fit,df=(n-1))[, ] %>% as.data.frame()
+    
+    gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  corAR1(form = ~t), weights = varFixed(value = ~var.t ))
+    fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
+    
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = fit.gls.true)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit.true$coefficients)
+    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit.true$varBeta, hac = vcov.para)
+    
+  }
+  # significance level
+  pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[2,4]))
+  pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[2,4]))
+  pval.gls.true <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls.true[2,4]))
+  p.val = c(length(which(pval.ols>0.05)),
+            length(which(pval.gls.true>0.05)), length(which(pval.hac>0.05)))
+  Res.fin[l,] = p.val
+  # r[[l]] = length(which( pval.gls>0.05))
+}
+colnames(Res.fin) <- c("ols", "gls.t", "hac")
+res = (nb.sim- Res.fin)/nb.sim
+name.x = "delta"
+# res = Res.fin/nb.sim
+res[name.x] = param.test
+dat.plot =reshape2::melt(res, id = name.x)
+ggplot(dat.plot, aes(x = delta, y = value, col = variable))+
+  geom_point() + theme_bw()+
+  ylab("True positive rate") 
+
+# test the variance estimation --------------------------------------------
+tot.res <- data.frame(matrix(NA, ncol = 200, nrow = nb.sim))
+for (i in c(1:nb.sim)) {
+  set.seed(i)
+  # y = simulate.general(N = n, arma.model = c(0,0), burn.in = 1000, hetero = 0, sigma = sqrt(var.t),
+  #                      monthly.var = 0)
+  # y[(n/2):n] <- y[(n/2):n] + offset
+  y = rnorm(n, mean = 0, sd = sig.m )
+  Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = var.t, t = t)
+  
+  # Test with vcov (HAC)
+  ols.fit = lm(signal~jump, data = Data.mod)
+  
+  # Test with gls
+  et = ols.fit$residuals^2
+  Data.mod.e = data.frame(signal = et, sin1 = sin(2*pi*t/T1), cos1 = cos(2*pi*t/T1))
+  lm.et = lm(signal~., data = Data.mod.e)
+  var.e = fitted(lm.et)
+
+  tot.res[i,] =var.e
+  
+}
+
+a. = sapply(c(1:n), function(x) sd(tot.res[,x]))
+dat = data.frame(x = c(1:200), value = a, sd = a.)
+ggplot(dat, aes(x=x,y=value)) +
+  geom_pointrange(aes(ymin=value-sd, ymax=value+sd))+ 
+theme_bw() + 
+  ylim(c(0,1.2))
+
+
+
+
+
 
 

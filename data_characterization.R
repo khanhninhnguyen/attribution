@@ -1,4 +1,5 @@
 #### This function is used for the data characterization. This is step after pairing and screening data ####
+source(paste0(path_code_att, "newUsed_functions.R"))
 
 # Heteroskedastic ---------------------------------------------------------
 
@@ -42,10 +43,19 @@ sd.all= get(load( file = paste0(path_results,"attribution/sd.all_",  win.thres,"
 # filter only gps-era unique
 sd.gpsera= sd.all[unique.ind]
 mean.bef = sapply(c(1:length(sd.gpsera)), function(x) mean(unlist(sd.gpsera[[x]]$bef[name.series])^2, na.rm = TRUE))
-var.bef = sapply(c(1:length(sd.gpsera)), function(x) var(unlist(sd.gpsera[[x]]$bef[name.series])^2, na.rm = TRUE))
+delta.bef = sapply(c(1:length(sd.gpsera)), function(x){
+  a = unlist(sd.gpsera[[x]]$bef[name.series])^2
+  (max(a, na.rm = TRUE) -min(a, na.rm = TRUE))/2
+}) 
 mean.aft = sapply(c(1:length(sd.gpsera)), function(x) mean(unlist(sd.gpsera[[x]]$aft[name.series])^2, na.rm = TRUE))
-var.aft = sapply(c(1:length(sd.gpsera)), function(x) var(unlist(sd.gpsera[[x]]$aft[name.series])^2, na.rm = TRUE))
-all.var = data.frame(mean.bef, mean.aft, var.bef, var.aft)
+delta.aft = sapply(c(1:length(sd.gpsera)), function(x) {
+  a = unlist(sd.gpsera[[x]]$aft[name.series])^2
+  (max(a, na.rm = TRUE) -min(a, na.rm = TRUE))/2
+})
+all.var = data.frame(mean.bef, mean.aft, delta.bef/mean.bef, delta.aft/mean.aft)
+summary(all.var)
+# fit the variance 
+
 # autocorrelation  --------------------------------------------------------
 
 
