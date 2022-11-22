@@ -1,6 +1,73 @@
 # this prog is used for comparison: OLS+HAC vs GLS
 source(paste0(path_code_att,"simulate_time_series.R"))
 library(sandwich)
+# gls function new version
+var_cova <- function(Sig, phi, theta, n){
+  M = 9*n
+  # compute the variance of et, 
+  Sig.k = Sig[2:(M-n)] 
+  Sig.k1 = Sig[1:(M-n-1)] 
+  k = c(0:(M-n-2))
+  
+  # to compute the variance 
+  c1 = (phi^(2*k))
+  c2 = c1*(theta^2)
+  c3 = (phi^(2*k+1))*theta
+  c4 = (phi^(2*k-1))*theta
+  
+  term1 = rev(c2) * Sig.k1
+  term2 = rev(c1) * Sig.k
+  term3 = rev(c3) * Sig.k1
+  term4 = rev(c4) * Sig.k
+  # variance of point t0-1
+  e = term4[length(term4)]
+  et = sum(term1+ term2+ term3 + term4) - e
+  
+  var.t = rep(NA, n)
+  for (i in c(1:n)) {
+    s = Sig[(M-n+i)]
+    s1 = Sig[(M-n+i-1)]
+    err = (theta/phi)*s1
+    c5 = (s1)*(theta**2) + s + theta*phi*(s1)
+    ei = c5 + (phi**2)*(et + s1*theta/phi)
+    var.t[i] = ei
+    et = ei
+  }
+  
+  # to commpute the covariance 
+  var.cov = matrix(NA, ncol = n, nrow = n)
+  for (l in c(1:(n-1))) {
+    var.et = var.t[l]
+    sigma.et = Sig[(M-n+l)]
+    for (l1 in c((l+1):(n))) {
+      var.cov[l, l1] = (phi^(l1-l))*var.et + (phi^(l1-l-1))*theta*sigma.et
+    }
+  }
+  var.cov[is.na(var.cov)] = 0
+  var.cov = var.cov + t(var.cov)
+  diag(var.cov) = var.t
+  
+  return(var.cov)
+}
+gls.true <- function(var.t, phi, theta, design.matrix, trend){
+  if(phi ==0 & theta ==0){
+    cov.var = diag(var.t)
+  }else{
+    Sig = rep(var.t,9)
+    cov.var = var_cova(Sig = Sig, phi = phi, theta = theta, n = nrow(design.matrix))
+  }
+  X = data.frame(intercept = rep(1,n))
+  if(trend ==0){
+    X = cbind(X, design.matrix[c("jump")])
+  }else{
+    X = cbind(X,design.matrix[c("jump", "Xt")])
+  }
+  X = as.matrix(X)
+  term1 = t(X) %*% (solve(cov.var)) %*% X
+  beta = solve(term1) %*% t(X) %*% (solve(cov.var)) %*% (as.matrix(design.matrix$signal))
+  var.beta = solve(term1)
+  return(list(beta = beta, var.beta = var.beta))
+}
 # initial condition ---------------------------------------------------------
 nb.sim = 1000
 n = 200
@@ -213,12 +280,19 @@ for (l in c(1:length(param.test))) {
     fit.hac=lmtest::coeftest(ols.fit,df=(n-1),vcov.=vcov.para)[, ] %>% as.data.frame()
     fit.ols=lmtest::coeftest(ols.fit,df=(n-1))[, ] %>% as.data.frame()
     
-    gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  corAR1(form = ~t), weights = varFixed(value = ~var.t ))
-    fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
+    # gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  corAR1(form = ~t), weights = varFixed(value = ~var.t ))
+    # fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
+    gls.fit.true =  gls.true(var.t, phi = 0, theta =0, design.matrix = Data.mod, trend = 0)
+    fit.gls.true.t = gls.fit.true$beta/sqrt((diag(gls.fit.true$var.beta)))
+    fit.gls.true.p = round(pnorm(-abs(fit.gls.true.t), mean = 0, sd = 1, lower.tail = TRUE)*2, digits = 4)
+    fit.gls.true = fit.hac
+    fit.gls.true$Estimate = gls.fit.true$beta
+    fit.gls.true$`t value` = fit.gls.true.t
+    fit.gls.true$`Pr(>|t|)` = fit.gls.true.p
     
     tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = fit.gls.true)
-    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit.true$coefficients)
-    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit.true$varBeta, hac = vcov.para)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit.true$beta)
+    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit.true$var.beta, hac = vcov.para)
     
   }
   # significance level
