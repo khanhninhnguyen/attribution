@@ -36,7 +36,7 @@ var_cova <- function(Sig, phi, theta, n){
 
 Sig = c(rep(c(1,2,3), 300),1)
 # Sig = rep(1,901)
-a = var_cova(Sig, phi = 0.6, theta = -0.2, n =100)
+a = var_cova(Sig, phi = 0.5, theta = 0, n =100)
 phi = 0.6
 theta = -0.2
 (1+ 2*theta*phi + theta**2)/(1-phi**2)
@@ -59,6 +59,49 @@ for (t in c(802:901)) {
   ind = t -801
   va[ind] = v
 }
+
+# test in simulated series
+nb.sim = 10000
+n = 100
+sig.m = 0.6
+sig.v = 0.4
+T1 = n/2
+a = cos(2*pi*(c(1:n)/T1) )
+var.t = (sig.m - sig.v*a)
+dat.all <- data.frame(matrix(NA, ncol = n, nrow = nb.sim))
+for (i in c(1:nb.sim)) {
+  set.seed(i)
+  y = simulate.general(N = n, arma.model = c(0.9,0), burn.in =1000, hetero = 1, sigma = sqrt(var.t),
+                       monthly.var = 0)
+  dat.all[i,] <- y
+}
+
+b = sapply(c(1:n), function(x) var(dat.all[,x]))
+ar1_cor <- function(n, rho) {
+  exponent <- abs(matrix(1:n - 1, nrow = n, ncol = n, byrow = TRUE) - 
+                    (1:n - 1))
+  rho^exponent
+}
+cov1 = ar1_cor(n, 0.9)
+e = diag(sqrt(var.t)) %*% cov1 %*% diag(sqrt(var.t))
+f= diag(e)/(1-phi**2)
+phi = 0.9
+
+
+# comparison 
+# olivier res
+Sig =  rep(var.t, 9)
+Sig = c(Sig[1], Sig)
+var.O = var_cova(Sig, phi = 0.9, theta = 0, n =100)
+# decomposition
+cov1 = ar1_cor(n, 0.9)
+e = diag(sqrt(var.t)) %*% cov1 %*% diag(sqrt(var.t))
+f= diag(e)/(1-phi**2)
+# effective sample size 
+# s = (n + 2*(phi^(n+1)) - n*(phi**2) - 2*phi)/(n*((1-phi)**2))
+# f = var.t*s
+
+
 
 
 
