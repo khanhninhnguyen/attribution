@@ -71,10 +71,10 @@ gls.true <- function(var.t, phi, theta, design.matrix, trend){
 # initial condition ---------------------------------------------------------
 nb.sim = 1000
 n = 200
-sig.m = 0.6
-sig.v = 0.4
+sig.m = 1
+sig.v = 0.9
 T1 = n/2
-a = cos(2*pi*(c(1:n)/T1) )
+a = cos(2*pi*(c(1:n)/T1)-pi)
 var.t = (sig.m - sig.v*a)
 res = data.frame(matrix(NA, ncol = 6, nrow = nb.sim))
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
@@ -256,7 +256,7 @@ for (l in c(1:length(param.test))) {
 # heteroskedastic noise ---------------------------------------------------
 # offset = seq(0.1, 0.5, 0.1)
 off.set = 0.3
-var.all = seq(0, 0.5, 0.1)
+var.all = seq(0, 0.8, 0.2)
 param.test = var.all
 Res.fin = data.frame(matrix(NA, ncol = 3, nrow = length(param.test)))
 for (l in c(1:length(param.test))) {
@@ -269,7 +269,7 @@ for (l in c(1:length(param.test))) {
   for (i in c(1:nb.sim)) {
     set.seed(i)
 
-    y = simulate.general(N = n, arma.model = c(0,0), burn.in = 1000, hetero = 1, sigma = sqrt(var.t),
+    y = simulate.general(N = n, arma.model = c(0.3,0), burn.in = 1000, hetero = 1, sigma = sqrt(var.t),
                          monthly.var = 0)
     y[(n/2):n] <- y[(n/2):n] + off.set
     Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = var.t, t = t)
@@ -280,8 +280,8 @@ for (l in c(1:length(param.test))) {
     fit.hac=lmtest::coeftest(ols.fit,df=(n-1),vcov.=vcov.para)[, ] %>% as.data.frame()
     fit.ols=lmtest::coeftest(ols.fit,df=(n-1))[, ] %>% as.data.frame()
     
-    # gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  corAR1(form = ~t), weights = varFixed(value = ~var.t ))
-    # fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
+    gls.fit.true = gls(signal~jump, data = Data.mod,  correlation =  corAR1(form = ~t), weights = varFixed(value = ~var.t ))
+    fit.gls.true =lmtest::coeftest(gls.fit.true,df=(n-1))[, ] %>% as.data.frame()
     gls.fit.true =  gls.true(var.t, phi = 0, theta =0, design.matrix = Data.mod, trend = 0)
     fit.gls.true.t = gls.fit.true$beta/sqrt((diag(gls.fit.true$var.beta)))
     fit.gls.true.p = round(pnorm(-abs(fit.gls.true.t), mean = 0, sd = 1, lower.tail = TRUE)*2, digits = 4)
@@ -289,6 +289,17 @@ for (l in c(1:length(param.test))) {
     fit.gls.true$Estimate = gls.fit.true$beta
     fit.gls.true$`t value` = fit.gls.true.t
     fit.gls.true$`Pr(>|t|)` = fit.gls.true.p
+    # 
+    # Sig = rep(var.t,9)
+    # cov.var = var_cova(Sig = Sig, phi = 0.3, theta = 0, n = n)
+    # w = (sqrt(diag(cov.var)))
+    # w = w - (mean(w)-1)
+    # 
+    # Data.mod$signal = y/w
+    # ols.nor = lm(signal~jump, data = Data.mod)
+    # vcov.para.nor=sandwich::kernHAC(ols.nor,prewhite = FALSE,kernel = "Quadratic Spectral", sandwich = TRUE)
+    # fit.hac.norm=lmtest::coeftest(ols.nor,df=(n-1),vcov.=vcov.para.nor)[, ] %>% as.data.frame()
+    # tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = fit.hac.norm)
     
     tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = fit.gls.true)
     coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit.true$beta)
@@ -401,13 +412,6 @@ ggplot(dat, aes(x=x,y=value)) +
   geom_pointrange(aes(ymin=value-sd, ymax=value+sd))+ 
 theme_bw() + 
   ylim(c(0,1.2))
-
-
-
-
-
-
-
 
 
 # inspect the impact of multicollinearity ---------------------------------
