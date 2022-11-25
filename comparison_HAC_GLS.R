@@ -5,8 +5,8 @@ source(paste0(path_code_att,"newUsed_functions.R"))
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho
 off.set = 0.3
 heteroscedast = 1
-autocor = 1
-x.axis = "rho"
+autocor = 0
+x.axis = "sig.v"
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
 nb.sim = 1000
@@ -18,12 +18,12 @@ list.param.sig = seq(0.1, 0.35, 0.05)
 # specify simulation model
 trend.sim = 0
 # specify the regression model 
-trend.reg = 1
+trend.reg = 0
 mod.expression = ifelse(trend.reg == 1, "signal~jump+Xt", "signal~jump")
 
 # specify the condition
 mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.param.ar, x.axis, individual, n, T1){
-  a = cos(2*pi*(c(1:n)/T1))
+  a = cos(2*pi*(c(1:n)/T1) -pi)
   if(heteroscedastic == 1 & autocorr == 0){
     hetero = 1
     burn.in = 0
@@ -130,7 +130,7 @@ if(x.axis == "rho"){
 res[name.x] = param.test
 dat.plot =reshape2::melt(res, id = name.x)
 face1 = "bold"
-jpeg(paste0(path_results,"attribution/h.", heteroscedast, "a.", autocor, x.axis, y.axis, "trend.reg", trend.reg,".jpg" ),
+jpeg(paste0(path_results,"attribution/h.", heteroscedast, "a.", autocor, x.axis, y.axis, "trend.reg", trend.reg,"1.jpg" ),
      width = 2600, height = 1800,res = 300)
 p2 <- eval(parse(
   text=paste0("ggplot(dat.plot, aes(x =", x.axis, ",y = value, col = variable))+
@@ -142,8 +142,12 @@ print(p2)
 dev.off()
 
 
-
-
+a = cos(2*pi*(c(1:n)/T1) )
+v = rep(NA,6)
+for (l in c(1:6)) {
+  s =  0.4 - a*list.param.sig[l]
+  v[l] =  1/(sum(1/s))
+}
 
 
 

@@ -79,6 +79,7 @@ gps.era.dat = dat[unique.ind]
 data.test = gps.era.dat
 list.ind = c(1:length(data.test))
 tot.res <- data.frame(matrix(NA, ncol = 11, nrow = length(list.ind)))
+len = rep(NA,170)
 Res <- list()
 for (k in list.ind) {
   name.dataset = names(data.test)[k]
@@ -90,7 +91,7 @@ for (k in list.ind) {
     rename(signal=name.series) %>% 
     mutate(Jump=c(rep(0,one.year*win.thres),rep(1,one.year*win.thres))) %>% 
     mutate(complete.time=1:(2*one.year*win.thres)) %>% 
-    mutate(Xt=complete.time-one.year*win.thres/2) %>% 
+    mutate(Xt=complete.time-one.year*win.thres/2) %>%
     dplyr::select(-date)
   for (i in 1:4){
     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
@@ -99,6 +100,7 @@ for (k in list.ind) {
   res.hac.1step = Test_OLS_vcovhac_1step(Data.mod)
   tot.res[k,] = res.hac.1step$fit.ols$coefficients
   print(k)
+  len[k] = nrow(na.omit(Data.mod))
 }
 colnames(tot.res) = names(Data.mod)
 trend.abs = tot.res$Xt
@@ -110,14 +112,16 @@ for (i in list.ind) {
   mean.gps[i] = mean(four.series[[names(data.test)[i]]]$GPS, na.rm = TRUE)
 }
 
-a = trend.abs/mean.gps
+trend.rel = trend.abs/mean.gps
 
 a = lm(signal~Jump, data = Data.mod)
 
 
+y =rnorm(n= 100,0,1)
 
+dat = data.frame(x)
+dat$y = y
 
-
-
+lm(y~j, data = dat)
 
 
