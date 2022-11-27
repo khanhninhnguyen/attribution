@@ -7,7 +7,8 @@ library(tidyverse)
 library(attempt)
 library(nlme)
 
-source(paste0(path_code_att, "newUsed_functions.R"))
+source(paste0(path_code_att,"simulate_time_series.R"))
+source(paste0(path_code_att,"newUsed_functions.R"))
 win.thres = 10
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
@@ -300,6 +301,51 @@ length(which(jump.p > 0.05 & trend.p>0.05))
 
 # inspect the impact of multicollinearity ---------------------------------
 
+sim.collinear <- function(nb.sim, off.set, trend, n, ar, burn.in, hetero, sigma.sim){
+  coef.all = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
+  var.all = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
+  t = c((-n/2):(n/2-1))
+  for (i in c(1:nb.sim)) {
+    set.seed(i)
+    y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
+                         monthly.var = 0)
+    y[(n/2):n] = y[(n/2):n]+off.set
+    Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = sigma.sim, t = t)
+    
+    ols.fit = lm(signal~jump, data = Data.mod)
+    
+    ols.fit.t = lm(signal~jump+t, data = Data.mod)
+    
+    coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2:3] )
+    var.all[i,] = c(vcov(ols.fit)[2,2],vcov(ols.fit.t )[2,2])
+  }
+  return(list(coef = coef.all, var = var.all))
+}
+L = seq(100, 6000, 500)
+off.set=0
+trend = 0
+ar=0
+hetero=0
+sigma.sim=0.4
+res = list()
+for (j in c(1:length(L))) {
+  Lj= L[j]
+  a = sim.collinear(nb.sim=1000, off.set=off.set, trend=trend, n=Lj, ar=ar, burn.in=0, hetero=hetero, sigma.sim=sigma.sim)
+  res[[j]] = a
+}
+save(res, file = paste0(path_results, "attribution/sim.collinear.o",off.set,"t",trend,"ar",ar,"h",hetero,".RData"))
+res = get(load(file = paste0(path_results, "attribution/sim.collinear.o",off.set,"t",trend,"ar",ar,"h",hetero,".RData")))
+
+wt = sapply(c(1:length(res)), function(x) mean(res[[x]]$coef$X1))
+w = sapply(c(1:length(res)), function(x) mean(res[[x]]$coef$X2))
+
+wt = sapply(c(1:length(res)), function(x) sd(res[[x]]$coef$X1))
+w = sapply(c(1:length(res)), function(x) sd(res[[x]]$coef$X2))
+
+wt = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X1))
+w = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X2))
+
+# individual case-----
 nb.sim = 1000
 off.set = 0
 trend = 0
@@ -317,7 +363,7 @@ for (i in c(1:nb.sim)) {
   Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = rep(0.6, n), t = t)
   
   ols.fit = lm(signal~jump, data = Data.mod)
-
+  
   ols.fit.t = lm(signal~jump+t, data = Data.mod)
   
   coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2:3] )
@@ -342,31 +388,6 @@ legend('topright', c('jump', 'jump+trend'),
 
 hist(coef.all$X3, breaks = 100)
 
-sim.collinear <- function(nb.sim, off.set, trend, n, ar, burn.in, hetero, sigma.sim){
-  coef.all = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
-  var.all = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
-  t = c((-n/2):(n/2-1))
-  for (i in c(1:nb.sim)) {
-    set.seed(i)
-    y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
-                         monthly.var = 0)
-    y[(n/2):n] = y[(n/2):n]+off.set
-    Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = sigma.sim, t = t)
-    
-    ols.fit = lm(signal~jump, data = Data.mod)
-    
-    ols.fit.t = lm(signal~jump+t, data = Data.mod)
-    
-    coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2:3] )
-    var.all[i,] = c(vcov(ols.fit)[2,2],vcov(ols.fit.t )[2,2])
-  }
-  return(list(coef = coef.all, var = var.all))
-}
-L = seq(100, 6000, 500)
-res = list()
-for (j in c(1:length(L))) {
-  Lj= L[j]
-  a = sim.collinear(nb.sim=1000, off.set=0, trend=0, n=Lj, ar=0, burn.in=0, hetero=0, sigma.sim=0.6)
-  res[[j]] = a
-}
-save(res, file = paste0(path_results, "attribution/sim.collinear.RData"))
+
+
+
