@@ -467,6 +467,14 @@ vf1 <- Initialize(vf1Fixed, data = dataMod)
 varWeights( vf1)
 
 
+x = as.matrix(data.frame(i = rep(1, 200), j = rep(c(0,1), each = 100), xt = c(1:200)))
+x = as.matrix(data.frame(i = rep(1, 200), j = rep(c(0,1), each = 100)))
+
+M =  t(x) %*% x
+det(M)
+solve(M)
+
+
 
 
 

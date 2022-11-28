@@ -345,11 +345,13 @@ w = sapply(c(1:length(res)), function(x) sd(res[[x]]$coef$X2))
 wt = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X1))
 w = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X2))
 
+
+###CHECK WHY THE vcov RETURN DIFFERENT VALUE FOR VAR(BETA) IN THE OLS CASE???/
 # individual case-----
 nb.sim = 1000
 off.set = 0
 trend = 0
-n=6000
+n=200
 # var.all = seq(0, 0.5, 0.1)
 ar.val = seq( 0, 0.8, 0.2)
 param.test =ar.val
@@ -360,11 +362,12 @@ for (i in c(1:nb.sim)) {
   set.seed(i)
   y = rnorm(n, 0, sd = sqrt(0.6))
   y[(n/2):n] = y[(n/2):n]+off.set
-  Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), var.t = rep(0.6, n), t = t)
+  Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2))
+  Data.mod1 = data.frame(signal = y, jump = rep(c(0,1), each = n/2), t = t)
   
   ols.fit = lm(signal~jump, data = Data.mod)
   
-  ols.fit.t = lm(signal~jump+t, data = Data.mod)
+  ols.fit.t = lm(signal~jump+t, data = Data.mod1)
   
   coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2:3] )
   var.all[i,] = c(vcov(ols.fit)[2,2],vcov(ols.fit.t )[2,2])
