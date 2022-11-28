@@ -348,9 +348,9 @@ w = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X2))
 
 ###CHECK WHY THE vcov RETURN DIFFERENT VALUE FOR VAR(BETA) IN THE OLS CASE???/
 # individual case-----
-nb.sim = 1000
-off.set = 0
-trend = 0
+nb.sim = 10000
+off.set = 0.3
+trend = -0.0015
 n=200
 # var.all = seq(0, 0.5, 0.1)
 ar.val = seq( 0, 0.8, 0.2)
@@ -360,12 +360,12 @@ var.all = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 t = c((-n/2):(n/2-1))
 for (i in c(1:nb.sim)) {
   set.seed(i)
-  y = rnorm(n, 0, sd = sqrt(0.6))
+  y = rnorm(n, 0, sd = sqrt(1))
   y[(n/2):n] = y[(n/2):n]+off.set
   Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2))
   Data.mod1 = data.frame(signal = y, jump = rep(c(0,1), each = n/2), t = t)
   
-  ols.fit = lm(signal~jump, data = Data.mod)
+  ols.fit = lm(signal~jump, data = Data.mod1)
   
   ols.fit.t = lm(signal~jump+t, data = Data.mod1)
   
@@ -376,21 +376,23 @@ for (i in c(1:nb.sim)) {
 # histo of the variance
 start.c = round(min(var.all), digits = 2) - 0.01
 end.c = round(max(var.all), digits = 2) +0.01
-hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.0005), xlim = c(0, end.c), main = "Histogram of var(jump)", xlab = "")
-hist(var.all$X2, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.0005), add=TRUE, xlab = "")
+hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.001), xlim = c(start.c, end.c), main = "Histogram of var(jump)", xlab = "")
+hist(var.all$X2, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.001), add=TRUE, xlab = "")
 legend('topright', c('jump', 'jump+trend'),
        fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
 
 # histo of the estimates
 start.c = round(min(coef.all), digits = 1) - 0.1
 end.c = round(max(coef.all), digits = 1) +0.1
-hist(coef.all$X1, col=rgb(0,0,1,0.2), breaks = seq(start.c, end.c, 0.01), xlim = c(-0.5, 1), main = "Histogram of jump estimates", xlab = "")
-hist(coef.all$X2, col=rgb(1,0,0,0.2), breaks = seq(start.c, end.c, 0.01), add=TRUE, xlab = "")
+hist(coef.all$X1, col=rgb(0,0,1,0.2), breaks = seq(start.c, end.c, 0.05), xlim = c(start.c, end.c), main = "Histogram of jump estimates", xlab = "")
+hist(coef.all$X2, col=rgb(1,0,0,0.2), breaks = seq(start.c, end.c, 0.05), add=TRUE, xlab = "")
 legend('topright', c('jump', 'jump+trend'),
        fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
 
 hist(coef.all$X3, breaks = 100)
 
 
-
-
+round(summary(coef.all$X1), digits = 5)
+round(summary(coef.all$X2), digits = 5)
+round(summary(var.all$X1), digits = 5)
+round(summary(var.all$X2), digits = 5)

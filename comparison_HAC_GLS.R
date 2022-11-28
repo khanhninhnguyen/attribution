@@ -2,7 +2,7 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 
-# input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho
+# input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
 off.set = 0.3
 heteroscedast = 1
 autocor = 0
@@ -148,6 +148,149 @@ for (l in c(1:6)) {
   s =  0.4 - a*list.param.sig[l]
   v[l] =  1/(sum(1/s))
 }
+
+# confusion table for all possible models and regressions -----------------
+n = 200
+T1 = n/2
+nb.sim = 10
+a = cos(2*pi*(c(1:n)/T1))
+var.m = 0.4
+var.t = var.m - 0.35*a
+off.set = 0
+ar0 = 0.3
+ar1 = ar0
+trend.reg = 0
+t = c(1:n)-n/2
+kernel1 = "Quadratic Spectral"
+approx1 = c("AR(1)")
+mod.expression = ifelse(trend.reg == 1, "signal~jump+Xt", "signal~jump")
+
+name.sim <- function(name.model, var.m, var.t, ar0){
+  if(name.model == "IID"){
+    ar = 0
+    burn.in = 0
+    hetero = 0
+    sigma = sqrt(var.m)
+  } else if (name.model == "AR(1)"){
+    ar = ar0 
+    burn.in = 1000
+    hetero = 0
+    sigma = sqrt(var.m)
+  } else if (name.model == "hetero"){
+    ar = 0
+    burn.in = 0
+    hetero = 1
+    sigma = var.t 
+  } else if (name.model == "hetero+AR(1)"){
+    ar = ar0 
+    burn.in = 1000
+    hetero = 1
+    sigma = var.t 
+  }
+  
+  return(list(ar = ar, hetero = hetero, burn.in = burn.in, sigma.t = sigma))
+}
+name.est <- function(name.model, method.lm, mod.expression, Data.mod, ar1, trend.reg){
+  fit <- NULL
+  fit.test <- NULL
+  vcov.para <- NULL
+  if(method.lm == "OLS" | method.lm == "OLS-HAC"){
+    fit = "lm(mod.expression, data = Data.mod)"
+  } else if(method.lm == "GLS-nmle"){
+    if(name.model == "IID"){
+      fit <- paste0("gls(",mod.expression,",data=Data.mod,correlation = NULL, na.action=na.omit,weights=NULL",")")
+    } else if(name.model == "hetero"){
+      fit <- paste0("gls(",mod.expression,",data=Data.mod,correlation = NULL, na.action=na.omit,weights=varFixed(value = ~weight1)",")")
+    } else if (name.model == "AR(1)"){
+      fit <- paste0("gls(",mod.expression,",data=Data.mod,correlation =  corAR1(ar1, form = ~ 1), na.action=na.omit,weights=NULL",")")
+    } else if (name.model == "hetero+AR(1)"){
+      fit <- paste0("gls(",mod.expression,",data=Data.mod,correlation =  corAR1(ar1, form = ~ 1), na.action=na.omit,weights=varFixed(value = ~weight1)",")")
+    }
+  } else if (method.lm == "GLS-true"){
+    if(name.model == "IID" | name.model == "hetero"){
+      ar1 = 0
+    } else { ar1 = ar1}
+    fit = paste0("gls.true(var.t = Data.mod$weight1, phi = ", ar1, ", theta = 0, design.matrix = Data.mod, trend = trend.reg)")
+  }
+  if( method.lm == "OLS-HAC"){
+    if (name.model == "AR(1)"|name.model == "hetero+AR(1)"){
+      vcov.para= paste0("sandwich::kernHAC(fit,prewhite = FALSE, approx =  approx1, kernel = kernel1 ,adjust = TRUE, sandwich = TRUE)")
+    }else{
+      vcov.para= paste0("sandwich::kernHAC(fit,prewhite = FALSE, kernel = kernel1 ,adjust = TRUE, sandwich = TRUE)")
+    }
+    fit.test = "lmtest::coeftest(fit,df=(n-2-trend.reg),vcov.=vcov.para)[, ] %>% as.data.frame()"
+  } else if (method.lm == "GLS-true" ){
+    fit.test = "fit$fit.gls"
+  } else{
+    fit.test="lmtest::coeftest(fit,df=(n-2-trend.reg))[, ] %>% as.data.frame()"
+  }
+  
+  return(list(fit.call = fit, vcov.call = vcov.para, fit.test.call = fit.test))
+}
+
+
+# iteration
+list.method = c("OLS", "OLS-HAC", "GLS-true","GLS-nmle")
+list.model = c( "IID", "AR(1)", "hetero", "hetero+AR(1)")
+Total.res = list()
+for (l in c(1:4)){
+  # specifify the model to simulate 
+  sim.mod = name.sim(list.model[l], var.m , var.t, ar0)
+  all.res = list()
+  for(s in c(1:4)) {
+    est.mod = list.model[s]
+    tot.res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
+    for (m in c(1:4)) {
+      # specify model and method to estimate 
+      b = name.est(name.model = est.mod, method.lm = list.method[m], mod.expression, Data.mod, ar1 = ar0, trend.reg)
+      for (i in c(1:nb.sim)) {
+        set.seed(i)
+        y = simulate.general(N = n, arma.model = c(sim.mod$ar,0), burn.in = sim.mod$burn.in, hetero = sim.mod$hetero, sigma = sqrt(sim.mod$sigma.t),
+                             monthly.var = 0)
+        y[(n/2):n] <- y[(n/2):n] + off.set
+        Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), weight1 = sim.mod$sigma.t, t = t, Xt = t)
+        fit =  eval(parse(text = b$fit.call))
+        if(is.null(b$vcov.call) == FALSE){
+          vcov.para = eval(parse(text = b$vcov.call))
+        }
+        # else{ vcov.para= vcov(fit)}
+        test.res = eval(parse(text = b$fit.test.call))
+        tot.res[i,m] = test.res[2,4]
+      }
+    }
+    all.res[[s]] = tot.res
+  }
+  Total.res[[l]] = all.res
+}
+
+res.ols = data.frame(matrix(NA, ncol = 4, nrow = 4))
+res.olshac = data.frame(matrix(NA, ncol = 4, nrow = 4))
+res.glstrue = data.frame(matrix(NA, ncol = 4, nrow = 4))
+res.glsnmle = data.frame(matrix(NA, ncol = 4, nrow = 4))
+for (j in c(1:4)) {
+  for (i in c(1:4)) {
+    m = Total.res[[j]][[i]]
+    all.met = sapply(c(1:4), function(x) length(which(m[,x] > 0.05)))
+    res.ols[j,i] =  all.met[1]
+    res.olshac[j,i] =  all.met[2]
+    res.glstrue[j,i] =  all.met[3]
+    res.glsnmle[j,i] =  all.met[4]
+  }
+}
+
+write.table( res.ols, 
+            file = paste0(path_results, "attribution/sim.OLS", trend.reg, off.set,".txt"),
+            sep = "\t", quote = FALSE)
+write.table( res.olshac, 
+             file = paste0(path_results, "attribution/sim.OLSHAC", trend.reg, off.set,".txt"),
+             sep = "\t", quote = FALSE)
+write.table( res.glsnmle, 
+             file = paste0(path_results, "attribution/sim.GLSnmle", trend.reg, off.set,".txt"),
+             sep = "\t", quote = FALSE)
+write.table( res.glstrue, 
+             file = paste0(path_results, "attribution/sim.GLStrue", trend.reg, off.set,".txt"),
+             sep = "\t", quote = FALSE)
+
 
 
 
