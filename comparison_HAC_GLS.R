@@ -216,8 +216,10 @@ name.est <- function(name.model, method.lm, mod.expression, Data.mod, ar1, trend
   if( method.lm == "OLS-HAC"){
     if (name.model == "AR(1)"|name.model == "hetero+AR(1)"){
       vcov.para= paste0("sandwich::kernHAC(fit,prewhite = 1, approx =  approx1, kernel = kernel1 ,adjust = TRUE, sandwich = TRUE)")
-    }else{
+    }else if (name.model == hetero) {
       vcov.para= paste0("sandwich::vcovHC(fit, type = type.hc)")
+    }else{
+      vcov.para= paste0("vcov(fit)")
     }
     fit.test = "lmtest::coeftest(fit,df=(n-2-trend.reg),vcov.=vcov.para)[, ] %>% as.data.frame()"
   } else if (method.lm == "GLS-true" ){
@@ -229,7 +231,7 @@ name.est <- function(name.model, method.lm, mod.expression, Data.mod, ar1, trend
   return(list(fit.call = fit, vcov.call = vcov.para, fit.test.call = fit.test))
 }
 
-
+#   CHECH FUNCTION IS TRUE BEFORE RUNG ITERATIONS 
 # iteration
 list.method = c("OLS", "OLS-HAC", "GLS-true","GLS-nmle")
 list.model = c( "IID", "AR(1)", "hetero", "hetero+AR(1)")

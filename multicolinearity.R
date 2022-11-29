@@ -352,8 +352,8 @@ w = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X2))
 nb.sim = 10000
 off.set = 0.3
 trend = 0
-n=200
-T1 = n/2
+n=2000
+T1 = n/6
 a = cos(2*pi*(c(1:n)/T1))
 var.m = 1
 var.t = var.m - 0.9*a
@@ -362,31 +362,34 @@ ar = 0.3
 coef.all = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 var.all = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 t = c((-n/2):(n/2-1))
+t1 = c(1:n)
 for (i in c(1:nb.sim)) {
   set.seed(i)
-  y =  simulate.general(N = n, arma.model = c(0.3,0), burn.in = 0, hetero = 1, sigma = sqrt(var.t),
+  y =  simulate.general(N = n, arma.model = c(0,0), burn.in = 0, hetero = 0, sigma = sqrt(1),
                             monthly.var = 0)
   y[(n/2):n] = y[(n/2):n]+off.set
-  Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2))
-  Data.mod1 = data.frame(signal = y, jump = rep(c(0,1), each = n/2), t = t)
+  Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), t1=t1, t=t)
+  for (j in 1:4){
+    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",j,"=cos(j*t1*(2*pi)/T1),sin",j,"=sin(j*t1*(2*pi)/T1))")))
+  }
+  Data.mod <- Data.mod %>% dplyr::select(-t1)
+  ols.fit = lm(signal~jump, data = Data.mod)
   
-  ols.fit = lm(signal~jump, data = Data.mod1)
-  
-  ols.fit.t = lm(signal~jump+t, data = Data.mod1)
+  ols.fit.t = lm(signal~., data = Data.mod)
   
   coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2:3] )
   var.all[i,] = c(vcov(ols.fit)[2,2],vcov(ols.fit.t )[2,2])
   # var.all[i,] = c(vcov.para[2,2],vcov.para.t[2,2])
 }
 # histo of the variance
-start.c = round(min(var.all), digits = 2) - 0.01
-end.c = round(max(var.all), digits = 2) +0.01
-hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.001), xaxt='n',
+start.c = round(min(var.all), digits = 3) - 0.001
+end.c = round(max(var.all), digits = 3) +0.001
+hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.0001), xaxt='n',
      xlim = c(start.c, end.c), main = "Histogram of var(jump)", xlab = "")
-hist(var.all$X2, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.001), add=TRUE, xlab = "")
+hist(var.all$X2, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.0001), add=TRUE, xlab = "")
 legend('topright', c('jump', 'jump+trend'),
        fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
-axis(side=1, at=seq(0,0.15, 0.02), labels=seq(0,0.15, 0.02))
+axis(side=1, at=seq(start.c, end.c, 0.001), labels=seq(start.c, end.c, 0.001))
 
 # histo of the estimates
 start.c = round(min(coef.all), digits = 2) - 0.01
