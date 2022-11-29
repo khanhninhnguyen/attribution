@@ -244,6 +244,7 @@ trend.0 = 0.0001
 mu0 = -0.36
 ar = 0
 sd0 = 0.7
+
 tot.res <- data.frame(matrix(NA, ncol= 4, nrow = 5))
 for (k in c(1:6)) {
   for (j in c(1:nb.sim)) {
@@ -350,17 +351,21 @@ w = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X2))
 # individual case-----
 nb.sim = 10000
 off.set = 0.3
-trend = -0.0015
+trend = 0
 n=200
+T1 = n/2
+a = cos(2*pi*(c(1:n)/T1))
+var.m = 1
+var.t = var.m - 0.9*a
 # var.all = seq(0, 0.5, 0.1)
-ar.val = seq( 0, 0.8, 0.2)
-param.test =ar.val
+ar = 0.3
 coef.all = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
 var.all = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
 t = c((-n/2):(n/2-1))
 for (i in c(1:nb.sim)) {
   set.seed(i)
-  y = rnorm(n, 0, sd = sqrt(1))
+  y =  simulate.general(N = n, arma.model = c(0.3,0), burn.in = 0, hetero = 1, sigma = sqrt(var.t),
+                            monthly.var = 0)
   y[(n/2):n] = y[(n/2):n]+off.set
   Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2))
   Data.mod1 = data.frame(signal = y, jump = rep(c(0,1), each = n/2), t = t)
@@ -376,16 +381,18 @@ for (i in c(1:nb.sim)) {
 # histo of the variance
 start.c = round(min(var.all), digits = 2) - 0.01
 end.c = round(max(var.all), digits = 2) +0.01
-hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.001), xlim = c(start.c, end.c), main = "Histogram of var(jump)", xlab = "")
+hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.001), xaxt='n',
+     xlim = c(start.c, end.c), main = "Histogram of var(jump)", xlab = "")
 hist(var.all$X2, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.001), add=TRUE, xlab = "")
 legend('topright', c('jump', 'jump+trend'),
        fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
+axis(side=1, at=seq(0,0.15, 0.02), labels=seq(0,0.15, 0.02))
 
 # histo of the estimates
-start.c = round(min(coef.all), digits = 1) - 0.1
-end.c = round(max(coef.all), digits = 1) +0.1
-hist(coef.all$X1, col=rgb(0,0,1,0.2), breaks = seq(start.c, end.c, 0.05), xlim = c(start.c, end.c), main = "Histogram of jump estimates", xlab = "")
-hist(coef.all$X2, col=rgb(1,0,0,0.2), breaks = seq(start.c, end.c, 0.05), add=TRUE, xlab = "")
+start.c = round(min(coef.all), digits = 2) - 0.01
+end.c = round(max(coef.all), digits = 2) +0.01
+hist(coef.all$X1, col=rgb(0,0,1,0.2), breaks = seq(start.c, end.c, 0.01), xlim = c(start.c, end.c), main = "Histogram of jump estimates", xlab = "")
+hist(coef.all$X2, col=rgb(1,0,0,0.2), breaks = seq(start.c, end.c, 0.01), add=TRUE, xlab = "")
 legend('topright', c('jump', 'jump+trend'),
        fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
 
