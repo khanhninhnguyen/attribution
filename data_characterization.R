@@ -115,7 +115,7 @@ for (k in list.ind) {
   Data.aft <- Data.aft %>% dplyr::select(-complete.time)
   trend.bef = lm(signal ~ ., data =  Data.bef)
   trend.aft = lm(signal ~ ., data =  Data.aft)
-  trend.all[k,] <- c(trend.bef$coefficients[2], trend.aft$coefficients[2])
+  trend.all[k,] <- c(trend.bef$coefficients[10], trend.aft$coefficients[10])
   print(k)
   len[k,] = c( nrow(na.omit(Data.bef)), nrow(na.omit(Data.aft)))
 }
@@ -138,7 +138,7 @@ aft.t = trend.all$X2[which(len$X2>1000)]
 
 a = c(bef.t, aft.t)
 b = c(len$X1[which(len$X1>1000)], len$X2[which(len$X2>1000)])
-hist(a, main = "Histogram of the absolute trend of the homogenous segment when n >1000", breaks=100)
+hist(a, main = "Histogram of the trend of the homogenous segment when n >1000", breaks=100)
 plot(b,a, ylab = "Absolute trend", xlab = "Length")
 
 

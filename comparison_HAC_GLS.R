@@ -152,7 +152,7 @@ for (l in c(1:6)) {
 # confusion table for all possible models and regressions -----------------
 n = 200
 T1 = n/2
-nb.sim = 100
+nb.sim = 1000
 a = cos(2*pi*(c(1:n)/T1))
 var.m = 0.4
 var.t = var.m - 0.35*a
@@ -216,7 +216,7 @@ name.est <- function(name.model, method.lm, mod.expression, Data.mod, ar1, trend
   if( method.lm == "OLS-HAC"){
     if (name.model == "AR(1)"|name.model == "hetero+AR(1)"){
       vcov.para= paste0("sandwich::kernHAC(fit,prewhite = 1, approx =  approx1, kernel = kernel1 ,adjust = TRUE, sandwich = TRUE)")
-    }else if (name.model == hetero) {
+    }else if (name.model == "hetero") {
       vcov.para= paste0("sandwich::vcovHC(fit, type = type.hc)")
     }else{
       vcov.para= paste0("vcov(fit)")
@@ -243,7 +243,7 @@ for (l in c(1:4)){
   for(s in c(1:4)) {
     est.mod = list.model[s]
     tot.res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
-    for (m in c(2)) {
+    for (m in c(1:4)) {
       # specify model and method to estimate 
       b = name.est(name.model = est.mod, method.lm = list.method[m], mod.expression, Data.mod, ar1 = ar0, trend.reg)
       for (i in c(1:nb.sim)) {
@@ -253,10 +253,10 @@ for (l in c(1:4)){
         y[(n/2):n] <- y[(n/2):n] + off.set
         Data.mod = data.frame(signal = y, jump = rep(c(0,1), each = n/2), weight1 = sim.mod$sigma.t, t = t, Xt = t)
         fit =  eval(parse(text = b$fit.call))
+
         if(is.null(b$vcov.call) == FALSE){
           vcov.para = eval(parse(text = b$vcov.call))
         }
-        print(b$vcov.call)
         # else{ vcov.para= vcov(fit)}
         test.res = eval(parse(text = b$fit.test.call))
         tot.res[i,m] = test.res[2,4]
@@ -274,11 +274,11 @@ res.glsnmle = data.frame(matrix(NA, ncol = 4, nrow = 4))
 for (j in c(1:4)) {
   for (i in c(1:4)) {
     m = Total.res[[j]][[i]]
-    all.met = sapply(c(1:4), function(x) length(which(m[,x] < 0.05)))
-    res.ols[j,i] =  all.met[1]
-    res.olshac[j,i] =  all.met[2]
-    res.glstrue[j,i] =  all.met[3]
-    res.glsnmle[j,i] =  all.met[4]
+    all.met = sapply(c(1:4), function(x) length(which(m[,x] > 0.05)))
+    res.ols[j,i] =  all.met[1]/nb.sim
+    res.olshac[j,i] =  all.met[2]/nb.sim
+    res.glstrue[j,i] =  all.met[3]/nb.sim
+    res.glsnmle[j,i] =  all.met[4]/nb.sim
   }
 }
 
