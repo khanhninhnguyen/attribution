@@ -250,3 +250,43 @@ gls.true <- function(var.t, phi, theta, design.matrix, trend){
   return(list(Coefficients = beta, fit.gls = fit.gls, vcov = var.beta))
 }
 
+# selection in the cos+sin 
+Test_OLS_vcovhac1 <- function(Data.mod){
+  # OLS estimates
+  list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
+  mod.X <-  list.para %>% str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
+  
+  fit.ols <- lm(mod.expression,data=Data.mod)
+  # # options(show.error.messages = TRUE)
+  # check.er = try(sandwich::kernHAC(fit.ols, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE),silent = TRUE)
+  # if(class(check.er) == "try-error"){
+  #   vcov.para = sandwich::kernHAC(fit.ols, prewhite = 0,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+  # }else{
+  #   vcov.para=sandwich::kernHAC(fit.ols, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+  # }
+  vcov.para = select1(fit.ols, y1 = 1, y2 = 0)
+  # Test with vcov (HAC)
+  fit.hac=lmtest::coeftest(fit.ols,df=fit.ols$df.residual,vcov.=vcov.para)[, ] %>% as.data.frame()
+  
+  keep.ind1 = which(fit.hac$`Pr(>|t|)` < 0.05)
+  keep.ind = keep.ind1[keep.ind1>2]
+  list.para.r = c( "Xt", list.para[keep.ind-1])
+  mod.X.r <-  list.para.r %>% str_c(collapse = "+")
+  mod.expression.r <- c("signal","~",mod.X.r) %>% str_c(collapse = "")
+  # test with significant variables 
+  fit.ols.r <- lm(mod.expression.r,data=Data.mod)
+  
+  vcov.para.r=sandwich::kernHAC(fit.ols.r, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+  
+  # Test with vcov (HAC)
+  fit.hac.r=lmtest::coeftest(fit.ols.r,df=fit.ols.r$df.residual,vcov.=vcov.para.r)[, ] %>% as.data.frame()
+
+  return(list(fit.hac = fit.hac.r, fit.ols = fit.ols.r, vcov.para = vcov.para.r, predicted = fit.ols.r$fitted.values))
+}
+select1<-function(x, y1, y2){
+  
+  tryCatch(sandwich::kernHAC(x, prewhite = y1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE), 
+  error = function(e) sandwich::kernHAC(x, prewhite = y2,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE))
+  
+}

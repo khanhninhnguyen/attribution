@@ -91,32 +91,41 @@ n = length(data.test)
 len = data.frame(matrix(NA, ncol = 2, nrow = n))
 Res <- list()
 trend.all = data.frame(matrix(NA, ncol = 2, nrow = n))
+p.all = data.frame(matrix(NA, ncol = 2, nrow = n))
 
 for (k in list.ind) {
   name.dataset = names(data.test)[k]
   Y.with.NA = data.test[[k]]
   date.detected.break = as.Date(substr(name.dataset,start = 6, stop = 15) , format = "%Y-%m-%d")
   
-  # Contruction of the dataset 
-  Data.mod <- Y.with.NA %>% dplyr::select(name.series,date) %>%
+  Bef = Y.with.NA[c(1:(one.year*win.thres)),]
+  Aft = Y.with.NA[c((one.year*win.thres+1) :(one.year*win.thres*2)),]
+  # Contruction of the dataset before breaks
+  Data.bef <- Bef %>% dplyr::select(name.series,date) %>%
     rename(signal=name.series) %>% 
-    # mutate(Jump=c(rep(0,one.year*win.thres),rep(1,one.year*win.thres))) %>% 
-    mutate(complete.time=1:(2*one.year*win.thres)) %>% 
-    # mutate(Xt=complete.time-one.year*win.thres/2) %>%
+    mutate(complete.time=1:(one.year*win.thres)) %>% 
+    mutate(Xt=complete.time-one.year*win.thres/2) %>%
+    dplyr::select(-date)
+  # Contruction of the dataset after breaks
+  Data.aft <- Aft %>% dplyr::select(name.series,date) %>%
+    rename(signal=name.series) %>% 
+    mutate(complete.time=1:(one.year*win.thres)) %>% 
+    mutate(Xt=complete.time-one.year*win.thres/2) %>%
     dplyr::select(-date)
   for (i in 1:4){
-    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+    eval(parse(text=paste0("Data.bef <- Data.bef %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+    eval(parse(text=paste0("Data.aft <- Data.aft %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
   }
-  Data.bef = Data.mod[c(1:(one.year*win.thres)),]
-  Data.bef$Xt = Data.bef$complete.time - one.year*win.thres/2
-  Data.aft = Data.mod[-c(1:(one.year*win.thres)),]
-  Data.aft$Xt = Data.aft$complete.time - one.year*win.thres*3/2
   Data.bef <- Data.bef %>% dplyr::select(-complete.time)
   Data.aft <- Data.aft %>% dplyr::select(-complete.time)
-  trend.bef = lm(signal ~ ., data =  Data.bef)
-  trend.aft = lm(signal ~ ., data =  Data.aft)
-  trend.all[k,] <- c(trend.bef$coefficients[10], trend.aft$coefficients[10])
+  
+  # test HAC sith significant vars 
+  bef.test = Test_OLS_vcovhac1(Data.bef)
+  aft.test = Test_OLS_vcovhac1(Data.aft)
+  # remove insignificant
   print(k)
+  trend.all[k,] <- c(bef.test$fit.ols$coefficients[2], aft.test$fit.ols$coefficients[2])
+  p.all[k,] <- c(bef.test$fit.hac$`Pr(>|t|)`[2], aft.test$fit.hac$`Pr(>|t|)`[2])
   len[k,] = c( nrow(na.omit(Data.bef)), nrow(na.omit(Data.aft)))
 }
 colnames(tot.res) = names(Data.mod)

@@ -349,18 +349,18 @@ w = sapply(c(1:length(res)), function(x) mean(res[[x]]$var$X2))
 
 ###CHECK WHY THE vcov RETURN DIFFERENT VALUE FOR VAR(BETA) IN THE OLS CASE???/
 # individual case-----
-nb.sim = 10000
+nb.sim = 1000
 off.set = 0.3
 trend = 0
 n=2000
-T1 = n/6
+T1 = n/2
 a = cos(2*pi*(c(1:n)/T1))
 var.m = 1
 var.t = var.m - 0.9*a
 # var.all = seq(0, 0.5, 0.1)
 ar = 0.3
-coef.all = data.frame(matrix(NA, ncol = 3, nrow = nb.sim))
-var.all = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
+coef.all = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
+var.all = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
 t = c((-n/2):(n/2-1))
 t1 = c(1:n)
 for (i in c(1:nb.sim)) {
@@ -373,20 +373,24 @@ for (i in c(1:nb.sim)) {
     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",j,"=cos(j*t1*(2*pi)/T1),sin",j,"=sin(j*t1*(2*pi)/T1))")))
   }
   Data.mod <- Data.mod %>% dplyr::select(-t1)
-  ols.fit = lm(signal~jump, data = Data.mod)
+  Data.mod <- Data.mod[-1,]
+  ols.fit = lm(signal~t, data = Data.mod)
   
   ols.fit.t = lm(signal~., data = Data.mod)
+  ols.fit.cos = lm(signal~t+cos1+cos2+cos3+cos4, data = Data.mod)
+  ols.fit.sin = lm(signal~t+sin1+sin2+sin3+sin4, data = Data.mod)
   
-  coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2:3] )
-  var.all[i,] = c(vcov(ols.fit)[2,2],vcov(ols.fit.t )[2,2])
+  coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2], ols.fit.cos$coefficients[2], ols.fit.sin$coefficients[2])
+  var.all[i,] = c(vcov(ols.fit)[2,2],vcov(ols.fit.t )[2,2], vcov(ols.fit.cos )[2,2], vcov(ols.fit.sin )[2,2])
   # var.all[i,] = c(vcov.para[2,2],vcov.para.t[2,2])
 }
+# plot results ----- 
 # histo of the variance
 start.c = round(min(var.all), digits = 3) - 0.001
 end.c = round(max(var.all), digits = 3) +0.001
 hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.0001), xaxt='n',
      xlim = c(start.c, end.c), main = "Histogram of var(jump)", xlab = "")
-hist(var.all$X2, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.0001), add=TRUE, xlab = "")
+hist(var.all$X3, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.0001), add=TRUE, xlab = "")
 legend('topright', c('jump', 'jump+trend'),
        fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
 axis(side=1, at=seq(start.c, end.c, 0.001), labels=seq(start.c, end.c, 0.001))
@@ -406,3 +410,44 @@ round(summary(coef.all$X1), digits = 5)
 round(summary(coef.all$X2), digits = 5)
 round(summary(var.all$X1), digits = 5)
 round(summary(var.all$X2), digits = 5)
+# the case wihout  the jump, check the multicollinearity between the trend and sin + cos 
+
+# without jump ----------
+for (i in c(1:nb.sim)) {
+  set.seed(i)
+  y =  simulate.general(N = n, arma.model = c(0,0), burn.in = 0, hetero = 0, sigma = sqrt(1),
+                        monthly.var = 0)
+  Data.mod = data.frame(signal = y, t1=t1, t=t)
+  for (j in 1:4){
+    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",j,"=cos(j*t1*(2*pi)/T1),sin",j,"=sin(j*t1*(2*pi)/T1))")))
+  }
+  Data.mod <- Data.mod %>% dplyr::select(-t1)
+  ols.fit.t = lm(signal~t, data = Data.mod)
+  
+  ols.fit = lm(signal~., data = Data.mod)
+  
+  coef.all[i,] = c(ols.fit$coefficients[2],ols.fit.t$coefficients[2:3] )
+  var.all[i,] = c(vcov(ols.fit)[2,2],vcov(ols.fit.t )[2,2])
+}
+start.c = round(min(var.all), digits = 6) - 0.0000001
+end.c = round(max(var.all), digits = 6) +0.0000001
+hist(var.all$X1, col=rgb(0,0,1,0.2), seq(start.c, end.c, 0.00000001), xaxt='n',
+     xlim = c(start.c, end.c), main = "Histogram of var(jump)", xlab = "")
+hist(var.all$X2, col=rgb(1,0,0,0.2), seq(start.c, end.c, 0.00000001), add=TRUE, xlab = "")
+legend('topright', c('jump', 'jump+trend'),
+       fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
+axis(side=1, at=seq(start.c, end.c, 0.0000001), labels=seq(start.c, end.c,  0.0000001))
+
+# histo of the estimates
+start.c = round(min(coef.all), digits = 2) - 0.01
+end.c = round(max(coef.all), digits = 2) +0.01
+hist(coef.all$X1, col=rgb(0,0,1,0.2), breaks = seq(start.c, end.c, 0.01), xlim = c(start.c, end.c), main = "Histogram of jump estimates", xlab = "")
+hist(coef.all$X2, col=rgb(1,0,0,0.2), breaks = seq(start.c, end.c, 0.01), add=TRUE, xlab = "")
+legend('topright', c('jump', 'jump+trend'),
+       fill=c(rgb(0,0,1,0.2), rgb(1,0,0,0.2)))
+
+a = data.frame(rep(1,(n-1)), Data.mod[,c(3,5)])
+a = as.matrix(a)
+t(a)%*%a
+solve(t(a)%*%a)
+
