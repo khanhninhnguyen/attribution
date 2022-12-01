@@ -1,5 +1,5 @@
 library("lubridate")       # Install & load lubridate package
-window.thres <- 1 # window period
+window.thres <- 10 # window period
 # we use the breakpoints from segmentation directly, with flag validation or outlier (80 days)
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
 # remove data in cluster of breakpoint or breakpoint from the ne --------
@@ -33,7 +33,7 @@ for (i in c(1:length(data))) {
       name.test = list.test[m]
       station.data = as.data.frame(data[[i]])
       remove.ind = which(station.data$date <= end.cluster & station.data$date > start.cluster)
-      station.data[remove.ind,c(list.test[list.test != ("gps1.era1")])] <- NA
+      station.data[remove.ind,c(list.test[list.test != ("gps.era")])] <- NA
       data[[i]] <- station.data
     }
   }

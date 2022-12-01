@@ -149,7 +149,19 @@ a = c(bef.t, aft.t)
 b = c(len$X1[which(len$X1>1000)], len$X2[which(len$X2>1000)])
 hist(a, main = "Histogram of the trend of the homogenous segment when n >1000", breaks=100)
 plot(b,a, ylab = "Absolute trend", xlab = "Length")
+p.all
 
+bef.p = p.all$X1[which(len$X1>1000)]
+aft.p = p.all$X2[which(len$X2>1000)]
+a = c(bef.p, aft.p)
+b = c(len$X1[which(len$X1>1000)], len$X2[which(len$X2>1000)])
+hist(a, main = "Histogram of the p value of trend when n >1000", xaxt='n',breaks = seq(0, 1, 0.05), xlim = c(0,1))
+axis(side = 1, at=seq(0,1, 0.05), labels=seq(0,1, 0.05))
 
+which(side = 1, len$X1>1000 & p.all$X1 <0.05)
+
+bef.p = trend.all$X1[which(len$X1>1000 & p.all$X1 < 0.05)]
+aft.p = trend.all$X2[which(len$X2>1000 &  p.all$X2 < 0.05)]
+a = c(bef.p, aft.p)
 
 

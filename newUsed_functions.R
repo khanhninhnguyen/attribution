@@ -258,6 +258,14 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
   
   fit.ols <- lm(mod.expression,data=Data.mod)
+  vcov.para<-tryCatch(
+    {
+      sandwich::kernHAC(fit.ols, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+    }, 
+    error = function(e) {
+      sandwich::kernHAC(fit.ols , prewhite = 0,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+    }
+  )
   # # options(show.error.messages = TRUE)
   # check.er = try(sandwich::kernHAC(fit.ols, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE),silent = TRUE)
   # if(class(check.er) == "try-error"){
@@ -265,7 +273,7 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   # }else{
   #   vcov.para=sandwich::kernHAC(fit.ols, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
   # }
-  vcov.para = select1(fit.ols, y1 = 1, y2 = 0)
+  # vcov.para = select1(fit.ols, y1 = 1, y2 = 0)
   # Test with vcov (HAC)
   fit.hac=lmtest::coeftest(fit.ols,df=fit.ols$df.residual,vcov.=vcov.para)[, ] %>% as.data.frame()
   
@@ -277,16 +285,19 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   # test with significant variables 
   fit.ols.r <- lm(mod.expression.r,data=Data.mod)
   
-  vcov.para.r=sandwich::kernHAC(fit.ols.r, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
-  
+  vcov.para.r<-tryCatch(
+    {
+      sandwich::kernHAC(fit.ols.r, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+    }, 
+    error = function(e) {
+      sandwich::kernHAC(fit.ols.r , prewhite = 0,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+    }
+  )
   # Test with vcov (HAC)
   fit.hac.r=lmtest::coeftest(fit.ols.r,df=fit.ols.r$df.residual,vcov.=vcov.para.r)[, ] %>% as.data.frame()
 
   return(list(fit.hac = fit.hac.r, fit.ols = fit.ols.r, vcov.para = vcov.para.r, predicted = fit.ols.r$fitted.values))
 }
-select1<-function(x, y1, y2){
+ 
+
   
-  tryCatch(sandwich::kernHAC(x, prewhite = y1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE), 
-  error = function(e) sandwich::kernHAC(x, prewhite = y2,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE))
-  
-}
