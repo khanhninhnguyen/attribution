@@ -163,7 +163,7 @@ trend.reg = 0
 t = c(1:n)-n/2
 type.hc = "HC3"
 kernel1 = "Quadratic Spectral"
-approx1 = c("AR(1)")
+approx1 = c("ARMA(1,1)")
 mod.expression = ifelse(trend.reg == 1, "signal~jump+Xt", "signal~jump")
 
 name.sim <- function(name.model, var.m, var.t, ar0){
@@ -243,7 +243,7 @@ for (l in c(1:4)){
   for(s in c(1:4)) {
     est.mod = list.model[s]
     tot.res = data.frame(matrix(NA, ncol = 4, nrow = nb.sim))
-    for (m in c(1:4)) {
+    for (m in c(2)) {
       # specify model and method to estimate 
       b = name.est(name.model = est.mod, method.lm = list.method[m], mod.expression, Data.mod, ar1 = ar0, trend.reg)
       for (i in c(1:nb.sim)) {

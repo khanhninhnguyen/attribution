@@ -256,14 +256,14 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
   mod.X <-  list.para %>% str_c(collapse = "+")
   mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
-  
+  approx1 = c("AR(1)")
   fit.ols <- lm(mod.expression,data=Data.mod)
   vcov.para<-tryCatch(
     {
-      sandwich::kernHAC(fit.ols, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+      sandwich::kernHAC(fit.ols, prewhite = 1,approx = approx1, kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
     }, 
     error = function(e) {
-      sandwich::kernHAC(fit.ols , prewhite = 0,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+      sandwich::kernHAC(fit.ols , prewhite = 0,approx = approx1, kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
     }
   )
   # # options(show.error.messages = TRUE)
@@ -276,7 +276,6 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   # vcov.para = select1(fit.ols, y1 = 1, y2 = 0)
   # Test with vcov (HAC)
   fit.hac=lmtest::coeftest(fit.ols,df=fit.ols$df.residual,vcov.=vcov.para)[, ] %>% as.data.frame()
-  
   keep.ind1 = which(fit.hac$`Pr(>|t|)` < 0.05)
   keep.ind = keep.ind1[keep.ind1>2]
   list.para.r = c( "Xt", list.para[keep.ind-1])
@@ -287,10 +286,10 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   
   vcov.para.r<-tryCatch(
     {
-      sandwich::kernHAC(fit.ols.r, prewhite = 1,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+      sandwich::kernHAC(fit.ols.r, prewhite = 1,approx = approx1, kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
     }, 
     error = function(e) {
-      sandwich::kernHAC(fit.ols.r , prewhite = 0,approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+      sandwich::kernHAC(fit.ols.r , prewhite = 0,approx = approx1, kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
     }
   )
   # Test with vcov (HAC)
@@ -298,6 +297,4 @@ Test_OLS_vcovhac1 <- function(Data.mod){
 
   return(list(fit.hac = fit.hac.r, fit.ols = fit.ols.r, vcov.para = vcov.para.r, predicted = fit.ols.r$fitted.values))
 }
- 
 
-  

@@ -473,8 +473,17 @@ x = as.matrix(data.frame(i = rep(1, 200), j = rep(c(0,1), each = 100)))
 M =  t(x) %*% x
 det(M)
 solve(M)
-
-
+a = rep(NA, 1000)
+for (i in c(1:1000)) {
+  set.seed(i)
+  y = rnorm(200, 0,1)
+  dat = data.frame(y = y, j = rep(c(0,1), eahc = 100), x = c(1:200))
+  fit.i = lm(y~., data = dat)
+  hac = sandwich::kernHAC(fit.i, prewhite = 1,approx = c("ARMA(1,1"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+  fit.hac=lmtest::coeftest(fit.i,df=fit.i$df.residual,vcov.= hac)[, ] %>% as.data.frame()
+  
+  a[i] = fit.hac$`Pr(>|t|)`[2]
+}
 
 
 

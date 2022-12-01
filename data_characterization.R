@@ -1,6 +1,7 @@
 #### This function is used for the data characterization. This is step after pairing and screening data ####
 source(paste0(path_code_att, "newUsed_functions.R"))
-
+source(paste0(path_code_att,"sliding_variance.R"))
+source(paste0(path_code_att,"support_screening.R"))
 # Heteroskedastic ---------------------------------------------------------
 
 # from OLS resdiual 
@@ -112,7 +113,7 @@ for (k in list.ind) {
     mutate(complete.time=1:(one.year*win.thres)) %>% 
     mutate(Xt=complete.time-one.year*win.thres/2) %>%
     dplyr::select(-date)
-  for (i in 1:4){
+  for (i in c(1/8,1:4)){
     eval(parse(text=paste0("Data.bef <- Data.bef %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
     eval(parse(text=paste0("Data.aft <- Data.aft %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
   }
@@ -164,4 +165,67 @@ bef.p = trend.all$X1[which(len$X1>1000 & p.all$X1 < 0.05)]
 aft.p = trend.all$X2[which(len$X2>1000 &  p.all$X2 < 0.05)]
 a = c(bef.p, aft.p)
 
+tot = data.frame(name = names(data.test), trend1 = trend.all$X1, trend2 = trend.all$X2,
+                 p1= p.all$X1, p2 = p.all$X2,
+                 len1 = len$X1, le2 = len$X2)
+tot.sig = tot[which(tot$p1 < 0.05 | tot$p2 < 0.05),]
 
+p = c(tot.sig$p1, tot.sig$p2)
+l = c(tot.sig$len1, tot.sig$le2)
+
+
+# Trend of the raw series ---------------------------------
+one.year = 365
+meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
+tot <- data.frame(matrix(NA, ncol = 7, nrow = 0))
+for (i in c(1:length(name_main ))) {
+  print(i)
+  name.i = name_main[i]
+  series.ref <- read.series(path_series = path_series_main, station = name.i, na.rm = 1, add.full = 0)
+  seg.ref = meta.compare[which(meta.compare$name == name.i),]
+  list.brp = c(min(series.ref$date),seg.ref$detected, max(series.ref$date))
+  list.noise = c(0, seg.ref$noise, 0)
+  ind.test.brp = c(1:length(list.noise))
+  for (j in c(2: (length(ind.test.brp)))) {
+    beg = list.brp[ind.test.brp[j-1]]
+    end = list.brp[ind.test.brp[j]]
+    dat.j = series.ref[which(series.ref$date >= beg & series.ref$date<= end),]
+    if(nrow(dat.j)>1000){
+      print(j)
+      Y.with.NA = tidyr::complete(dat.j, date = seq(beg, end, by = "day"))
+      scr = screen.O(Y = Y.with.NA , name.var = "signal", method = 'sigma', global.mu = 0, iter = 1, estimator = "Sca", fix.thres = 0, loes = 0, loes.method = 0)
+      Y.with.NA$signal = scr$data
+      Xt = c(1:nrow(Y.with.NA))- nrow(Y.with.NA)/2
+      Data.mod = data.frame( signal = Y.with.NA$signal,Xt = Xt, complete.time = c(1:nrow(Y.with.NA)))
+      for (k in c(1:4)){
+        eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",k,"=cos(k*complete.time*(2*pi)/one.year),sin",k,"=sin(k*complete.time*(2*pi)/one.year))")))
+      }
+      Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+      # test HAC sith significant vars 
+      hac.test = Test_OLS_vcovhac1(Data.mod)
+      tot = rbind(tot, data.frame(name = name.i, brp = end, trend = hac.test$fit.ols$coefficients[2],  l = nrow(dat.j),
+                                  p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2]))
+    }
+  }
+}
+rownames(tot) <- NULL
+tot$w = 1/tot$v
+
+aggr = data.frame(matrix(NA, ncol = 2, nrow = 81))
+for (j in c(1:81)) {
+  res.j = tot[which(tot$name == name_main[j]),]
+  sum.weight = sum(res.j$w)
+  mean.est = sum(res.j$trend * res.j$w)/sum.weight
+  var.mean = 1/sum.weight
+  t = mean.est/(sqrt(var.mean))
+  aggr[j,] <-c(mean.est, t)
+}
+
+colnames(aggr) <- c("trend", "t")
+
+d = aggr[which(abs(aggr$t)>1.96),]
+
+aggr$c = 2
+aggr$c[which(abs(aggr$t)>1.96)] = 3
+
+plot(aggr$trend, col = aggr$c)

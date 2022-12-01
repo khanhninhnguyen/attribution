@@ -2,40 +2,46 @@ library("lubridate")       # Install & load lubridate package
 window.thres <- 10 # window period
 # we use the breakpoints from segmentation directly, with flag validation or outlier (80 days)
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
-# remove data in cluster of breakpoint or breakpoint from the ne --------
+# remove data in cluster of breakpoint or breakpoint from the ne in the whole series of GPS-ERA --------
 
 data <- get(load(file = paste0(path_results,"attribution/six_diff_series_",window.thres,"year_", nearby_ver,".RData")))
 
 list.cluster.removed <- data.frame(matrix(NA, ncol = 3, nrow = 0))
 colnames(list.cluster.removed) = c("station","start", "end")
+
 for (i in c(1:length(data))) {
   case.name = names(data)[i]
   station.ref = substr(case.name ,start = 1, stop = 4)
   breakpoint = as.Date(substr(case.name,start = 6, stop = 15) , format = "%Y-%m-%d")
   station.seg = meta.compare[which(meta.compare$name == station.ref),]
-  ind = which(station.seg$detected == breakpoint)
-  noise = station.seg$noise[ind]
-  rest = c(station.seg$noise[c(ind:nrow(station.seg))],0)
-  if (noise > 0){
-    j = 1
-    last.ind = j
-    while(rest[j+1] > rest[j]){
-      j = j+1
-      last.ind = j
+  noise = station.seg$noise
+  data.i = as.data.frame(data[[i]])
+  min.dat = min(data.i$date)
+  max.dat = max(data.i$date)
+  # list all crenels of series 
+  list.brp.inside = station.seg$detected[which(station.seg$detected < max.dat & station.seg$detected> min.dat)]
+  list.noise.inside = station.seg$noise[which(station.seg$detected < max.dat & station.seg$detected> min.dat)]
+  list.noise.inside = c(list.noise.inside,0)
+  beg.pos.clust = which(list.noise.inside == 1)
+  if(length(beg.pos.clust) >0 ){
+    end.pos.clust = c()
+    for (l in c(1:length(beg.pos.clust))) {
+      ind.start = beg.pos.clust[l]
+      k = 0
+      while(list.noise.inside[ind.start+k]>k){
+        k = k +1
+      }
+      end.pos.clust = c(end.pos.clust,(ind.start+k-1))
     }
-    length.cluster = rest[last.ind] 
-    start.cluster.ind = ind - 1 + last.ind - (length.cluster-1)
-    end.cluster.ind = start.cluster.ind + length.cluster - 1
-    start.cluster = station.seg$detected[start.cluster.ind]
-    end.cluster = station.seg$detected[end.cluster.ind]
-    list.cluster.removed[(nrow(list.cluster.removed)+1),] <- c(station.ref, as.character(start.cluster), as.character(end.cluster))
-    for (m in 1:6) {
-      name.test = list.test[m]
-      station.data = as.data.frame(data[[i]])
-      remove.ind = which(station.data$date <= end.cluster & station.data$date > start.cluster)
-      station.data[remove.ind,c(list.test[list.test != ("gps.era")])] <- NA
-      data[[i]] <- station.data
+    cre.list = data.frame(begin = list.brp.inside[beg.pos.clust], end = list.brp.inside[end.pos.clust])
+    for (j in c(1:nrow(cre.list))) {
+      remove.ind = which(data.i$date > cre.list$begin[j] & data.i$date <= cre.list$end[j])
+      data.i[remove.ind,c("gps.era")] <- NA
     }
+    data[[i]] <- data.i
+    removed.cre = cre.list
+    removed.cre$name = station.ref
+    list.cluster.removed <- rbind( list.cluster.removed, removed.cre)
   }
 }
 
@@ -49,14 +55,14 @@ data[name.removed.stations] <- NULL
 # list cluster removed: 
 
 short.list = list.cluster.removed[!duplicated(list.cluster.removed),]
-all.cases.name = names(data)
-all.cases.ind = sapply(c(1:length(all.cases.name)), function(x) substr(all.cases.name[x],start = 1, stop = 15))
-list.case.remove = paste(short.list$station, short.list$end, sep = ".")
-case.remove.ind = which(all.cases.ind %in% list.case.remove)
-data.last = data[-case.remove.ind]
+# all.cases.name = names(data)
+# all.cases.ind = sapply(c(1:length(all.cases.name)), function(x) substr(all.cases.name[x],start = 1, stop = 15))
+# list.case.remove = paste(short.list$name, short.list$end, sep = ".")
+# case.remove.ind = which(all.cases.ind %in% list.case.remove)
+# data.last = data[-case.remove.ind]
 
 save(short.list, file = paste0(path_results,"attribution/removed_possible_crenel_",window.thres,"year_", nearby_ver,".RData"))
-save(data.last, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_", window.thres,"year_",nearby_ver,".RData"))
+save(data, file = paste0(path_results,"attribution/six_diff_series_rm_crenel_", window.thres,"year_",nearby_ver,".RData"))
 
 #NOTE: data after restriction is lost of date in the crenel, in the next step, we need to complete data by date again 
 
