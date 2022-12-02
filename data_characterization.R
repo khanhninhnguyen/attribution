@@ -177,7 +177,7 @@ l = c(tot.sig$len1, tot.sig$le2)
 # Trend of the raw series ---------------------------------
 one.year = 365
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
-tot <- data.frame(matrix(NA, ncol = 7, nrow = 0))
+tot <- data.frame(matrix(NA, ncol = 10, nrow = 0))
 for (i in c(1:length(name_main ))) {
   print(i)
   name.i = name_main[i]
@@ -195,6 +195,8 @@ for (i in c(1:length(name_main ))) {
       Y.with.NA = tidyr::complete(dat.j, date = seq(beg, end, by = "day"))
       scr = screen.O(Y = Y.with.NA , name.var = "signal", method = 'sigma', global.mu = 0, iter = 1, estimator = "Sca", fix.thres = 0, loes = 0, loes.method = 0)
       Y.with.NA$signal = scr$data
+      n.row = length(scr$sd.est)
+      b = unlist(scr$sd.est[[n.row]])^2
       Xt = c(1:nrow(Y.with.NA))- nrow(Y.with.NA)/2
       Data.mod = data.frame( signal = Y.with.NA$signal,Xt = Xt, complete.time = c(1:nrow(Y.with.NA)))
       for (k in c(1:4)){
@@ -203,29 +205,50 @@ for (i in c(1:length(name_main ))) {
       Data.mod <- Data.mod %>% dplyr::select(-complete.time)
       # test HAC sith significant vars 
       hac.test = Test_OLS_vcovhac1(Data.mod)
+      gls.test = gls(signal~., data=Data.mod,correlation =  corAR1( form = ~ 1), na.action=na.omit, weights=varFixed(value = ~b))
       tot = rbind(tot, data.frame(name = name.i, brp = end, trend = hac.test$fit.ols$coefficients[2],  l = nrow(dat.j),
-                                  p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2]))
+                                  p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2],
+                                  gls.tr = gls.test$coefficients[2], gls.p = summary(gls.test)$tTable[2,4],
+                                  gls.v = gls.test$varBeta[2,2], gls.t = summary(gls.test)$tTable[2,3]))
     }
   }
 }
 rownames(tot) <- NULL
 tot$w = 1/tot$v
 
-aggr = data.frame(matrix(NA, ncol = 2, nrow = 81))
+weighted = data.frame(matrix(NA, ncol = 2, nrow = 81))
 for (j in c(1:81)) {
   res.j = tot[which(tot$name == name_main[j]),]
   sum.weight = sum(res.j$w)
   mean.est = sum(res.j$trend * res.j$w)/sum.weight
   var.mean = 1/sum.weight
   t = mean.est/(sqrt(var.mean))
-  aggr[j,] <-c(mean.est, t)
+  weighted[j,] <-c(mean.est, t)
 }
 
-colnames(aggr) <- c("trend", "t")
+rownames(tot) <- NULL
+tot$w = 1/tot$gls.v
 
-d = aggr[which(abs(aggr$t)>1.96),]
+weighted1 = data.frame(matrix(NA, ncol = 2, nrow = 81))
+for (j in c(1:81)) {
+  res.j = tot[which(tot$name == name_main[j]),]
+  sum.weight = sum(res.j$w)
+  mean.est = sum(res.j$gls.tr * res.j$w)/sum.weight
+  var.mean = 1/sum.weight
+  t = mean.est/(sqrt(var.mean))
+  weighted1[j,] <-c(mean.est, t)
+}
 
+colnames(weighted) <- c("trend", "t")
+
+d = weighted[which(abs(weighted$t)>1.96),]
+name_main[which(abs(weighted$t)>1.96)]
 aggr$c = 2
 aggr$c[which(abs(aggr$t)>1.96)] = 3
 
 plot(aggr$trend, col = aggr$c)
+mod.expression = signal~Xt+cos1+sin1+cos2+sin2+cos3+sin3+cos4+sin4
+b = unlist(a[[4]])^2
+d = gls(signal~., data=Data.mod,correlation =  corAR1( form = ~ 1), na.action=na.omit, weights=varFixed(value = ~b))
+fit <- paste0("gls(",mod.expression,",data=Data.mod,correlation =  corAR1(ar1, form = ~ 1), na.action=na.omit,weights=varFixed(value = ~b)",")")
+
