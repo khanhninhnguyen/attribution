@@ -205,7 +205,8 @@ for (i in c(1:length(name_main ))) {
       Data.mod <- Data.mod %>% dplyr::select(-complete.time)
       # test HAC sith significant vars 
       hac.test = Test_OLS_vcovhac1(Data.mod)
-      gls.test = gls(signal~., data=Data.mod,correlation =  corAR1( form = ~ 1), na.action=na.omit, weights=varFixed(value = ~b))
+      gls.test = gls(signal~., data=Data.mod,correlation =  corAR1(form = ~ Xt), na.action=na.omit, weights=varFixed(value = ~b))
+      
       tot = rbind(tot, data.frame(name = name.i, brp = end, trend = hac.test$fit.ols$coefficients[2],  l = nrow(dat.j),
                                   p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2],
                                   gls.tr = gls.test$coefficients[2], gls.p = summary(gls.test)$tTable[2,4],
@@ -213,7 +214,7 @@ for (i in c(1:length(name_main ))) {
     }
   }
 }
-save(tot, file = paste0(path_results,"attribution/test.gps.era.RData"))
+save(tot, file = paste0(path_results,"attribution/test.gps.era.ARMAhac.RData"))
 a = get(load(file = paste0(path_results,"attribution/test.gps.era.RData")))
 rownames(tot) <- NULL
 tot$w = 1/tot$v
@@ -242,6 +243,9 @@ for (j in c(1:81)) {
 }
 
 colnames(weighted) <- c("trend", "t")
+colnames(weighted1) <- c("trend", "t")
+full = cbind(weighted, weighted1)
+full$name = name_main
 
 d = weighted[which(abs(weighted$t)>1.96),]
 name_main[which(abs(weighted$t)>1.96)]

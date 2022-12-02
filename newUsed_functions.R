@@ -254,9 +254,9 @@ gls.true <- function(var.t, phi, theta, design.matrix, trend){
 Test_OLS_vcovhac1 <- function(Data.mod){
   # OLS estimates
   list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
-  mod.X <-  list.para %>% str_c(collapse = "+")
-  mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
-  approx1 = c("AR(1)")
+  mod.X <-  list.para %>% stringr::str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X) %>% stringr::str_c(collapse = "")
+  approx1 = c("ARMA(1,1)")
   fit.ols <- lm(mod.expression,data=Data.mod)
   vcov.para<-tryCatch(
     {
@@ -279,8 +279,8 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   keep.ind1 = which(fit.hac$`Pr(>|t|)` < 0.05)
   keep.ind = keep.ind1[keep.ind1>2]
   list.para.r = c( "Xt", list.para[keep.ind-1])
-  mod.X.r <-  list.para.r %>% str_c(collapse = "+")
-  mod.expression.r <- c("signal","~",mod.X.r) %>% str_c(collapse = "")
+  mod.X.r <-  list.para.r %>% stringr::str_c(collapse = "+")
+  mod.expression.r <- c("signal","~",mod.X.r) %>% stringr::str_c(collapse = "")
   # test with significant variables 
   fit.ols.r <- lm(mod.expression.r,data=Data.mod)
   
