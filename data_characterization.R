@@ -213,6 +213,8 @@ for (i in c(1:length(name_main ))) {
     }
   }
 }
+save(tot, file = paste0(path_results,"attribution/test.gps.era.RData"))
+a = get(load(file = paste0(path_results,"attribution/test.gps.era.RData")))
 rownames(tot) <- NULL
 tot$w = 1/tot$v
 
