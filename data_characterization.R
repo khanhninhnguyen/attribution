@@ -217,6 +217,10 @@ for (i in c(1:length(name_main ))) {
 }
 
 a = get(load(file = paste0(path_results,"attribution/test.gps.era.ARMAhac.RData")))
+b = get(load(file = paste0(path_results,"attribution/test.gps.era.ARhac.RData")))
+
+plot(a$t, a$gls.tr, xlab = "GLS")
+
 rownames(tot) <- NULL
 # tot$w = 1/tot$v
 
