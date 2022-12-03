@@ -256,7 +256,7 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
   mod.X <-  list.para %>% stringr::str_c(collapse = "+")
   mod.expression <- c("signal","~",mod.X) %>% stringr::str_c(collapse = "")
-  approx1 = c("ARMA(1,1)")
+  approx1 = c("AR(1)")
   fit.ols <- lm(mod.expression,data=Data.mod)
   vcov.para<-tryCatch(
     {

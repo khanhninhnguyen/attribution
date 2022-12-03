@@ -2,6 +2,7 @@
 source(paste0(path_code_att, "newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"support_screening.R"))
+library(nlme)
 # Heteroskedastic ---------------------------------------------------------
 
 # from OLS resdiual 
@@ -177,7 +178,7 @@ l = c(tot.sig$len1, tot.sig$le2)
 # Trend of the raw series ---------------------------------
 one.year = 365
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
-tot <- data.frame(matrix(NA, ncol = 10, nrow = 0))
+tot <- data.frame(matrix(NA, ncol = 7, nrow = 0))
 for (i in c(1:length(name_main ))) {
   print(i)
   name.i = name_main[i]
@@ -205,19 +206,19 @@ for (i in c(1:length(name_main ))) {
       Data.mod <- Data.mod %>% dplyr::select(-complete.time)
       # test HAC sith significant vars 
       hac.test = Test_OLS_vcovhac1(Data.mod)
-      gls.test = gls(signal~., data=Data.mod,correlation =  corAR1(form = ~ Xt), na.action=na.omit, weights=varFixed(value = ~b))
+      # gls.test = nlme::gls(signal~., data=Data.mod,correlation =  corAR1(form = ~ 1), na.action=na.omit, weights=varFixed(value = ~b))
       
       tot = rbind(tot, data.frame(name = name.i, brp = end, trend = hac.test$fit.ols$coefficients[2],  l = nrow(dat.j),
-                                  p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2],
-                                  gls.tr = gls.test$coefficients[2], gls.p = summary(gls.test)$tTable[2,4],
-                                  gls.v = gls.test$varBeta[2,2], gls.t = summary(gls.test)$tTable[2,3]))
+                                  p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2]))
+                                  # gls.tr = gls.test$coefficients[2], gls.p = summary(gls.test)$tTable[2,4],
+                                  # gls.v = gls.test$varBeta[2,2], gls.t = summary(gls.test)$tTable[2,3]))
     }
   }
 }
-save(tot, file = paste0(path_results,"attribution/test.gps.era.ARMAhac.RData"))
-a = get(load(file = paste0(path_results,"attribution/test.gps.era.RData")))
+
+a = get(load(file = paste0(path_results,"attribution/test.gps.era.ARMAhac.RData")))
 rownames(tot) <- NULL
-tot$w = 1/tot$v
+# tot$w = 1/tot$v
 
 weighted = data.frame(matrix(NA, ncol = 2, nrow = 81))
 for (j in c(1:81)) {

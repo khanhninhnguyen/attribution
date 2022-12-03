@@ -246,7 +246,7 @@ for (l in c(1:4)){
     for (m in c(2)) {
       # specify model and method to estimate 
       b = name.est(name.model = est.mod, method.lm = list.method[m], mod.expression, Data.mod, ar1 = ar0, trend.reg)
-      for (i in c(1:nb.sim)) {
+      for (i in c(104:nb.sim)) {
         set.seed(i)
         y = simulate.general(N = n, arma.model = c(sim.mod$ar,0), burn.in = sim.mod$burn.in, hetero = sim.mod$hetero, sigma = sqrt(sim.mod$sigma.t),
                              monthly.var = 0)
