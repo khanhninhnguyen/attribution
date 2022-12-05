@@ -29,7 +29,43 @@ last_signif <- function(signal, pq, alpha){
   }
   return(list( pq = pq, pandcoef = pandcoef))
 }
-
+diff.var <- function(name.test){
+  if(name.test == "gps.gps"){
+    varname = c("GPS.x", "GPS.y")
+  }
+  if(name.test == "gps.era"){
+    varname = c("GPS.x", "ERAI.x")
+  }
+  if(name.test == "gps1.era"){
+    varname = c("GPS.y", "ERAI.x")
+  }
+  if(name.test == "gps.era1"){
+    varname = c("GPS.x", "ERAI.y")
+  }
+  if(name.test == "gps1.era1"){
+    varname = c("GPS.y", "ERAI.y")
+  }
+  if(name.test == "era.era"){
+    varname = c("ERAI.x", "ERAI.y")
+  }
+  return(varname)
+}p.and.coef <- function(fitARIMA, pq1, nb.or){
+  test.sig = coeftest(fitARIMA)
+  ord = pq1[c(1,3)]
+  orde = c(rbind(ord,ord-1))
+  orde[which(orde <0)] <- 0
+  ind.param = which(orde >0)
+  orde[ind.param] <- fitARIMA$coef[1:nb.or]
+  p.value <- rep(-1, 4)
+  p.value[ ind.param] <- test.sig[,4][1:nb.or]
+  return(list(p.value = p.value , coef = orde))
+}
+# return significant order
+check_sig <- function(p.val, alpha){
+  ar.or = length(which(p.val[1:2] >0 & p.val[1:2] <= alpha))
+  ma.or = length(which(p.val[3:4] >0 & p.val[3:4] <= alpha))
+  return(c(ar.or, 0, ma.or))
+}
 
 # if we want to not dupplicate gps-era case
 # all.cases.name = names(dat)
@@ -78,6 +114,7 @@ for (testi in c(1:6)) {
   residus[[name.test]] <- res.testi
 }
 
+save(residus, file = paste0(path_results,"attribution/norm.residual.ols.RData"))
 # fit the ARIMA 
 
 fit.arima <- function(signal.test){
