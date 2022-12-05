@@ -178,7 +178,7 @@ l = c(tot.sig$len1, tot.sig$le2)
 # Trend of the raw series ---------------------------------
 one.year = 365
 meta.compare =  get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
-tot <- data.frame(matrix(NA, ncol = 7, nrow = 0))
+tot <- data.frame(matrix(NA, ncol = 11, nrow = 0))
 for (i in c(1:length(name_main ))) {
   print(i)
   name.i = name_main[i]
@@ -195,7 +195,7 @@ for (i in c(1:length(name_main ))) {
       print(j)
       Y.with.NA = tidyr::complete(dat.j, date = seq(beg, end, by = "day"))
       scr = screen.O(Y = Y.with.NA , name.var = "signal", method = 'sigma', global.mu = 0, iter = 1, estimator = "Sca", fix.thres = 0, loes = 0, loes.method = 0)
-      Y.with.NA$signal = scr$data
+      Y.with.NA$signal = -scr$data
       n.row = length(scr$sd.est)
       b = unlist(scr$sd.est[[n.row]])^2
       Xt = c(1:nrow(Y.with.NA))- nrow(Y.with.NA)/2
@@ -206,22 +206,38 @@ for (i in c(1:length(name_main ))) {
       Data.mod <- Data.mod %>% dplyr::select(-complete.time)
       # test HAC sith significant vars 
       hac.test = Test_OLS_vcovhac1(Data.mod)
-      # gls.test = nlme::gls(signal~., data=Data.mod,correlation =  corAR1(form = ~ 1), na.action=na.omit, weights=varFixed(value = ~b))
+      
+      gls.test1 = nlme::gls(signal~., data=Data.mod,correlation =  corAR1(form = ~ Xt), na.action=na.omit, weights=varFixed(value = ~b))
+      keep.ind1 = which(summary(gls.test1)$tTable[,4] < 0.05)
+      keep.ind = keep.ind1[keep.ind1>2]
+      list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
+      list.para.r = c( "Xt", list.para[keep.ind-1])
+      mod.X.r <-  list.para.r %>% stringr::str_c(collapse = "+")
+      mod.expression.r <- c("signal","~",mod.X.r) %>% stringr::str_c(collapse = "")
+      # test with significant variables 
+      gls.test <- eval(parse(text=paste0("gls(",mod.expression.r,",data=Data.mod,correlation =  corAR1(form = ~ Xt), na.action=na.omit,weights=varFixed(value = ~b)",")")))
       
       tot = rbind(tot, data.frame(name = name.i, brp = end, trend = hac.test$fit.ols$coefficients[2],  l = nrow(dat.j),
-                                  p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2]))
-                                  # gls.tr = gls.test$coefficients[2], gls.p = summary(gls.test)$tTable[2,4],
-                                  # gls.v = gls.test$varBeta[2,2], gls.t = summary(gls.test)$tTable[2,3]))
+                                  p = hac.test$fit.hac$`Pr(>|t|)`[2], t = hac.test$fit.hac$`t value`[2], v = hac.test$vcov.para[2,2],
+                                  gls.tr = gls.test$coefficients[2], gls.p = summary(gls.test)$tTable[2,4],
+                                  gls.v = gls.test$varBeta[2,2], gls.t = summary(gls.test)$tTable[2,3]))
     }
   }
 }
-
+save(tot, file = paste0(path_results,"attribution/test.gps.era.ARhac.RData"))
 a = get(load(file = paste0(path_results,"attribution/test.gps.era.ARMAhac.RData")))
 b = get(load(file = paste0(path_results,"attribution/test.gps.era.ARhac.RData")))
+res = data.frame(tr.ols = b$trend, tr.gls = b$gls.tr, v.ar = b$v, v.arma = a$v, v.gls = b$gls.v)
+plot(res$tr.ols, res$tr.gls, xlab = "GLS")
 
-plot(a$t, a$gls.tr, xlab = "GLS")
+ggplot(res, aes(x = v.ar, y = v.gls))+
+  geom_point()+theme_bw()+
+  ylab("GLS") + xlab("OLS")+
+  geom_abline(slope = 1, intercept = 0)+
+  theme(axis.text = element_text(size = 18),legend.text=element_text(size=15),
+        axis.title = element_text(size=18))
 
-rownames(tot) <- NULL
+rownames(b) <- NULL
 # tot$w = 1/tot$v
 
 weighted = data.frame(matrix(NA, ncol = 2, nrow = 81))
