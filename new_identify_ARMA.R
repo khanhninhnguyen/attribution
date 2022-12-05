@@ -49,7 +49,8 @@ diff.var <- function(name.test){
     varname = c("ERAI.x", "ERAI.y")
   }
   return(varname)
-}p.and.coef <- function(fitARIMA, pq1, nb.or){
+}
+p.and.coef <- function(fitARIMA, pq1, nb.or){
   test.sig = coeftest(fitARIMA)
   ord = pq1[c(1,3)]
   orde = c(rbind(ord,ord-1))
@@ -116,7 +117,7 @@ for (testi in c(1:6)) {
 
 save(residus, file = paste0(path_results,"attribution/norm.residual.ols.RData"))
 # fit the ARIMA 
-
+residus = get(load(file = paste0(path_results,"attribution/norm.residual.ols.RData")))
 fit.arima <- function(signal.test){
   fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
                                max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
@@ -127,7 +128,17 @@ fit.arima <- function(signal.test){
   
   refit0 = last_signif(signal = signal.test, pq, alpha = significant.level)
   pq = refit0$pq
-  return(list(pq = pq, coef = refit0$pandcoef$coef, p = refit0$pandcoef$p.value))
+  
+  if( any(pq > 1)){
+    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                                  max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+    pq = arimaorder(fit.b)
+  }
+  
+  refit1 = last_signif(signal = signal.test, pq, alpha = significant.level)
+  
+  pq = refit1$pq
+  return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
 
 order.arma <- list()
@@ -145,4 +156,85 @@ for (testi in c(1:6)) {
   }
   order.arma[[name.test]] <- list(order.arma.bef, order.arma.aft)
 }
+save(order.arma, file = paste0(path_results,"attribution/order.model.arma.restrict.RData"))
+
+a = get(load(file = paste0(path_results,"attribution/order.model.arma.restrict.RData")))
+# list.model = c("white", "ar1", "ma1", "ar2", "ma2", "arma11", "arma12", "arma21", "arma22")
+list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
+
+model.iden <- function(order){
+  model = c()
+  if (identical(order, c(1,0,1))){ model = "ARMA(1,1)"}
+  else if (identical(order, c(1,0,0))){ model = "AR(1)"}
+  else if (identical(order, c(0,0,1))){ model = "MA(1)"}
+  else if (identical(order, c(0,0,0))){ model = "White"}
+  else if (identical(order, c(2,0,0))){ model = "AR(2)"}
+  else if (identical(order, c(2,0,1))){ model = "ARMA(2,1)"}
+  else if (identical(order, c(1,0,2))){ model = "ARMA(1,2)"}
+  else if (identical(order, c(0,0,2))){ model = "MA(2)"}
+  else if (identical(order, c(2,0,2))){ model = "ARMA(2,2)"}
+  
+  return(model)
+}
+length.data = nrow(a$gps.era[[1]])
+six.model = data.frame(matrix(NA, ncol = 6, nrow = length.data))
+for (i in 1:length(list.test)) {
+  name.test = list.test[i]
+  six.model[,i] = sapply(c(1:length.data), function(x) model.iden(as.numeric(unlist(a[[name.test]][[2]][x,]))))
+}
+
+six.values = c()
+for (i in 1:length(list.test)) {
+  value.count = sapply(c(list.model), function(x) length(which(six.model[,i] == x)))
+  six.values <- c( six.values, value.count)
+}
+res.plot = data.frame(series = rep(list.test, each = 4), mod = rep(list.model, 6), value = six.values*100/788)
+res.plot$series = factor(res.plot$series, 
+                         levels=list.test)
+res.plot$mod = factor(res.plot$mod, 
+                      levels=list.model)
+jpeg(paste0(path_results,"attribution/iden_model.jpg" ),width = 2600, height = 1800,res = 300)
+p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) + 
+  geom_bar(position="dodge", stat="identity")+theme_bw()+ 
+  xlab("") + ylab("Percentage of model")+
+  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
+      axis.title = element_text(size=14))+
+  theme(
+    legend.title=element_blank(),
+    legend.position = c(.5, .95),
+    legend.justification = c("right", "top"),
+    legend.box.just = "right",
+    legend.margin = margin(6, 6, 6, 6)
+  )
+print(p)
+dev.off()
+
+
+# plot the residual 
+dat.bef$gps.era = res.bef
+jpeg(paste0(path_results,"attribution/iden_model.jpg" ),width = 2600, height = 1800,res = 300)
+p <- ggplot(dat.bef, aes(x=date, y=gps.era)) + 
+  geom_line(col="gray")+theme_bw()+ 
+  xlab("") + ylab("Residual")+
+  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
+        axis.title = element_text(size=14))
+ 
+print(p)
+dev.off()
+
+scr = screen.O(Y = dat.bef , name.var = name.test, method = 'sigma', global.mu = 0, iter = 1, estimator = "Sca", fix.thres = 0, loes = 0, loes.method = 0)
+sd0 = unlist(scr$sd.est[[1]])
+dat.bef$sd0 = sd0
+dat.bef = dat.bef[which(is.na(dat.bef$sd0)==FALSE),]
+
+jpeg(paste0(path_results,"attribution/std.jpg" ),width = 2600, height = 1800,res = 300)
+p <- ggplot(dat.bef, aes(x=date, y=sd0)) + 
+  geom_line(col="black")+theme_bw()+ 
+  xlab("") + ylab("Moving standard deviation of GPS-ERA")+
+  theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
+        axis.title = element_text(size=20))
+
+print(p)
+dev.off()
+
 
