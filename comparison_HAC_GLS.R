@@ -5,8 +5,8 @@ source(paste0(path_code_att,"newUsed_functions.R"))
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
 off.set = 0
 heteroscedast = 1
-autocor = 1
-x.axis = "rho"
+autocor = 0
+x.axis = "sig.v"
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
 nb.sim = 1000
@@ -49,12 +49,12 @@ mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.pa
   return(list(hetero = hetero, burn.in = burn.in, sigma.t = sigma.t, ar = ar))
 }
 gen.test = mod.sim(heteroscedastic = heteroscedast, autocorr = autocor, var.inno = 0.4, list.param.ar = list.param.ar, 
-                   list.param.sig = list.param.sig, x.axis = x.axis, individual = 3, n = n, T1 = n/2)
+                   list.param.sig = list.param.sig, x.axis = x.axis, individual = 0, n = n, T1 = n/2)
 
 
 
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
-Res.fin = data.frame(matrix(NA, ncol = 3, nrow = length(gen.test$ar)))
+Res.fin = data.frame(matrix(NA, ncol = 4, nrow = length(gen.test$ar)))
 
 hetero = gen.test$hetero
 burn.in = gen.test$burn.in
@@ -64,7 +64,7 @@ for (l in c(1:length(gen.test$ar))) {
   coef.res <- list()
   var.res <- list()
   ar = gen.test$ar[l]
-  sigma.sim = gen.test$sigma.t[l]
+  sigma.sim = gen.test$sigma.t[,l]
   for (i in c(1:nb.sim)) {
     set.seed(i)
     y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
@@ -95,31 +95,32 @@ for (l in c(1:length(gen.test$ar))) {
     fit.gls =lmtest::coeftest(gls.fit,df=(n-2-trend.reg))[, ] %>% as.data.frame()
     
     #GLS with true covariance matrix
-    # gls.fit.true = gls.true(var.t = Data.mod$weight1, phi = ar, theta = 0, design.matrix = Data.mod, trend = trend.reg)
+    gls.fit.true = gls.true(var.t = Data.mod$weight1, phi = ar, theta = 0, design.matrix = Data.mod, trend = trend.reg)
     
-    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols,  fit.gls = fit.gls)
-    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit$coefficients)
-    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit$varBeta, hac = vcov.para)
+    # tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols,  fit.gls = fit.gls)
+    # coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit$coefficients)
+    # var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit$varBeta, hac = vcov.para)
     
-    # tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = gls.fit.true$fit.gls, fit.gls = fit.gls)
-    # coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit$coefficients, gls.t = gls.fit.true$Coefficients)
-    # var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit$varBeta, hac = vcov.para, gls.t = gls.fit.true$vcov)
-    # 
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls.true = gls.fit.true$fit.gls, fit.gls = fit.gls)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = gls.fit$coefficients, gls.t = gls.fit.true$Coefficients)
+    var.res[[i]] = list( ols = vcov(ols.fit), gls = gls.fit$varBeta, hac = vcov.para, gls.t = gls.fit.true$vcov)
+
   }
   # significance level
   pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[2,4]))
   pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[2,4]))
-  # pval.gls.true <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls.true[2,4]))
+  pval.gls.true <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls.true[2,4]))
   pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls[2,4]))
   
   p.val = c(length(which(pval.ols>0.05)),
-            # length(which(pval.gls.true>0.05)), 
+            length(which(pval.gls.true>0.05)),
             length(which(pval.gls>0.05)), 
             length(which(pval.hac>0.05)))
   Res.fin[l,] = p.val
 }
 
-colnames(Res.fin) <- c("OLS","FGLS", "OLS-HAC")
+colnames(Res.fin) <- c("OLS", "GLS", "FGLS", "OLS-HAC")
+Res.fin <- Res.fin[c("OLS","OLS-HAC", "FGLS", "GLS")]
 save(Res.fin, file = paste0(path_results, "attribution/h.", heteroscedast, "a.", autocor, x.axis, y.axis, "trend.reg", trend.reg,"1.RData"))
 if(off.set == 0){
   res = (nb.sim- Res.fin)/nb.sim
@@ -135,7 +136,8 @@ if(x.axis == "rho"){
 res[name.x] = param.test
 dat.plot =reshape2::melt(res, id = name.x)
 face1 = "bold"
-x.axis1 = expression(phi)
+# x.axis1 = expression(phi)
+x.axis1 = "Range of variance(%)"
 # linetype1 = "dashed"
 jpeg(paste0(path_results,"attribution/h.", heteroscedast, "a.", autocor, x.axis, y.axis, "trend.reg", trend.reg,"1.jpg" ),
      width = 2600, height = 1800,res = 300)
@@ -144,8 +146,8 @@ p2 <- eval(parse(
   geom_point(size=3) + geom_line() +theme_bw() +
   ylab(y.axis) + 
   xlab(x.axis1) +
-  scale_x_continuous(breaks=seq(0, 1, 0.15), limits =c(0,0.9))+
-  scale_y_continuous(breaks=seq(0, 1, 0.15), limits =c(0,1))+
+  scale_y_continuous(breaks=seq(0, 0.7, 0.15), limits =c(0,0.7))+
+  scale_x_continuous(breaks=seq(25, 87.5, 12.5))+
   theme(axis.text = element_text(size = 25),legend.text=element_text(size=15),legend.title=element_blank(),
       axis.title = element_text(size=25,face=face1))")))
 print(p2)

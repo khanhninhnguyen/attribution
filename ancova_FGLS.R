@@ -4,7 +4,7 @@ library(attempt)
 library(nlme)
 
 source(paste0(path_code_att, "newUsed_functions.R"))
-win.thres = 1
+win.thres = 10
 dat  = get(load(file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
@@ -36,6 +36,8 @@ for (k in list.ind) {
     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
   }
   Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+  Data.mod <- Data.mod %>% dplyr::select(-Xt)
+  
   ########################
   # Test on the OLS estimate with the HAC covariance and selection of the 
   # significant parameters

@@ -29,13 +29,13 @@ for (k in c(1:n)) {
   Data.mod <- Y.with.NA %>% dplyr::select(name.series,date) %>%
     rename(signal=name.series) %>% 
     # mutate(Jump=c(rep(0,one.year*win.thres),rep(1,one.year*win.thres))) %>% 
-    mutate(complete.time=1:(2*one.year*win.thres)) %>% 
+    mutate(complete.time=1:(2*one.year*win.thres)) %>%
     mutate(Xt=complete.time-one.year*win.thres/2) %>% 
     dplyr::select(-date)
   for (i in 1:4){
     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
   }
-  Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+  Data.mod <- Data.mod %>% dplyr::select(-Xt)
   Data.bef = Data.mod[c(1:(one.year*win.thres)),]
   Data.aft = Data.mod[-c(1:(one.year*win.thres)),]
   trend.bef = lm(signal ~ ., data =  Data.bef)
@@ -274,8 +274,17 @@ aggr$c = 2
 aggr$c[which(abs(aggr$t)>1.96)] = 3
 
 plot(aggr$trend, col = aggr$c)
-mod.expression = signal~Xt+cos1+sin1+cos2+sin2+cos3+sin3+cos4+sin4
+mod.expression = signal~Jump+cos1+sin1+cos2+sin2+cos3+sin3+cos4+sin4
 b = unlist(a[[4]])^2
 d = gls(signal~., data=Data.mod,correlation =  corAR1( form = ~ 1), na.action=na.omit, weights=varFixed(value = ~b))
 fit <- paste0("gls(",mod.expression,",data=Data.mod,correlation =  corAR1(ar1, form = ~ 1), na.action=na.omit,weights=varFixed(value = ~b)",")")
+a = get(load(file = paste0(path_results, "attribution/all.hac.10years.RData")))
 
+r = data.frame(matrix(NA, ncol = 4, nrow = 170))
+for (i in c(1:170)) {
+  # r[i,] <- a[[i]]$selec$fit.hac[2,]
+  e = summary(a[[i]]$selec$fit.ols)
+  r[i,] <- e$coefficients[2,]
+}
+l = which(names(sd.all) == "alic.2011-06-08.20na")
+d = c(sd.all[[l]]$bef$gps.era, sd.all[[l]]$aft$gps.era)

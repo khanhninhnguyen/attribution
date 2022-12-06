@@ -226,8 +226,10 @@ scr = screen.O(Y = dat.bef , name.var = name.test, method = 'sigma', global.mu =
 sd0 = unlist(scr$sd.est[[1]])
 dat.bef$sd0 = sd0
 dat.bef = dat.bef[which(is.na(dat.bef$sd0)==FALSE),]
+dat.bef$sd0 =  d
+dat.bef$date = Y.with.NA$date
 
-jpeg(paste0(path_results,"attribution/std.jpg" ),width = 2600, height = 1800,res = 300)
+jpeg(paste0(path_results,"attribution/std1.jpg" ),width = 2600, height = 1800,res = 300)
 p <- ggplot(dat.bef, aes(x=date, y=sd0)) + 
   geom_line(col="black")+theme_bw()+ 
   xlab("") + ylab("Moving standard deviation of GPS-ERA")+
