@@ -3,10 +3,10 @@ source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
-off.set = 0
+off.set = 0.3
 heteroscedast = 1
-autocor = 0
-x.axis = "sig.v"
+autocor = 1
+x.axis = "rho"
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
 nb.sim = 1000
@@ -49,7 +49,7 @@ mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.pa
   return(list(hetero = hetero, burn.in = burn.in, sigma.t = sigma.t, ar = ar))
 }
 gen.test = mod.sim(heteroscedastic = heteroscedast, autocorr = autocor, var.inno = 0.4, list.param.ar = list.param.ar, 
-                   list.param.sig = list.param.sig, x.axis = x.axis, individual = 0, n = n, T1 = n/2)
+                   list.param.sig = list.param.sig, x.axis = x.axis, individual = 6, n = n, T1 = n/2)
 
 
 
@@ -136,8 +136,8 @@ if(x.axis == "rho"){
 res[name.x] = param.test
 dat.plot =reshape2::melt(res, id = name.x)
 face1 = "bold"
-# x.axis1 = expression(phi)
-x.axis1 = "Range of variance(%)"
+x.axis1 = "p"
+# x.axis1 = "Range of variance(%)"
 # linetype1 = "dashed"
 jpeg(paste0(path_results,"attribution/h.", heteroscedast, "a.", autocor, x.axis, y.axis, "trend.reg", trend.reg,"1.jpg" ),
      width = 2600, height = 1800,res = 300)
@@ -146,8 +146,8 @@ p2 <- eval(parse(
   geom_point(size=3) + geom_line() +theme_bw() +
   ylab(y.axis) + 
   xlab(x.axis1) +
-  scale_y_continuous(breaks=seq(0, 0.7, 0.15), limits =c(0,0.7))+
-  scale_x_continuous(breaks=seq(25, 87.5, 12.5))+
+  scale_y_continuous(breaks=seq(0, 1, 0.15), limits =c(0,1))+
+  scale_x_continuous(breaks=list.param.ar )+
   theme(axis.text = element_text(size = 25),legend.text=element_text(size=15),legend.title=element_blank(),
       axis.title = element_text(size=25,face=face1))")))
 print(p2)

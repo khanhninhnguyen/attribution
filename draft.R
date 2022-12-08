@@ -485,5 +485,7 @@ for (i in c(1:1000)) {
   a[i] = fit.hac$`Pr(>|t|)`[2]
 }
 
+# comparison bwthe ols, gls, ols-hac and ESS at specific station 
+
 
 
