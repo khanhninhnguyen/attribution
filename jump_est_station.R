@@ -1,5 +1,5 @@
 # estimation for specific station 
-win.thres = 10
+win.thres = 1
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
@@ -73,8 +73,10 @@ print(p)
 dev.off()
 
 
+main = sapply(c(1:length(a)), function(x) substr(a[x],start = 1, stop = 4))
+nb = sapply(c(1:length(a)), function(x) substr(a[x],start = 17, stop = 20))
 
-
+list.station = data.frame(main = main, nearby = nb)
 
 
 
