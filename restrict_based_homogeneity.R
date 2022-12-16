@@ -36,7 +36,7 @@ for (i in c(1:length(data))) {
     cre.list = data.frame(begin = list.brp.inside[beg.pos.clust], end = list.brp.inside[end.pos.clust])
     for (j in c(1:nrow(cre.list))) {
       remove.ind = which(data.i$date > cre.list$begin[j] & data.i$date <= cre.list$end[j])
-      data.i[remove.ind,c("gps.era")] <- NA
+      data.i[remove.ind,list.test[-5]] <- NA
     }
     data[[i]] <- data.i
     removed.cre = cre.list
