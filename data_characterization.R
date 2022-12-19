@@ -64,6 +64,9 @@ all.var = data.frame(var.m.bef = mean.bef, var.m.aft = mean.aft,
                      var.d.bef = delta.bef, var.d.aft = delta.aft, 
                      r.var.d.bef = delta.bef/mean.bef, r.var.d.aft = delta.aft/mean.aft)
 summary(all.var)
+
+
+
 # fit the variance 
 
 # autocorrelation  --------------------------------------------------------

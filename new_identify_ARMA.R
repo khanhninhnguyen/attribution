@@ -134,7 +134,7 @@ fit.arima <- function(signal.test){
                                   max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
     pq = arimaorder(fit.b)
   }
-  
+
   refit1 = last_signif(signal = signal.test, pq, alpha = significant.level)
   
   pq = refit1$pq
@@ -142,26 +142,35 @@ fit.arima <- function(signal.test){
 }
 
 order.arma <- list()
+coef.arma <- list()
 for (testi in c(1:6)) {
   name.test = list.test[testi]
   res.testi = residus[[name.test]]
   order.arma.bef = data.frame(matrix(NA, ncol = 3, nrow = length(dat)))
   order.arma.aft = data.frame(matrix(NA, ncol = 3, nrow = length(dat)))
+  coef.arma.bef = data.frame(matrix(NA, ncol = 4, nrow = length(dat)))
+  coef.arma.aft = data.frame(matrix(NA, ncol = 4, nrow = length(dat)))
   for (i in c(1:length(dat))) {
     dat.i = res.testi[[i]]
     bef.residus = dat.i[1:(one.year*10)]
     aft.residus = dat.i[-c(1:(one.year*10))]
-    order.arma.bef[i,] = fit.arima(bef.residus)$pq
-    order.arma.aft[i,] = fit.arima(aft.residus)$pq
+    bef.fit = fit.arima(bef.residus)
+    aft.fit = fit.arima(aft.residus)
+    order.arma.bef[i,] = bef.fit$pq
+    order.arma.aft[i,] = aft.fit$pq
+    coef.arma.bef[i,] = bef.fit$coef
+    coef.arma.aft[i,] = aft.fit$coef
   }
   order.arma[[name.test]] <- list(order.arma.bef, order.arma.aft)
+  coef.arma[[name.test]] <- list(coef.arma.bef, coef.arma.aft)
 }
 save(order.arma, file = paste0(path_results,"attribution/order.model.arma.restrict.RData"))
+save(coef.arma, file = paste0(path_results,"attribution/coef.model.arma.restrict.RData"))
 
 a = get(load(file = paste0(path_results,"attribution/order.model.arma.restrict.RData")))
-# list.model = c("white", "ar1", "ma1", "ar2", "ma2", "arma11", "arma12", "arma21", "arma22")
-list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
-
+list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(1,2)", "ARMA(2,1)", "ARMA(2,2)")
+# list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
+# barplot of models------
 model.iden <- function(order){
   model = c()
   if (identical(order, c(1,0,1))){ model = "ARMA(1,1)"}
@@ -183,29 +192,37 @@ for (i in 1:length(list.test)) {
   six.model[,i] = sapply(c(1:length.data), function(x) model.iden(as.numeric(unlist(a[[name.test]][[2]][x,]))))
 }
 
+# remove the duplicated 
+name.ref = substr(names(dat) ,start = 1, stop = 15)
+
+list.dup = which(duplicated(name.ref))
+six.model[list.dup,1] <- NA
 six.values = c()
 for (i in 1:length(list.test)) {
   value.count = sapply(c(list.model), function(x) length(which(six.model[,i] == x)))
   six.values <- c( six.values, value.count)
 }
-res.plot = data.frame(series = rep(list.test, each = 4), mod = rep(list.model, 6), value = six.values*100/788)
+res.plot = data.frame(series = rep(list.test, each = 9), mod = rep(list.model, 6), value = six.values*100/784)
+res.plot$value[which(res.plot$series == "gps.era")] <- res.plot$value[which(res.plot$series == "gps.era")]*784/156
 res.plot$series = factor(res.plot$series, 
                          levels=list.test)
 res.plot$mod = factor(res.plot$mod, 
                       levels=list.model)
-jpeg(paste0(path_results,"attribution/iden_model.jpg" ),width = 2600, height = 1800,res = 300)
+
+
+jpeg(paste0(path_results,"attribution/iden_model_order2.jpg" ),width = 3000, height = 1800,res = 300)
 p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) + 
   geom_bar(position="dodge", stat="identity")+theme_bw()+ 
   xlab("") + ylab("Percentage of model")+
   theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
-      axis.title = element_text(size=14))+
-  theme(
-    legend.title=element_blank(),
-    legend.position = c(.5, .95),
-    legend.justification = c("right", "top"),
-    legend.box.just = "right",
-    legend.margin = margin(6, 6, 6, 6)
-  )
+      axis.title = element_text(size=14))
+  # theme(
+  #   legend.title=element_blank(),
+  #   legend.position = c(.5, .95),
+  #   legend.justification = c("right", "top"),
+  #   legend.box.just = "right",
+  #   legend.margin = margin(6, 6, 6, 6)
+  # )
 print(p)
 dev.off()
 
@@ -238,6 +255,22 @@ p <- ggplot(dat.bef, aes(x=date, y=sd0)) +
 
 print(p)
 dev.off()
+
+
+
+
+
+
+# cdf of the coefficients 
+
+
+ggplot(b, aes(x = value, col = variable))+
+  stat_ecdf(lwd = 0.5)+ 
+  scale_color_manual(values = c( "#000000", "#FF0000", "#00FF00", "#FFFF00", "#0000FF", "#00FFFF"))+
+  labs(y = "CDF", x = "rho(1)")+ 
+  theme_bw()
+
+
 
 
 

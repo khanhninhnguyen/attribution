@@ -56,7 +56,7 @@ for (j in c(1:nrow(nearby_list1))){
         ver.cor.full$GPS = ver.cor.full$GPS*ver.cor.full$a + ver.cor.full$b
         ver.cor.full$ERAI = ver.cor.full$ERAI*ver.cor.full$a + ver.cor.full$b
         series.ref0 = series.ref
-        series.ref0[c("GPS", "ERAI")] <- ver.cor.full[c("GPS", "ERAI")]
+        # series.ref0[c("GPS", "ERAI")] <- ver.cor.full[c("GPS", "ERAI")] # test the case where no vertical correction applied
         
         # join 2 data frame
         # both <- both[which(both$date > begin.point & both$date <= end.point),]
@@ -102,7 +102,7 @@ for (j in c(1:nrow(nearby_list1))){
   }
 }
 
-save(four.series, file = paste0(path_results,"attribution/four_main_series_",window.thres,"year_", nearby_ver,".RData"))
-save(six.series, file = paste0(path_results,"attribution/six_diff_series_",window.thres,"year_", nearby_ver,".RData"))
+save(four.series, file = paste0(path_results,"attribution/four_main_series_",window.thres,"year_", nearby_ver,"0.RData"))
+save(six.series, file = paste0(path_results,"attribution/six_diff_series_",window.thres,"year_", nearby_ver,"0.RData"))
 
 

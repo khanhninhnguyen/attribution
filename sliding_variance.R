@@ -253,6 +253,11 @@ one.step.norm <- function(Y, name.var, estimator, length.wind, global.mu, loes, 
   }
   # step 1: normalize by std and median
   norm1 <- unlist((Y[name.var] - slide.mean)/std.t)
+  # if std is too small, case of ERA-ERA', we can keep the raw data and std is fixed at 1
+  if(all(std.t ==0, na.rm = TRUE)){
+    norm1 <- unlist(Y[name.var]) 
+    std.t <- rep(1, length(norm1))
+  }
   return(list(norm.sig = norm1, mu = slide.mean, sd = std.t))
 }
 
