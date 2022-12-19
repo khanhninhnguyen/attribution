@@ -263,12 +263,44 @@ dev.off()
 
 # cdf of the coefficients 
 
+coef.all = get(load(file = paste0(path_results,"attribution/coef.model.arma.restrict.RData")))
+order.all = get(load(file = paste0(path_results,"attribution/order.model.arma.restrict.RData")))
+n=length(coef.all$gps.era[[1]][,1])
 
-ggplot(b, aes(x = value, col = variable))+
-  stat_ecdf(lwd = 0.5)+ 
-  scale_color_manual(values = c( "#000000", "#FF0000", "#00FF00", "#FFFF00", "#0000FF", "#00FFFF"))+
-  labs(y = "CDF", x = "rho(1)")+ 
-  theme_bw()
+param.list <- c()
+model.list <- c()
+test.list  <- c()
+values <- c()
+list.param = c("phi", "theta")
+for (testi in c(1:6)) {
+  name.test = list.test[testi]
+  for (i in c(1:n)) {
+    if(is.na(six.model[i, testi]) == FALSE){
+      ind.par = unlist(extract_param(six.model[i, testi]))
+      param = coef.all[[name.test]][[1]][i,ind.par]
+      param.list <- c(param.list, list.param[which(ind.par!=0)])
+      values <- c(values, param)
+      model.list <- c(model.list, rep(six.model[i, testi], length(param)))
+      test.list  <- c(test.list, rep(name.test, length(param)))
+    }
+  }
+}
+
+extract_param <- function(x){
+  if(x =="ARMA(1,1)"){ y = list(rho = 1, theta = 3)}
+  if(x == "White"){ y = list(rho = 0, theta = 0)}
+  if(x == "AR(1)"){ y = list(rho = 1, theta = 0)}
+  if(x == "MA(1)"){ y = list(rho = 0, theta = 3)}
+  return(y)
+}
+dat.p = data.frame(name = test.list, param = param.list, model = model.list, value = unlist(values))
+ggplot(data = dat.p, aes( x = name, y = value, fill = param,col = model)) + theme_bw()+
+  geom_boxplot()+
+  xlab("") + ylab(" values of parameters ") +
+  theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
+        axis.title = element_text(size=16))+
+  scale_color_manual(values=c("red", "green", "purple"))
+
 
 
 
