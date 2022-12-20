@@ -87,6 +87,7 @@ rmsd(era.era0, era.era2)
 # compute the raw data without correction
 window.thres = 10
 data.res = get(load(file = paste0(path_results,"attribution/six_diff_series_rm_crenel_restricted_closed_brp_",window.thres,"year_", nearby_ver,".RData")))
+old.ver0 = get(load(file = paste0(path_results,"attribution/OLD_VERTICAL/six_diff_series_",window.thres,"year_", nearby_ver,".RData")))
 
 list.break = data.frame(ref = substr(names(data.res), start = 1, stop = 4), 
                         brp = substr(names(data.res), start = 6, stop = 15),
@@ -99,34 +100,109 @@ merge_series <- function(path1, path2, station1, station2, list.day){
   series2 = read.series(path_series = path2, station = station2, na.rm = 0, add.full = 0)
   
   both = inner_join(series1,series2, by = "date") 
-  both$signal = both$GPS.y-both$GPS.x
-  both$year <- both$year.x
-  both$month <- both$month.x
   both <- tidyr::complete(both, date = seq(min(both$date), max(both$date), by = "day"))
-
+  both = both[which(both$date %in% list.day),]
+  out <- list()
   for (m in 1:6) {
     name.test = list.test[m]
     var1 = diff.var(c(name.test))[1]
     var2 = diff.var(c(name.test))[2]
-    six_series_frame[name.test] <- both[,c(var1)] - both[,c(var2)]
+    out[name.test] <- both[,c(var1)] - both[,c(var2)]
   }
   return(out)
 }
 
-series1 = read.series(path_series = path1, station = station1, na.rm = 0, add.full = 0)
 list.main = unique((list.break$ref))
-sapply(c(1:length(list.main)), function(x) {
+l = sapply(c(1:length(list.main)), function(x) {
   list.s = list.break[which(list.break$ref == list.main[x]),]
   r = length(unique(list.s$brp))
+  print(x)
   if(r ==1){
     y = rep(2, nrow(list.s))
   }else{
+    y = rep(NA, nrow(list.s))
     for (i in c(1:nrow(list.s))) {
       case1 = list.s[i,]
       case2 = list.s[(which(list.s$nb == case1$nb & list.s$brp > case1$brp)[1]),]
       if(all(is.na(case2)) == FALSE){
-        
+        name1 = paste0(case1$ref,".",as.character(case1$brp), ".", case1$nb)
+        name2 = paste0(case2$ref,".",as.character(case2$brp), ".", case2$nb)
+        dat1 = data.res[[name1]]
+        dat2 = data.res[[name2]]
+        if(all(is.na(dat1$gps.gps))==TRUE){
+          y[i] = 0
+        }else if(all(is.na(dat1$gps.gps))==FALSE & all(is.na(dat2$gps.gps))==TRUE){
+          y[i] = 2
+        } else if(all(is.na(dat1$gps.gps))==FALSE & all(is.na(dat2$gps.gps))==FALSE){
+          end.day = data.res[[name1]]$date[max(which(is.na(data.res[[name1]]$gps.gps) ==FALSE))]
+          beg.day = data.res[[name2]]$date[min(which(is.na(data.res[[name2]]$gps.gps) ==FALSE))]
+          if(end.day>beg.day){
+            y[i] = 1
+          }else{
+            y[i] = 2
+          }
+        }
+      }else{
+        y[i] = 2
       }
     }
   }
+  return(y)
 })
+list.break$side = unlist(l)
+# sort out all segment will be used 
+list.break = list.break[which(list.break$side!=0),]
+list.break = list.break[-which(list.break$nb == "pama"),]
+
+# compute the mean of differences for all segments with/without vertical correction
+series1 = read.series(path_series = path_series_nearby, station = "pama", na.rm = 0, add.full = 0)
+series2 = read.series(path_series = path_series_main, station = "medi", na.rm = 0, add.full = 0)
+
+mean.all = data.frame(matrix(NA, ncol = 12, nrow = nrow(list.break)))
+sd.all = data.frame(matrix(NA, ncol = 12, nrow = nrow(list.break)))
+
+for (i in c(1:nrow(list.break))) {
+  case.name = paste0(list.break$ref[i],".",as.character(list.break$brp[i]), ".", list.break$nb[i])
+  # new vertical correction 
+  new.ver = data.res[[case.name]]
+  # old vertical correction 
+  old.ver = old.ver0[[case.name]]
+  # without vertical correction
+  # choose the side (left or both) 
+  if(list.break$side[i] == 1){
+    list.day0 = new.ver$date[which(is.na(new.ver$gps.gps) == FALSE)]
+    list.day0 = list.day0[which(list.day0<= list.break$brp[i])]
+  }else if(list.break$side[i] == 2){
+    list.day0 = new.ver$date[which(is.na(new.ver$gps.gps) == FALSE)]
+  }
+  if(length(list.day0) > 100) {
+    old.ver =  old.ver[which(old.ver$date %in% list.day0 ),]
+    raw.series = merge_series(path1 = path_series_main, path2 = path_series_nearby, 
+                              station1 = list.break$ref[i], station2 = list.break$nb[i],
+                              list.day = list.day0)
+    ind.test = c(2,3,4,6)
+    mean.all[i,] <- c( sapply(ind.test, function(x) mean( raw.series[[x]], na.rm = TRUE )),
+                       colMeans(old.ver[list.test[ind.test]], na.rm = TRUE),
+                       colMeans(new.ver[list.test[ind.test]], na.rm = TRUE))
+    sd.all[i,] <- c( sapply(ind.test, function(x) sd( raw.series[[x]], na.rm = TRUE )),
+                     sapply(ind.test, function(x) sd( unlist(old.ver[list.test[x]]), na.rm = TRUE )),
+                     sapply(ind.test, function(x) sd( unlist(new.ver[list.test[x]]), na.rm = TRUE )))
+    print(i)
+  }
+}
+
+a = data.frame( value = colMeans(abs(sd.all), na.rm = TRUE))
+a$ver = rep(c("Raw", "Ver1", "Ver2"), each =4)
+a$variable =  rep(list.test[ind.test], 3)
+ggplot(a, aes(x = variable, y = value, col = ver))+geom_point()+theme_bw()+ylab("Mean of the std of differences")
+
+colnames(mean.all) <- paste( rep(list.test[ind.test], 3), rep(c("Raw", "Ver1", "Ver2"), each =4), sep = "")
+dat = data.frame(raw = mean.all$gps1.eraRaw, ver1 = mean.all$gps1.eraVer1, ver2 = mean.all$gps1.eraVer2)
+a = reshape2::melt(dat, id = "raw")
+
+ggplot(a, aes(x = raw, y = value, col = variable))+geom_point()+theme_bw()+ylab("corrected")+
+  geom_abline(slope = 1)+ylim(c(-4,7))+ xlim(c(-4,7))
+
+
+
+

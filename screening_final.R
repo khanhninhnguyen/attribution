@@ -66,3 +66,5 @@ for (i in c(1:length(data.in))) {
 save(data.all, file = paste0(path_results,"attribution/data.all_", window.thres,"years_", nearby_ver,"screened.RData"))
 save(list.outlier, file = paste0(path_results,"attribution/list.outlier_",  window.thres,"years_", nearby_ver,"screened.RData"))
 save(sd.all, file = paste0(path_results,"attribution/sd.all_",  window.thres,"years_", nearby_ver,"screened.RData"))
+
+list.outlier = get(load(file = paste0(path_results,"attribution/list.outlier_",  window.thres,"years_", nearby_ver,"screened.RData")))
