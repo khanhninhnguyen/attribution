@@ -80,8 +80,8 @@ IGLS <- function(design.m, tol, day.list){
   resi0 = rep(NA, nrow(design.m))
   # call expression
   list.para <- colnames(design.m)[2:dim(design.m)[2]]
-  mod.X <-  list.para %>% str_c(collapse = "+")
-  mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
+  mod.X <-  list.para %>% stringr::str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X) %>% stringr::str_c(collapse = "")
   # ols
   ols.fit = lm( mod.expression, data = design.m)
   resi0[which(is.na(design.m$signal)==FALSE)] <- ols.fit$residuals
@@ -129,16 +129,21 @@ for (i in c(1:nrow(reduced.list))) {
   name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
   dat.i = dat[[name.i]]
   dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
-  dat.i = remove_na_2sides(dat.i, name.series =  "gps.era")
-  m = construct.design(dat.i, name.series = "gps.era")
-  r = IGLS(design.m = m, tol = 0.0000001, day.list = dat.i$date)
-  all.coef[[i]] = r$coefficients
-  all.var[[i]]= r$var
+  for (j in c(1:6)) {
+    name.series0 = list.test[j]
+    dat.i = remove_na_2sides(dat.i, name.series = name.series0)
+    m = construct.design(dat.i, name.series = name.series0)
+    r = IGLS(design.m = m, tol = 0.0000001, day.list = dat.i$date)
+    all.coef[[name.series0]][[i]] = r$coefficients
+    all.var[[name.series0]][[i]] = r$var
+  }
 }
+save(all.coef, file = paste0(path_results, "attribution/all.coef.longest.RData"))
+save(all.var, file = paste0(path_results, "attribution/all.var.longest.RData"))
 
 p1 = ggplot(data = all.coef[[1]], )
-
-
+a = get(load(file = paste0(path_results, "attribution.allmoving.var.longest.RData")))
+l = sapply(c(1:length(a)), function(x) length(a[[x]]))
 
 
 
