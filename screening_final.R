@@ -68,3 +68,9 @@ save(list.outlier, file = paste0(path_results,"attribution/list.outlier_",  wind
 save(sd.all, file = paste0(path_results,"attribution/sd.all_",  window.thres,"years_", nearby_ver,"screened.RData"))
 
 list.outlier = get(load(file = paste0(path_results,"attribution/list.outlier_",  window.thres,"years_", nearby_ver,"screened.RData")))
+length.out = c()
+for (i in c(1:length(list.outlier))) {
+  a = unlist(list.outlier[[i]]$bef$gps.gps)
+  b = unlist(list.outlier[[i]]$aft$gps.gps)
+  length.out = c(length.out, length(c(a,b)))
+}

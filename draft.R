@@ -485,7 +485,9 @@ for (i in c(1:1000)) {
   a[i] = fit.hac$`Pr(>|t|)`[2]
 }
 
-# comparison bwthe ols, gls, ols-hac and ESS at specific station 
 
+
+a = read.series(path_series = path_series_nearby, station = "pama", na.rm = F, add.full = 0 )
+b = read.series(path_series = path_series_main, station = "medi", na.rm = F, add.full = 0 )
 
 

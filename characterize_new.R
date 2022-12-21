@@ -1,11 +1,21 @@
 # new characterization
-# choose the longest segment from the screened data 
+# this prog is used to compare the FPR and TPR of the test of the change in mean between the OLS-HAC and the GLS
+source(paste0(path_code_att,"simulate_time_series.R"))
+source(paste0(path_code_att,"newUsed_functions.R"))
+source(paste0(path_code_att,"sliding_variance.R"))
+
+# choose the longest segment from the screened data ----------------------------
 
 win.thres = 10
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.gps"
 one.year=365
-
+nb.consecutive <- function(list.day, x){
+  a = list.day[which(is.na(x)== FALSE)]
+  b = ts(a) 
+  y = length(which(diff(b)==1))
+  return(y)
+}
 list.break = data.frame(ref = substr(names(dat), start = 1, stop = 4), 
                         brp = substr(names(dat), start = 6, stop = 15),
                         nb = substr(names(dat), start = 17, stop = 20))
@@ -31,12 +41,105 @@ list.break$len1 = length.seg[,1]
 list.break$len2 = length.seg[,2]
 
 res <- data.frame(seg = list.seg, side = list.side)
-nb.consecutive <- function(list.day, x){
-  a = list.day[which(is.na(x)== FALSE)]
-  b = ts(a) 
-  y = length(which(diff(b)==1))
+
+# add distance
+distances <- as.data.frame(get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData"))))
+colnames(list.break)[c(1,3)] <- c("main", "nearby")
+full.list = left_join(list.break, distances, by = c("main", "nearby"))
+
+r = sapply(c(1:length(list.main)), function(x){
+  list.s = full.list[which(full.list$main == list.main[x]),]
+  ind.seg = ifelse(c(max(list.s$len1) > max(list.s$len2),  max(list.s$len1) > max(list.s$len2)), c(which.max(list.s$len1),1), c(which.max(list.s$len2),2))
+  y = rep(NA, nrow(list.s))
+  y[ind.seg[1]] = ind.seg[2]
+  print(x)
   return(y)
+})
+full.list$chose = unlist(r)
+save(full.list, file = paste0(path_results, "attribution/list.segments.selected.RData"))
+
+# heteroskedasticity ------------------------------------------------------
+win.thres = 10
+one.year=365
+dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
+full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected.RData")))
+reduced.list = na.omit(full.list)
+construct.design <- function(data.df, name.series){
+  Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
+    rename(signal=name.series) %>% 
+    mutate(complete.time=1:nrow(data.df)) %>% 
+    dplyr::select(-date)
+  for (i in 1:4){
+    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+  }
+  Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+  return(Data.mod)
 }
+
+IGLS <- function(design.m, tol, day.list){
+  resi0 = rep(NA, nrow(design.m))
+  # call expression
+  list.para <- colnames(design.m)[2:dim(design.m)[2]]
+  mod.X <-  list.para %>% str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X) %>% str_c(collapse = "")
+  # ols
+  ols.fit = lm( mod.expression, data = design.m)
+  resi0[which(is.na(design.m$signal)==FALSE)] <- ols.fit$residuals
+  old.coef = ols.fit$coefficients
+  # estimate initial moving variance 
+  Y0 = data.frame(date = day.list, residus = resi0)
+  w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
+  change1 = 10
+  i=0
+  while (change1 > tol) {
+     design.m$w = w0^2
+     gls.fit = eval(parse(text=paste0("gls(",mod.expression,",data=design.m, correlation = NULL, na.action = na.omit, weights=varFixed(value = ~w)",")")))
+     change1 = sum((gls.fit$coefficients - old.coef)^2)
+     deg =  cbind(rep(1, nrow(design.m)), as.matrix(design.m[,c(2:9)])) 
+     fit.val = deg %*% as.matrix(gls.fit$coefficients)
+     resi0 = design.m$signal - fit.val
+     Y0 = data.frame(date = day.list, residus = resi0)
+     w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
+     old.coef = gls.fit$coefficients
+     print(old.coef)
+     i=1+i
+  }
+  print(i)
+  return(list( coefficients = gls.fit$coefficients, var = w0^2))
+}
+
+remove_na_2sides <- function(df, name.series){
+  a = which(is.na(df[name.series])== FALSE)
+  df = df[c(min(a):(max(a))), ]
+  return(df)
+}
+
+choose_segment <- function(x){
+  if(x==1){
+    y =c(1:3650)
+  }else{
+    y = c(3651:7300)
+  }
+}
+
+# run the regression for the whole data
+all.coef = list()
+all.var = list()
+for (i in c(1:nrow(reduced.list))) {
+  name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+  dat.i = dat[[name.i]]
+  dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  dat.i = remove_na_2sides(dat.i, name.series =  "gps.era")
+  m = construct.design(dat.i, name.series = "gps.era")
+  r = IGLS(design.m = m, tol = 0.0000001, day.list = dat.i$date)
+  all.coef[[i]] = r$coefficients
+  all.var[[i]]= r$var
+}
+
+p1 = ggplot(data = all.coef[[1]], )
+
+
+
 
 
 
