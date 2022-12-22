@@ -104,7 +104,7 @@ IGLS <- function(design.m, tol, day.list){
      i=1+i
   }
   print(i)
-  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0))
+  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0, fit = fit.val))
 }
 
 remove_na_2sides <- function(df, name.series){
@@ -123,13 +123,14 @@ choose_segment <- function(x){
 
 # run the regression for the whole data
 all.coef = list()
-all.var = list()
-all.residual = list()
+all.dat = list()
+all.fit = list()
 for (i in c(1:nrow(reduced.list))) {
   name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
   dat.i = dat[[name.i]]
   dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
   dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
+  ind.all = which(is.na(dat.i[["gps.gps"]]) == FALSE)
   print(i)
   for (j in c(1:6)) {
     name.series0 = list.test[j]
@@ -137,43 +138,47 @@ for (i in c(1:nrow(reduced.list))) {
     tol0 = 0.0000001
     if(i == 49 & j ==5){ tol0 = 0.0001 }
     fit.igls = IGLS(design.m = m, tol =  tol0, day.list = dat.ij$date)
+    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'var')] <- unlist(fit.igls$var)
+    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'res')] <- unlist(fit.igls$residual)
+    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'fit')] <- unlist(fit.igls$residual)
+    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'fit')] <- unlist(fit.igls$fit)
     all.coef[[name.series0]][[name.i]] = fit.igls$coefficients
-    all.var[[name.series0]][[name.i]] = fit.igls$var
-    all.residual[[name.series0]][[name.i]] = fit.igls$residual
     print(j)
   }
+  all.dat[[name.i]] = dat.i
 }
 save(all.coef, file = paste0(path_results, "attribution/all.coef.longest.RData"))
-save(all.var, file = paste0(path_results, "attribution/all.var.longest.RData"))
-save(all.residual, file = paste0(path_results, "attribution/all.residual.longest.RData"))
+save(all.dat, file = paste0(path_results, "attribution/all.dat.longest.RData"))
 
 all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest.RData")))
-all.var = get(load(file = paste0(path_results, "attribution/all.var.longest.RData")))
-all.residual = get(load(file = paste0(path_results, "attribution/all.all.residual.longest.RData")))
+all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest.RData")))
 
 l = sapply(c(1:length(all.var$gps.era)), function(x) length(all.var$gps.era[[x]]))
 hist(l, breaks = 100)
-range.var <- function(x){
+range.var <- function(x, day.list, s){
+  df = data.frame(date = day.list, x = x)
+  df$y = format(df$date, "%Y")
+  df[which(is.na(s)==TRUE),] = NA
   if(all(x==1)){
     NA
   }else{
-    anu.min = sapply(c(1:10), function(i) {min(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
-    anu.max = sapply(c(1:10), function(i) {max(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
-    anu.min[which(is.infinite(anu.min))] = NA
-    anu.max[which(is.infinite(anu.max))] = NA
-    mean( (anu.max-anu.min), na.rm = TRUE)
+    anu.min = aggregate(x~y, df, function(z) min(z, na.rm=TRUE))[,2]
+    anu.max = aggregate(x~y, df, function(z) max(z, na.rm=TRUE))[,2]
+    ifelse(length(anu.max)!=1,  mean( (anu.max-anu.min), na.rm = TRUE), NA)
   }
 }
-diff.range.var <- function(x){
+diff.range.var <- function(x, day.list,s){
+  df = data.frame(date = day.list, x = x)
+  df$y = format(df$date, "%Y")
+  df[which(is.na(s)==TRUE),] = NA
   if(all(x==1)){
     NA
   }else{
-    anu.min = sapply(c(1:10), function(i) {min(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
-    anu.max = sapply(c(1:10), function(i) {max(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
-    anu.min[which(is.infinite(anu.min))] = NA
-    anu.max[which(is.infinite(anu.max))] = NA
+    anu.min = aggregate(x~y, df, function(z) min(z, na.rm=TRUE))[,2]
+    anu.max = aggregate(x~y, df, function(z) max(z, na.rm=TRUE))[,2]
     r = (anu.max- anu.min)
-    (max(r, na.rm = TRUE) - min(r, na.rm = TRUE))/mean(r, na.rm = TRUE)
+    ifelse(length(anu.max)!=1, (max(r, na.rm = TRUE) - min(r, na.rm = TRUE)), NA)
+    
   }
 }
 
@@ -181,39 +186,37 @@ range.all = list()
 range.diff = list()
 for (i in c(1:nrow(reduced.list))) {
   name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
-  dat.i = dat[[name.i]]
-  dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
-  rownames(dat.i) <- NULL
+  dat.i = all.dat[[name.i]]
   for (j in c(1:6)) {
     name.series = list.test[j]
-    ind.all = which(is.na(dat.i[["gps.gps"]]) == FALSE)
-    dat.i[ paste0(name.series, 'var')] = NA
-    dat.i[ c(min(ind.all): max(ind.all)), paste0(name.series, 'var')] = all.var[[name.series]][[i]]
-    range.all[[name.series]][[name.i]] = range.var(dat.i[,paste0(name.series, 'var')])
-    range.diff[[name.series]][[name.i]] = diff.range.var(dat.i[,paste0(name.series, 'var')])
+    var.ij = dat.i[,paste0(name.series, 'var')]
+    range.all[[name.series]][[name.i]] = range.var(x = var.ij , day.list = dat.i$date, s = dat.i$gps.gps)
+    range.diff[[name.series]][[name.i]] = diff.range.var(x = var.ij , day.list = dat.i$date, s = dat.i$gps.gps)
   }
 }
 
 range.all1 = as.data.frame(range.all)
 range.diff1 = as.data.frame(range.diff)
+range.diff1 = range.diff1/range.all1 
+range.diff1 = range.diff1[which(l>500),]
 
 apply(range.all1, 2, median)
 apply(range.diff1, 2, median)
 d = reshape2::melt(range.all1)
 d = reshape2::melt(range.diff1)
 
-p <- d %>%
+d %>%
   ggplot( aes(x=value, color=variable, fill=variable)) + theme_bw()+
   geom_histogram(alpha=0.6, binwidth = 0.25) +
   ylab("") +
-  xlab("Range of moving window variance ") +
+  xlab("Relative difference of the range of moving window variance ") +
   facet_wrap(~variable)
 
 
 
-
-
-
+a= remove_na_2sides(dat.i, name.series = "gps.era")
+plot(a$date, a$gps.era, xlab = "", ylab = "GPS-ERA")
+plot(a$date, a$gps.eravar, xlab = "", ylab = "MW variance of GPS-ERA")
 
 
 # plot an example 
