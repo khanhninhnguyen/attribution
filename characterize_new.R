@@ -145,9 +145,11 @@ for (i in c(1:nrow(reduced.list))) {
 }
 save(all.coef, file = paste0(path_results, "attribution/all.coef.longest.RData"))
 save(all.var, file = paste0(path_results, "attribution/all.var.longest.RData"))
+save(all.residual, file = paste0(path_results, "attribution/all.residual.longest.RData"))
 
 all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest.RData")))
 all.var = get(load(file = paste0(path_results, "attribution/all.var.longest.RData")))
+all.residual = get(load(file = paste0(path_results, "attribution/all.all.residual.longest.RData")))
 
 l = sapply(c(1:length(all.var$gps.era)), function(x) length(all.var$gps.era[[x]]))
 hist(l, breaks = 100)
