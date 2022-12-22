@@ -101,11 +101,10 @@ IGLS <- function(design.m, tol, day.list){
      Y0 = data.frame(date = day.list, residus = resi0)
      w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
      old.coef = gls.fit$coefficients
-     print(old.coef)
      i=1+i
   }
   print(i)
-  return(list( coefficients = gls.fit$coefficients, var = w0^2))
+  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0))
 }
 
 remove_na_2sides <- function(df, name.series){
@@ -125,26 +124,96 @@ choose_segment <- function(x){
 # run the regression for the whole data
 all.coef = list()
 all.var = list()
+all.residual = list()
 for (i in c(1:nrow(reduced.list))) {
   name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
   dat.i = dat[[name.i]]
   dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
+  print(i)
   for (j in c(1:6)) {
     name.series0 = list.test[j]
-    dat.i = remove_na_2sides(dat.i, name.series = name.series0)
-    m = construct.design(dat.i, name.series = name.series0)
-    r = IGLS(design.m = m, tol = 0.0000001, day.list = dat.i$date)
-    all.coef[[name.series0]][[i]] = r$coefficients
-    all.var[[name.series0]][[i]] = r$var
+    m = construct.design(dat.ij, name.series = name.series0)
+    tol0 = 0.0000001
+    if(i == 49 & j ==5){ tol0 = 0.0001 }
+    fit.igls = IGLS(design.m = m, tol =  tol0, day.list = dat.ij$date)
+    all.coef[[name.series0]][[name.i]] = fit.igls$coefficients
+    all.var[[name.series0]][[name.i]] = fit.igls$var
+    all.residual[[name.series0]][[name.i]] = fit.igls$residual
+    print(j)
   }
 }
 save(all.coef, file = paste0(path_results, "attribution/all.coef.longest.RData"))
 save(all.var, file = paste0(path_results, "attribution/all.var.longest.RData"))
 
-p1 = ggplot(data = all.coef[[1]], )
-a = get(load(file = paste0(path_results, "attribution.allmoving.var.longest.RData")))
-l = sapply(c(1:length(a)), function(x) length(a[[x]]))
+all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest.RData")))
+all.var = get(load(file = paste0(path_results, "attribution/all.var.longest.RData")))
+
+l = sapply(c(1:length(all.var$gps.era)), function(x) length(all.var$gps.era[[x]]))
+hist(l, breaks = 100)
+range.var <- function(x){
+  if(all(x==1)){
+    NA
+  }else{
+    anu.min = sapply(c(1:10), function(i) {min(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
+    anu.max = sapply(c(1:10), function(i) {max(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
+    anu.min[which(is.infinite(anu.min))] = NA
+    anu.max[which(is.infinite(anu.max))] = NA
+    mean( (anu.max-anu.min), na.rm = TRUE)
+  }
+}
+diff.range.var <- function(x){
+  if(all(x==1)){
+    NA
+  }else{
+    anu.min = sapply(c(1:10), function(i) {min(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
+    anu.max = sapply(c(1:10), function(i) {max(x[(one.year*(i-1)+1):(one.year*(i))],na.rm = TRUE)})
+    anu.min[which(is.infinite(anu.min))] = NA
+    anu.max[which(is.infinite(anu.max))] = NA
+    r = (anu.max- anu.min)
+    (max(r, na.rm = TRUE) - min(r, na.rm = TRUE))/mean(r, na.rm = TRUE)
+  }
+}
+
+range.all = list()
+range.diff = list()
+for (i in c(1:nrow(reduced.list))) {
+  name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+  dat.i = dat[[name.i]]
+  dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  rownames(dat.i) <- NULL
+  for (j in c(1:6)) {
+    name.series = list.test[j]
+    ind.all = which(is.na(dat.i[["gps.gps"]]) == FALSE)
+    dat.i[ paste0(name.series, 'var')] = NA
+    dat.i[ c(min(ind.all): max(ind.all)), paste0(name.series, 'var')] = all.var[[name.series]][[i]]
+    range.all[[name.series]][[name.i]] = range.var(dat.i[,paste0(name.series, 'var')])
+    range.diff[[name.series]][[name.i]] = diff.range.var(dat.i[,paste0(name.series, 'var')])
+  }
+}
+
+range.all1 = as.data.frame(range.all)
+range.diff1 = as.data.frame(range.diff)
+
+apply(range.all1, 2, median)
+apply(range.diff1, 2, median)
+d = reshape2::melt(range.all1)
+d = reshape2::melt(range.diff1)
+
+p <- d %>%
+  ggplot( aes(x=value, color=variable, fill=variable)) + theme_bw()+
+  geom_histogram(alpha=0.6, binwidth = 0.25) +
+  ylab("") +
+  xlab("Range of moving window variance ") +
+  facet_wrap(~variable)
 
 
 
+
+
+
+
+
+# plot an example 
+# fit arma model on the residual from the IGLS 
 
