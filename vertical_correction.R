@@ -7,7 +7,7 @@ six.series <- list()
 distances <- get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData")))
 nearby_list <- get(load(file = paste0(path_results, "attribution/","list_nearby", nearby_ver, ".RData")))
 nearby_list1 <- nearby_list[which(is.na(nearby_list$Level1) == FALSE),]
-window.thres <- 10
+window.thres <- 1
 
 test <- c()
 # Read list nearby 

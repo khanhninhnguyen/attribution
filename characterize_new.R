@@ -56,13 +56,13 @@ r = sapply(c(1:length(list.main)), function(x){
   return(y)
 })
 full.list$chose = unlist(r)
-save(full.list, file = paste0(path_results, "attribution/list.segments.selected.RData"))
+save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
 
 # heteroskedasticity ------------------------------------------------------
 win.thres = 10
 one.year=365
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
-full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected.RData")))
+full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
 reduced.list = na.omit(full.list)
 construct.design <- function(data.df, name.series){
   Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
@@ -140,18 +140,17 @@ for (i in c(1:nrow(reduced.list))) {
     fit.igls = IGLS(design.m = m, tol =  tol0, day.list = dat.ij$date)
     dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'var')] <- unlist(fit.igls$var)
     dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'res')] <- unlist(fit.igls$residual)
-    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'fit')] <- unlist(fit.igls$residual)
     dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'fit')] <- unlist(fit.igls$fit)
     all.coef[[name.series0]][[name.i]] = fit.igls$coefficients
     print(j)
   }
   all.dat[[name.i]] = dat.i
 }
-save(all.coef, file = paste0(path_results, "attribution/all.coef.longest.RData"))
-save(all.dat, file = paste0(path_results, "attribution/all.dat.longest.RData"))
+save(all.coef, file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData"))
+save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData"))
 
-all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest.RData")))
-all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest.RData")))
+all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
 
 l = sapply(c(1:length(all.var$gps.era)), function(x) length(all.var$gps.era[[x]]))
 hist(l, breaks = 100)
@@ -198,7 +197,7 @@ for (i in c(1:nrow(reduced.list))) {
 range.all1 = as.data.frame(range.all)
 range.diff1 = as.data.frame(range.diff)
 range.diff1 = range.diff1/range.all1 
-range.diff1 = range.diff1[which(l>500),]
+# range.diff1 = range.diff1[which(l>500),]
 
 apply(range.all1, 2, median)
 apply(range.diff1, 2, median)
@@ -215,10 +214,67 @@ d %>%
 
 
 a= remove_na_2sides(dat.i, name.series = "gps.era")
-plot(a$date, a$gps.era, xlab = "", ylab = "GPS-ERA")
+plot(a$date, a$gps.era1, xlab = "", ylab = "GPS-ERA'")
 plot(a$date, a$gps.eravar, xlab = "", ylab = "MW variance of GPS-ERA")
+lines(a$date, a$gps.era1fit, col = "red", xlab = "", ylab = "MW variance of GPS-ERA")
 
 
 # plot an example 
 # fit arma model on the residual from the IGLS 
+
+
+fit.arima <- function(signal.test){
+  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                               max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+  
+  pq <- arimaorder(fit.b)
+  # order.init[k, c((testi*3-2): (testi*3))] <- pq
+  options(warn = 1)
+  
+  refit0 = last_signif(signal = signal.test, pq, alpha = significant.level)
+  pq = refit0$pq
+  
+  if( any(pq > 1)){
+    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                                  max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+    pq = arimaorder(fit.b)
+  }
+  
+  refit1 = last_signif(signal = signal.test, pq, alpha = significant.level)
+  
+  pq = refit1$pq
+  return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
+}
+
+order.arma <- list()
+coef.arma <- list()
+for (testi in c(1:6)) {
+  name.test = list.test[testi]
+  res.testi = residus[[name.test]]
+  order.arma.bef = data.frame(matrix(NA, ncol = 3, nrow = length(dat)))
+  order.arma.aft = data.frame(matrix(NA, ncol = 3, nrow = length(dat)))
+  coef.arma.bef = data.frame(matrix(NA, ncol = 4, nrow = length(dat)))
+  coef.arma.aft = data.frame(matrix(NA, ncol = 4, nrow = length(dat)))
+  for (i in c(1:length(dat))) {
+    dat.i = res.testi[[i]]
+    bef.residus = dat.i[1:(one.year*10)]
+    aft.residus = dat.i[-c(1:(one.year*10))]
+    bef.fit = fit.arima(bef.residus)
+    aft.fit = fit.arima(aft.residus)
+    order.arma.bef[i,] = bef.fit$pq
+    order.arma.aft[i,] = aft.fit$pq
+    coef.arma.bef[i,] = bef.fit$coef
+    coef.arma.aft[i,] = aft.fit$coef
+  }
+  order.arma[[name.test]] <- list(order.arma.bef, order.arma.aft)
+  coef.arma[[name.test]] <- list(coef.arma.bef, coef.arma.aft)
+}
+save(order.arma, file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData"))
+save(coef.arma, file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData"))
+
+
+
+
+
+
 
