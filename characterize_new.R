@@ -6,7 +6,7 @@ source(paste0(path_code_att,"sliding_variance.R"))
 
 # choose the longest segment from the screened data ----------------------------
 
-win.thres = 10
+win.thres = 1
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.gps"
 one.year=365
@@ -16,6 +16,7 @@ nb.consecutive <- function(list.day, x){
   y = length(which(diff(b)==1))
   return(y)
 }
+L = one.year*win.thres
 list.break = data.frame(ref = substr(names(dat), start = 1, stop = 4), 
                         brp = substr(names(dat), start = 6, stop = 15),
                         nb = substr(names(dat), start = 17, stop = 20))
@@ -30,8 +31,8 @@ for (i in c(1:length(list.main))) {
     list.ij = paste0(list.nb[[j]]$ref,".",as.character(list.nb[[j]]$brp), ".", list.nb[[j]]$nb)
     data.ij = dat[list.ij]
     length.all <- sapply(c(1:length(data.ij)), function(x){
-      seg1 = data.ij[[x]][c(1:3650),]
-      seg2 = data.ij[[x]][-c(1:3650),]
+      seg1 = data.ij[[x]][c(1:L),]
+      seg2 = data.ij[[x]][-c(1:L),]
       y = c(nb.consecutive(list.day = seg1$date, x = seg1$gps.gps), nb.consecutive(list.day = seg2$date, x = seg2$gps.gps))
     })
     length.seg <- rbind(length.seg, t(length.all))
@@ -59,7 +60,7 @@ full.list$chose = unlist(r)
 save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
 
 # heteroskedasticity ------------------------------------------------------
-win.thres = 10
+win.thres = 1
 one.year=365
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
@@ -115,9 +116,9 @@ remove_na_2sides <- function(df, name.series){
 
 choose_segment <- function(x){
   if(x==1){
-    y =c(1:3650)
+    y =c(1:L)
   }else{
-    y = c(3651:7300)
+    y = c((L+1):(2*L))
   }
 }
 
