@@ -10,7 +10,7 @@ win.thres = 10
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.era"
 one.year=365
-last_signif <- function(signal, pq, alpha){  
+last_signif <- function(signal, pq, alpha, fit.b){  
   nb.or <- sum(pq)
   pq1 = rep(NA,3)
   while ( identical(as.numeric(pq1), pq) == FALSE) { # iteratively identify the model, stop when the model are the same after the significant check

@@ -3,10 +3,13 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
+win.thres = 10
+one.year=365
+L = one.year*win.thres
 
 # choose the longest segment from the screened data ----------------------------
 
-win.thres = 1
+
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.gps"
 one.year=365
@@ -16,7 +19,6 @@ nb.consecutive <- function(list.day, x){
   y = length(which(diff(b)==1))
   return(y)
 }
-L = one.year*win.thres
 list.break = data.frame(ref = substr(names(dat), start = 1, stop = 4), 
                         brp = substr(names(dat), start = 6, stop = 15),
                         nb = substr(names(dat), start = 17, stop = 20))
@@ -24,6 +26,7 @@ list.break[] <- lapply(list.break, as.character)
 list.break$brp = as.Date(list.break$brp , format = "%Y-%m-%d")
 list.main = unique((list.break$ref))
 length.seg = matrix(NA, ncol = 2, nrow = 0)
+list.break[c("len1", "len2")] <- NA
 for (i in c(1:length(list.main))) {
   list.s = list.break[which(list.break$ref == list.main[i]),]
   list.nb = split(list.s, list.s$nb)
@@ -35,11 +38,11 @@ for (i in c(1:length(list.main))) {
       seg2 = data.ij[[x]][-c(1:L),]
       y = c(nb.consecutive(list.day = seg1$date, x = seg1$gps.gps), nb.consecutive(list.day = seg2$date, x = seg2$gps.gps))
     })
-    length.seg <- rbind(length.seg, t(length.all))
+    
+    list.break[which(list.break$ref %in% list.nb[[j]]$ref & list.break$nb %in% list.nb[[j]]$nb), c("len1", "len2")] = (t(length.all))
   }
 }
-list.break$len1 = length.seg[,1]
-list.break$len2 = length.seg[,2]
+
 
 res <- data.frame(seg = list.seg, side = list.side)
 
@@ -60,8 +63,7 @@ full.list$chose = unlist(r)
 save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
 
 # heteroskedasticity ------------------------------------------------------
-win.thres = 1
-one.year=365
+
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
 reduced.list = na.omit(full.list)
@@ -136,7 +138,7 @@ for (i in c(1:nrow(reduced.list))) {
   for (j in c(1:6)) {
     name.series0 = list.test[j]
     m = construct.design(dat.ij, name.series = name.series0)
-    tol0 = 0.0000001
+    tol0 = 0.000000001
     if(i == 49 & j ==5){ tol0 = 0.0001 }
     fit.igls = IGLS(design.m = m, tol =  tol0, day.list = dat.ij$date)
     dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'var')] <- unlist(fit.igls$var)
@@ -153,8 +155,9 @@ save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thr
 all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
 
-l = sapply(c(1:length(all.var$gps.era)), function(x) length(all.var$gps.era[[x]]))
-hist(l, breaks = 100)
+# l = sapply(c(1:length(all.dat)), function(x) length(all.dat[[x]]$gps.era))
+length.consecutive = sapply(c(1:nrow(reduced.list)), function(x) max(reduced.list[x, c('len1', 'len2')]))
+hist(length.consecutive , breaks = 100, main = "Histogram of the number of consecutive pairs", xlab = "")
 range.var <- function(x, day.list, s){
   df = data.frame(date = day.list, x = x)
   df$y = format(df$date, "%Y")
@@ -212,17 +215,82 @@ d %>%
   xlab("Relative difference of the range of moving window variance ") +
   facet_wrap(~variable)
 
-
+summary(range.all1)
+summary(range.diff1)
 
 a= remove_na_2sides(dat.i, name.series = "gps.era")
-plot(a$date, a$gps.era1, xlab = "", ylab = "GPS-ERA'")
-plot(a$date, a$gps.eravar, xlab = "", ylab = "MW variance of GPS-ERA")
-lines(a$date, a$gps.era1fit, col = "red", xlab = "", ylab = "MW variance of GPS-ERA")
+plot(a$date, a$gps.era1, xlab = "", ylab = "GPS-ERA'", type = 'l', col = "gray")
+lines(a$date, a$gps.era1fit, col = "red", xlab = "", ylab = "MW variance of GPS-ERA'")
+plot(a$date, a$gps.era1res, col = "red", xlab = "", type = 'l', ylab = "residual of GPS-ERA'")
+plot(a$date, a$gps.era1res^2, col = "red", xlab = "", ylab = "MW variance of GPS-ERA'")
+lines(a$date, a$gps.era1var, xlab = "", ylab = "MW variance of GPS-ERA'")
 
 
 # plot an example 
-# fit arma model on the residual from the IGLS 
-
+# fit arma model on the residual from the IGLS ------------------------------
+# used function  --- ------------
+last_signif <- function(signal, pq, alpha, fit.b){  
+  nb.or <- sum(pq)
+  pq1 = rep(NA,3)
+  while ( identical(as.numeric(pq1), pq) == FALSE) { # iteratively identify the model, stop when the model are the same after the significant check
+    pq1 = pq
+    if(nb.or==0){
+      pandcoef <- list(p.value = rep(-1,4),coef = rep(0,4))
+    }else{
+      fitARIMA = try(arima( signal, pq, method="ML"), TRUE)
+      if (class(fitARIMA) == "try-error"){
+        fitARIMA = fit.b
+      }
+      pandcoef <- p.and.coef(fitARIMA, pq, nb.or)
+    }
+    pq = check_sig(p.val = pandcoef$p.value, alpha = alpha)
+    nb.or <- sum(pq)
+  }
+  return(list( pq = pq, pandcoef = pandcoef))
+}
+diff.var <- function(name.test){
+  if(name.test == "gps.gps"){
+    varname = c("GPS.x", "GPS.y")
+  }
+  if(name.test == "gps.era"){
+    varname = c("GPS.x", "ERAI.x")
+  }
+  if(name.test == "gps1.era"){
+    varname = c("GPS.y", "ERAI.x")
+  }
+  if(name.test == "gps.era1"){
+    varname = c("GPS.x", "ERAI.y")
+  }
+  if(name.test == "gps1.era1"){
+    varname = c("GPS.y", "ERAI.y")
+  }
+  if(name.test == "era.era"){
+    varname = c("ERAI.x", "ERAI.y")
+  }
+  return(varname)
+}
+p.and.coef <- function(fitARIMA, pq1, nb.or){
+  test.sig = coeftest(fitARIMA)
+  ord = pq1[c(1,3)]
+  orde = c(rbind(ord,ord-1))
+  orde[which(orde <0)] <- 0
+  ind.param = which(orde >0)
+  orde[ind.param] <- fitARIMA$coef[1:nb.or]
+  p.value <- rep(-1, 4)
+  p.value[ ind.param] <- test.sig[,4][1:nb.or]
+  return(list(p.value = p.value , coef = orde))
+}
+# return significant order
+check_sig <- function(p.val, alpha){
+  ar.or = length(which(p.val[1:2] >0 & p.val[1:2] <= alpha))
+  ma.or = length(which(p.val[3:4] >0 & p.val[3:4] <= alpha))
+  return(c(ar.or, 0, ma.or))
+}
+# read residual and fit arima-------------------
+full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
+reduced.list = na.omit(full.list)
+all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
 
 fit.arima <- function(signal.test){
   fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
@@ -230,9 +298,9 @@ fit.arima <- function(signal.test){
   
   pq <- arimaorder(fit.b)
   # order.init[k, c((testi*3-2): (testi*3))] <- pq
-  options(warn = 1)
+  options(warn = 2)
   
-  refit0 = last_signif(signal = signal.test, pq, alpha = significant.level)
+  refit0 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
   pq = refit0$pq
   
   if( any(pq > 1)){
@@ -241,39 +309,80 @@ fit.arima <- function(signal.test){
     pq = arimaorder(fit.b)
   }
   
-  refit1 = last_signif(signal = signal.test, pq, alpha = significant.level)
+  refit1 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
   
   pq = refit1$pq
   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
 
-order.arma <- list()
-coef.arma <- list()
+order.arma.l <- list()
+coef.arma.l <- list()
 for (testi in c(1:6)) {
   name.test = list.test[testi]
-  res.testi = residus[[name.test]]
-  order.arma.bef = data.frame(matrix(NA, ncol = 3, nrow = length(dat)))
-  order.arma.aft = data.frame(matrix(NA, ncol = 3, nrow = length(dat)))
-  coef.arma.bef = data.frame(matrix(NA, ncol = 4, nrow = length(dat)))
-  coef.arma.aft = data.frame(matrix(NA, ncol = 4, nrow = length(dat)))
-  for (i in c(1:length(dat))) {
-    dat.i = res.testi[[i]]
-    bef.residus = dat.i[1:(one.year*10)]
-    aft.residus = dat.i[-c(1:(one.year*10))]
-    bef.fit = fit.arima(bef.residus)
-    aft.fit = fit.arima(aft.residus)
-    order.arma.bef[i,] = bef.fit$pq
-    order.arma.aft[i,] = aft.fit$pq
-    coef.arma.bef[i,] = bef.fit$coef
-    coef.arma.aft[i,] = aft.fit$coef
+  order.arma = data.frame(matrix(NA, ncol = 3, nrow = length(all.dat)))
+  coef.arma = data.frame(matrix(NA, ncol = 4, nrow = length(all.dat)))
+  for (i in c(1:nrow(reduced.list))) {
+    name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+    dat.i = all.dat[[name.i]]
+    arima.fit = fit.arima(dat.i[, paste0(name.test, "res")])
+    order.arma[i,] = arima.fit$pq
+    coef.arma[i,] = arima.fit$coef
   }
-  order.arma[[name.test]] <- list(order.arma.bef, order.arma.aft)
-  coef.arma[[name.test]] <- list(coef.arma.bef, coef.arma.aft)
+  order.arma.l[[name.test]] <- list(order.arma)
+  coef.arma.l[[name.test]] <- list(coef.arma)
 }
-save(order.arma, file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData"))
-save(coef.arma, file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData"))
+save(order.arma.l, file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData"))
+save(coef.arma.l, file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData"))
 
+# for plot 
+list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(1,2)", "ARMA(2,1)", "ARMA(2,2)")
+model.iden <- function(order){
+  model = c()
+  if (identical(order, c(1,0,1))){ model = "ARMA(1,1)"}
+  else if (identical(order, c(1,0,0))){ model = "AR(1)"}
+  else if (identical(order, c(0,0,1))){ model = "MA(1)"}
+  else if (identical(order, c(0,0,0))){ model = "White"}
+  else if (identical(order, c(2,0,0))){ model = "AR(2)"}
+  else if (identical(order, c(2,0,1))){ model = "ARMA(2,1)"}
+  else if (identical(order, c(1,0,2))){ model = "ARMA(1,2)"}
+  else if (identical(order, c(0,0,2))){ model = "MA(2)"}
+  else if (identical(order, c(2,0,2))){ model = "ARMA(2,2)"}
+  
+  return(model)
+}
+length.data =nrow(reduced.list)
+six.model = data.frame(matrix(NA, ncol = 6, nrow = length.data))
+for (i in 1:length(list.test)) {
+  name.test = list.test[i]
+  six.model[,i] = sapply(c(1:length.data), function(x) model.iden(as.numeric(unlist(order.arma.l[[name.test]][[1]][x,]))))
+}
+colnames(six.model) <- list.test
+six.values = c()
+for (i in 1:length(list.test)) {
+  value.count = sapply(c(list.model), function(x) length(which(six.model[,i] == x)))
+  six.values <- c( six.values, value.count)
+}
+res.plot = data.frame(series = rep(list.test, each = 9), mod = rep(list.model, 6), value = six.values*100/length.data)
+res.plot$series = factor(res.plot$series, 
+                         levels=list.test)
+res.plot$mod = factor(res.plot$mod, 
+                      levels=list.model)
 
+jpeg(paste0(path_results,"attribution/iden_model_longest.jpg" ),width = 3000, height = 1800,res = 300)
+p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) + 
+  geom_bar(position="dodge", stat="identity")+theme_bw()+ 
+  xlab("") + ylab("Percentage of model")+
+  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
+        axis.title = element_text(size=14))
+# theme(
+#   legend.title=element_blank(),
+#   legend.position = c(.5, .95),
+#   legend.justification = c("right", "top"),
+#   legend.box.just = "right",
+#   legend.margin = margin(6, 6, 6, 6)
+# )
+print(p)
+dev.off()
 
 
 
