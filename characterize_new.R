@@ -3,7 +3,7 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
-win.thres = 10
+win.thres = 1
 one.year=365
 L = one.year*win.thres
 
@@ -42,9 +42,6 @@ for (i in c(1:length(list.main))) {
     list.break[which(list.break$ref %in% list.nb[[j]]$ref & list.break$nb %in% list.nb[[j]]$nb), c("len1", "len2")] = (t(length.all))
   }
 }
-
-
-res <- data.frame(seg = list.seg, side = list.side)
 
 # add distance
 distances <- as.data.frame(get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData"))))
@@ -212,7 +209,7 @@ d %>%
   ggplot( aes(x=value, color=variable, fill=variable)) + theme_bw()+
   geom_histogram(alpha=0.6, binwidth = 0.25) +
   ylab("") +
-  xlab("Relative difference of the range of moving window variance ") +
+  xlab("Range of moving window variance ") +
   facet_wrap(~variable)
 
 summary(range.all1)
@@ -335,6 +332,9 @@ save(order.arma.l, file = paste0(path_results,"attribution/order.model.arma", wi
 save(coef.arma.l, file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData"))
 
 # for plot 
+order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+
 list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(1,2)", "ARMA(2,1)", "ARMA(2,2)")
 model.iden <- function(order){
   model = c()
@@ -383,6 +383,29 @@ p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) +
 # )
 print(p)
 dev.off()
+
+x=list( a = six.model$gps.era, b = six.model$gps.gps)
+library(ggvenn)
+
+#### Diagramme de Venn (left=before, right=after):
+
+six.model$main = reduced.list$main
+six.model.m = reshape2::melt(six.model, id = "main")
+
+name.series = "gps.gps"
+x <- list(
+  white = six.model.m$main[six.model.m$value=="White"],
+  AR1 = six.model.m$main[six.model.m$value=="AR(1)"],
+  MA1 = six.model.m$main[six.model.m$value=="MA(1)"],
+  ARMA11 = six.model.m$main[six.model.m$value=="ARMA(1,1)"]
+
+)
+ggvenn(
+  x, 
+  fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"),
+  stroke_size = 0.5, set_name_size = 6
+)
+
 
 
 
