@@ -3,7 +3,7 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
-win.thres = 1
+win.thres = 10
 one.year=365
 L = one.year*win.thres
 
@@ -25,8 +25,8 @@ list.break = data.frame(ref = substr(names(dat), start = 1, stop = 4),
 list.break[] <- lapply(list.break, as.character)
 list.break$brp = as.Date(list.break$brp , format = "%Y-%m-%d")
 list.main = unique((list.break$ref))
-length.seg = matrix(NA, ncol = 2, nrow = 0)
-list.break[c("len1", "len2")] <- NA
+# length.seg = matrix(NA, ncol = , nrow = 0)
+list.break[c("nbc1", "nbc2", "len1", "len2")] <- NA
 for (i in c(1:length(list.main))) {
   list.s = list.break[which(list.break$ref == list.main[i]),]
   list.nb = split(list.s, list.s$nb)
@@ -36,12 +36,15 @@ for (i in c(1:length(list.main))) {
     length.all <- sapply(c(1:length(data.ij)), function(x){
       seg1 = data.ij[[x]][c(1:L),]
       seg2 = data.ij[[x]][-c(1:L),]
-      y = c(nb.consecutive(list.day = seg1$date, x = seg1$gps.gps), nb.consecutive(list.day = seg2$date, x = seg2$gps.gps))
+      y = c(nb.consecutive(list.day = seg1$date, x = seg1$gps.gps), nb.consecutive(list.day = seg2$date, x = seg2$gps.gps),
+            length(na.omit(seg1$gps.gps)), length(na.omit(seg2$gps.gps)))
     })
     
-    list.break[which(list.break$ref %in% list.nb[[j]]$ref & list.break$nb %in% list.nb[[j]]$nb), c("len1", "len2")] = (t(length.all))
+    list.break[which(list.break$ref %in% list.nb[[j]]$ref & list.break$nb %in% list.nb[[j]]$nb), c("nbc1", "nbc2", "len1", "len2")] = (t(length.all))
   }
 }
+list.break$r1 = list.break$nbc1/list.break$len1
+list.break$r2 = list.break$nbc2/list.break$len2
 
 # add distance
 distances <- as.data.frame(get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData"))))
@@ -50,7 +53,7 @@ full.list = left_join(list.break, distances, by = c("main", "nearby"))
 
 r = sapply(c(1:length(list.main)), function(x){
   list.s = full.list[which(full.list$main == list.main[x]),]
-  ind.seg = ifelse(c(max(list.s$len1) > max(list.s$len2),  max(list.s$len1) > max(list.s$len2)), c(which.max(list.s$len1),1), c(which.max(list.s$len2),2))
+  ind.seg = ifelse(c(max(list.s$nbc1) > max(list.s$nbc2),  max(list.s$nbc1) > max(list.s$nbc2)), c(which.max(list.s$nbc1),1), c(which.max(list.s$nbc2),2))
   y = rep(NA, nrow(list.s))
   y[ind.seg[1]] = ind.seg[2]
   print(x)
