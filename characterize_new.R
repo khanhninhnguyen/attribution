@@ -3,7 +3,7 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
-win.thres = 10
+win.thres = 1
 one.year=365
 L = one.year*win.thres
 
@@ -51,11 +51,15 @@ distances <- as.data.frame(get(load(file = paste0(path_results, "attribution/", 
 colnames(list.break)[c(1,3)] <- c("main", "nearby")
 full.list = left_join(list.break, distances, by = c("main", "nearby"))
 
+# selection of segment based on its ratio of number of consecutive pairs
+
 r = sapply(c(1:length(list.main)), function(x){
-  list.s = full.list[which(full.list$main == list.main[x]),]
+  list.s1 = full.list[which(full.list$main == list.main[x]),]
+  ind.1 = which(list.s1$r1>0.9 | list.s1$r2>0.9)
+  list.s = list.s1[ind.1,]
   ind.seg = ifelse(c(max(list.s$nbc1) > max(list.s$nbc2),  max(list.s$nbc1) > max(list.s$nbc2)), c(which.max(list.s$nbc1),1), c(which.max(list.s$nbc2),2))
-  y = rep(NA, nrow(list.s))
-  y[ind.seg[1]] = ind.seg[2]
+  y = rep(NA, nrow(list.s1))
+  y[ind.1[ind.seg[1]]] = ind.seg[2]
   print(x)
   return(y)
 })
@@ -408,9 +412,41 @@ ggvenn(
   fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"),
   stroke_size = 0.5, set_name_size = 6
 )
+# plot the length of data -------
+a = na.omit(full.list)
+b = sapply(c(1:nrow(a)), function(x) a[x,c(8,9)][a[x,12]])
+d = sapply(c(1:nrow(a)), function(x) a[x,c(4,5)][a[x,12]])
+df = data.frame(b=unlist(b), d=unlist(d))
+scatterplot <- ggplot(df, aes(x = b, y =d)) + theme_bw()+
+  geom_point(size = 3, alpha = 0.6) +
+  xlab("No. consecutive pairs/Total length")+ylab("No. consecutive pairs")
+guides(color = FALSE) +
+  theme(plot.margin = margin())
+
+marginal_distribution <- function(x, var) {
+  ggplot(x, aes_string(x = var)) +
+    geom_histogram(bins = 40, alpha = 0.8) +
+    guides(fill = FALSE) +
+    theme_void() +
+    theme(plot.margin = margin())}
+
+x_hist <- marginal_distribution(df, "b")
+y_hist <- marginal_distribution(df, "d") +coord_flip()
+
+library(cowplot)
+aligned_x_hist <- align_plots(x_hist, scatterplot, align = "v")[[1]]
+aligned_y_hist <- align_plots(y_hist, scatterplot, align = "h")[[1]]
 
 
-
-
+plot_grid(
+  aligned_x_hist
+  , NULL
+  , scatterplot
+  , aligned_y_hist
+  , ncol = 2
+  , nrow = 2
+  , rel_heights = c(0.2, 1)
+  , rel_widths = c(1, 0.2)
+)
 
 
