@@ -3,7 +3,7 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
-win.thres = 1
+win.thres = 10
 one.year=365
 L = one.year*win.thres
 
@@ -45,7 +45,7 @@ for (i in c(1:length(list.main))) {
 }
 list.break$r1 = list.break$nbc1/list.break$len1
 list.break$r2 = list.break$nbc2/list.break$len2
-
+list.break <- list.break[which(list.break$nb!= "kaza"),]
 # add distance
 distances <- as.data.frame(get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData"))))
 colnames(list.break)[c(1,3)] <- c("main", "nearby")
