@@ -450,3 +450,11 @@ plot_grid(
 )
 
 
+
+
+# histogram of the mean 
+a = sapply(c(1:length(all.dat)), function(x) mean(all.dat[[x]]$gps.era, na.rm = TRUE))
+
+
+
+
