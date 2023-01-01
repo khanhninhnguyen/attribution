@@ -3,10 +3,24 @@
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
-win.thres = 10
+
+remove_na_2sides <- function(df, name.series){
+  a = which(is.na(df[name.series])== FALSE)
+  df = df[c(min(a):(max(a))), ]
+  return(df)
+}
+
+choose_segment <- function(x){
+  if(x==1){
+    y =c(1:L)
+  }else{
+    y = c((L+1):(2*L))
+  }
+}
+
+win.thres = 1
 one.year=365
 L = one.year*win.thres
-
 # choose the longest segment from the screened data ----------------------------
 
 
@@ -66,67 +80,11 @@ r = sapply(c(1:length(list.main)), function(x){
 full.list$chose = unlist(r)
 save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
 
-# heteroskedasticity ------------------------------------------------------
-
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
 reduced.list = na.omit(full.list)
-construct.design <- function(data.df, name.series){
-  Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
-    rename(signal=name.series) %>% 
-    mutate(complete.time=1:nrow(data.df)) %>% 
-    dplyr::select(-date)
-  for (i in 1:4){
-    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
-  }
-  Data.mod <- Data.mod %>% dplyr::select(-complete.time)
-  return(Data.mod)
-}
 
-IGLS <- function(design.m, tol, day.list){
-  resi0 = rep(NA, nrow(design.m))
-  # call expression
-  list.para <- colnames(design.m)[2:dim(design.m)[2]]
-  mod.X <-  list.para %>% stringr::str_c(collapse = "+")
-  mod.expression <- c("signal","~",mod.X) %>% stringr::str_c(collapse = "")
-  # ols
-  ols.fit = lm( mod.expression, data = design.m)
-  resi0[which(is.na(design.m$signal)==FALSE)] <- ols.fit$residuals
-  old.coef = ols.fit$coefficients
-  # estimate initial moving variance 
-  Y0 = data.frame(date = day.list, residus = resi0)
-  w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
-  change1 = 10
-  i=0
-  while (change1 > tol) {
-     design.m$w = w0^2
-     gls.fit = eval(parse(text=paste0("gls(",mod.expression,",data=design.m, correlation = NULL, na.action = na.omit, weights=varFixed(value = ~w)",")")))
-     change1 = sum((gls.fit$coefficients - old.coef)^2)
-     deg =  cbind(rep(1, nrow(design.m)), as.matrix(design.m[,c(2:9)])) 
-     fit.val = deg %*% as.matrix(gls.fit$coefficients)
-     resi0 = design.m$signal - fit.val
-     Y0 = data.frame(date = day.list, residus = resi0)
-     w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
-     old.coef = gls.fit$coefficients
-     i=1+i
-  }
-  print(i)
-  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0, fit = fit.val))
-}
-
-remove_na_2sides <- function(df, name.series){
-  a = which(is.na(df[name.series])== FALSE)
-  df = df[c(min(a):(max(a))), ]
-  return(df)
-}
-
-choose_segment <- function(x){
-  if(x==1){
-    y =c(1:L)
-  }else{
-    y = c((L+1):(2*L))
-  }
-}
+# heteroskedasticity ------------------------------------------------------
 
 # run the regression for the whole data
 all.coef = list()
@@ -188,6 +146,18 @@ diff.range.var <- function(x, day.list,s){
     
   }
 }
+range.var <- function(x, day.list, s){
+  df = data.frame(date = day.list, x = x)
+  df$y = format(df$date, "%Y")
+  df[which(is.na(s)==TRUE),] = NA
+  if(all(x==1)){
+    NA
+  }else{
+    anu.min = min(df$x, na.rm = TRUE)
+    anu.max = max(df$x, na.rm = TRUE)
+    anu.max - anu.min
+  }
+} # replaced functionf for 1 year
 
 range.all = list()
 range.diff = list()
@@ -204,6 +174,8 @@ for (i in c(1:nrow(reduced.list))) {
   }
 }
 
+res.tol = list(range.all, range.mean)
+save(res.tol, file = paste0(path_results, "attribution/range_mean_var", win.thres,".RData"))
 range.all1 = as.data.frame(range.all)
 range.diff1 = as.data.frame(range.diff)
 range.diff1 = range.diff1/range.all1 
@@ -222,7 +194,18 @@ range.diff1 = range.diff1/range.all1
 #   facet_wrap(~variable)
 
 # CDF 
+a = rbind(reshape2::melt(range.mean), reshape2::melt(range.all))
+a$feature = rep(c("mean", "annual range"), each = nrow(a)/2)
+a$series = rep(rep(list.name.test, each = nrow(a)/12),2)
 
+ggplot(a, aes(x = value, col = series ))+ theme_bw()+
+  stat_ecdf(lwd = 0.5, aes(linetype=feature))+
+  scale_x_continuous(breaks = seq(0, 10, 1), limits = c(0,10))+
+  geom_hline(yintercept = 0.5, size = 0.3) +
+  scale_color_manual(values = brewer.pal(n = 6, name = 'Dark2'))+
+  labs(y = "CDF", x = "Moving window variance", linetype = "")+
+  theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
+        axis.title = element_text(size=16))
 
 summary(range.all1)
 summary(range.diff1)

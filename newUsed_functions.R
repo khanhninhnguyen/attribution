@@ -298,3 +298,46 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   return(list(fit.hac = fit.hac.r, fit.ols = fit.ols.r, vcov.para = vcov.para.r, predicted = fit.ols.r$fitted.values))
 }
 
+construct.design <- function(data.df, name.series){
+  Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
+    rename(signal=name.series) %>% 
+    mutate(complete.time=1:nrow(data.df)) %>% 
+    dplyr::select(-date)
+  for (i in 1:4){
+    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+  }
+  Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+  return(Data.mod)
+}
+
+IGLS <- function(design.m, tol, day.list){
+  resi0 = rep(NA, nrow(design.m))
+  # call expression
+  list.para <- colnames(design.m)[2:dim(design.m)[2]]
+  mod.X <-  list.para %>% stringr::str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X) %>% stringr::str_c(collapse = "")
+  # ols
+  ols.fit = lm( mod.expression, data = design.m)
+  resi0[which(is.na(design.m$signal)==FALSE)] <- ols.fit$residuals
+  old.coef = ols.fit$coefficients
+  # estimate initial moving variance 
+  Y0 = data.frame(date = day.list, residus = resi0)
+  w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
+  change1 = 10
+  i=0
+  while (change1 > tol) {
+    design.m$w = w0^2
+    gls.fit = eval(parse(text=paste0("gls(",mod.expression,",data=design.m, correlation = NULL, na.action = na.omit, weights=varFixed(value = ~w)",")")))
+    change1 = sum((gls.fit$coefficients - old.coef)^2)
+    deg =  cbind(rep(1, nrow(design.m)), as.matrix(design.m[,c(2:9)])) 
+    fit.val = deg %*% as.matrix(gls.fit$coefficients)
+    resi0 = design.m$signal - fit.val
+    Y0 = data.frame(date = day.list, residus = resi0)
+    w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
+    old.coef = gls.fit$coefficients
+    i=1+i
+  }
+  print(i)
+  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0, fit = fit.val))
+}
+

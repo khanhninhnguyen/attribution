@@ -491,3 +491,18 @@ a = read.series(path_series = path_series_nearby, station = "pama", na.rm = F, a
 b = read.series(path_series = path_series_main, station = "medi", na.rm = F, add.full = 0 )
 
 
+
+
+# comparison bw 1 year vs 10 years ----------------------------------------
+
+all.1 = get(load(file = paste0(path_results, "attribution/range_mean_var", win.thres=1,".RData")))
+all.10 = get(load(file = paste0(path_results, "attribution/range_mean_var", win.thres=10,".RData")))
+
+a = as.data.frame(all.1[[2]])
+a$name = substr(rownames(a), start = 1, stop = 4)
+b = as.data.frame(all.10[[2]])
+b$name = substr(rownames(b), start = 1, stop = 4)
+d = inner_join(a,b, by = c("name"))
+
+
+
