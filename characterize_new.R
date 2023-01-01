@@ -191,6 +191,7 @@ diff.range.var <- function(x, day.list,s){
 
 range.all = list()
 range.diff = list()
+range.mean = list()
 for (i in c(1:nrow(reduced.list))) {
   name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
   dat.i = all.dat[[name.i]]
@@ -199,6 +200,7 @@ for (i in c(1:nrow(reduced.list))) {
     var.ij = dat.i[,paste0(name.series, 'var')]
     range.all[[name.series]][[name.i]] = range.var(x = var.ij , day.list = dat.i$date, s = dat.i$gps.gps)
     range.diff[[name.series]][[name.i]] = diff.range.var(x = var.ij , day.list = dat.i$date, s = dat.i$gps.gps)
+    range.mean[[name.series]][[name.i]] = mean(var.ij, na.rm = TRUE)
   }
 }
 
@@ -206,22 +208,25 @@ range.all1 = as.data.frame(range.all)
 range.diff1 = as.data.frame(range.diff)
 range.diff1 = range.diff1/range.all1 
 # range.diff1 = range.diff1[which(l>500),]
+# Histogram 
+# apply(range.all1, 2, median)
+# apply(range.diff1, 2, median)
+# d = reshape2::melt(range.all1)
+# d = reshape2::melt(range.diff1)
+# 
+# d %>%
+#   ggplot( aes(x=value, color=variable, fill=variable)) + theme_bw()+
+#   geom_histogram(alpha=0.6, binwidth = 0.25) +
+#   ylab("") +
+#   xlab("Range of moving window variance ") +
+#   facet_wrap(~variable)
 
-apply(range.all1, 2, median)
-apply(range.diff1, 2, median)
-d = reshape2::melt(range.all1)
-d = reshape2::melt(range.diff1)
+# CDF 
 
-d %>%
-  ggplot( aes(x=value, color=variable, fill=variable)) + theme_bw()+
-  geom_histogram(alpha=0.6, binwidth = 0.25) +
-  ylab("") +
-  xlab("Range of moving window variance ") +
-  facet_wrap(~variable)
 
 summary(range.all1)
 summary(range.diff1)
-
+# specific case
 a= remove_na_2sides(dat.i, name.series = "gps.era")
 plot(a$date, a$gps.era1, xlab = "", ylab = "GPS-ERA'", type = 'l', col = "gray")
 lines(a$date, a$gps.era1fit, col = "red", xlab = "", ylab = "MW variance of GPS-ERA'")
