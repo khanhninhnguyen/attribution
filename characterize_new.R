@@ -548,14 +548,17 @@ plot_grid(
 
 
 
-
+reduced.list$L1 = NA
 # histogram of the mean 
-a = sapply(c(1:length(all.dat)), function(x) mean(all.dat[[x]]$gps.era, na.rm = TRUE))
+for (i in c(1:nrow(reduced.list))) {
+  name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+  dat.i = dat[[name.i]]
+  dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  reduced.list$L1[i] = nb.consecutive(list.day = dat.i$date, x = dat.i$gps.gps)
+  
+}
 
-
-
-
-
+reduced.list$L2 = sapply(c(1:55), function(x) reduced.list[x, c(4,5)][reduced.list$chose[x]])
 
 
 
