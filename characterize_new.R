@@ -11,20 +11,26 @@ remove_na_2sides <- function(df, name.series){
 }
 
 choose_segment <- function(x){
-  if(x==1){
-    y =c(1:L)
+  if(L == 365){
+    if(x==1){
+      y =c((9*L+1):(10*L))
+    }else{
+      y = c((10*L+1):(11*L))
+    }
   }else{
-    y = c((L+1):(2*L))
+    if(x==1){
+      y =c(1:L)
+    }else{
+      y = c((L+1):(2*L))
+    }
   }
 }
 
-win.thres = 10
+win.thres = 1
 one.year=365
 L = one.year*win.thres
 # choose the longest segment from the screened data ----------------------------
-
-
-dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
+dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.gps"
 one.year=365
 nb.consecutive <- function(list.day, x){
@@ -79,9 +85,9 @@ r = sapply(c(1:length(list.main)), function(x){
 })
 full.list$chose = unlist(r)
 save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
-
-dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres,"years_", nearby_ver,"screened.RData")))
-full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
+# if limit 1 year ------------------
+dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
+full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = na.omit(full.list)
 
 # heteroskedasticity ------------------------------------------------------
@@ -117,9 +123,6 @@ save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thr
 all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
 
-# l = sapply(c(1:length(all.dat)), function(x) length(all.dat[[x]]$gps.era))
-length.consecutive = sapply(c(1:nrow(reduced.list)), function(x) max(reduced.list[x, c('len1', 'len2')]))
-hist(length.consecutive , breaks = 100, main = "Histogram of the number of consecutive pairs", xlab = "")
 range.var <- function(x, day.list, s){
   df = data.frame(date = day.list, x = x)
   df$y = format(df$date, "%Y")
@@ -176,9 +179,7 @@ for (i in c(1:nrow(reduced.list))) {
 
 res.tol = list(range.all, range.mean)
 save(res.tol, file = paste0(path_results, "attribution/range_mean_var", win.thres,".RData"))
-range.all1 = as.data.frame(range.all)
-range.diff1 = as.data.frame(range.diff)
-range.diff1 = range.diff1/range.all1 
+
 # range.diff1 = range.diff1[which(l>500),]
 # Histogram 
 # apply(range.all1, 2, median)
@@ -197,6 +198,7 @@ range.diff1 = range.diff1/range.all1
 a = rbind(reshape2::melt(range.mean), reshape2::melt(range.all))
 a$feature = rep(c("mean", "annual range"), each = nrow(a)/2)
 a$series = rep(rep(list.name.test, each = nrow(a)/12),2)
+library(RColorBrewer)
 
 ggplot(a, aes(x = value, col = series ))+ theme_bw()+
   stat_ecdf(lwd = 0.5, aes(linetype=feature))+
@@ -207,15 +209,15 @@ ggplot(a, aes(x = value, col = series ))+ theme_bw()+
   theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
         axis.title = element_text(size=16))
 
-summary(range.all1)
-summary(range.diff1)
+# summary(range.all1)
+# summary(range.diff1)
 # specific case
-a= remove_na_2sides(dat.i, name.series = "gps.era")
-plot(a$date, a$gps.era1, xlab = "", ylab = "GPS-ERA'", type = 'l', col = "gray")
-lines(a$date, a$gps.era1fit, col = "red", xlab = "", ylab = "MW variance of GPS-ERA'")
-plot(a$date, a$gps.era1res, col = "red", xlab = "", type = 'l', ylab = "residual of GPS-ERA'")
-plot(a$date, a$gps.era1res^2, col = "red", xlab = "", ylab = "MW variance of GPS-ERA'")
-lines(a$date, a$gps.era1var, xlab = "", ylab = "MW variance of GPS-ERA'")
+# a= remove_na_2sides(dat.i, name.series = "gps.era")
+# plot(a$date, a$gps.era1, xlab = "", ylab = "GPS-ERA'", type = 'l', col = "gray")
+# lines(a$date, a$gps.era1fit, col = "red", xlab = "", ylab = "MW variance of GPS-ERA'")
+# plot(a$date, a$gps.era1res, col = "red", xlab = "", type = 'l', ylab = "residual of GPS-ERA'")
+# plot(a$date, a$gps.era1res^2, col = "red", xlab = "", ylab = "MW variance of GPS-ERA'")
+# lines(a$date, a$gps.era1var, xlab = "", ylab = "MW variance of GPS-ERA'")
 
 
 # plot an example 
@@ -279,13 +281,13 @@ check_sig <- function(p.val, alpha){
   return(c(ar.or, 0, ma.or))
 }
 # read residual and fit arima-------------------
-full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
-reduced.list = na.omit(full.list)
+# full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
+# reduced.list = na.omit(full.list)
 all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
 
 fit.arima <- function(signal.test){
-  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
                                max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
   
   pq <- arimaorder(fit.b)
@@ -296,7 +298,7 @@ fit.arima <- function(signal.test){
   pq = refit0$pq
   
   if( any(pq > 1)){
-    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
                                   max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
     pq = arimaorder(fit.b)
   }
@@ -315,6 +317,7 @@ fit.arima.manual <- function(signal.test){
   list.model.name = c("white", "ar1", "ma1", "arma1")
   list.model =  list(white, ar1, ma1, arma1)
   bic.list = c(white$bic, ar1$bic, ma1$bic, arma1$bic)
+  print(bic.list)
   ind.chosen = which.min(bic.list)
   model.chosen = list.model[[ind.chosen]]
   pq = arimaorder(model.chosen)
@@ -349,12 +352,12 @@ coef.arma.l <- list()
 for (testi in c(1:6)) {
   name.test = list.test[testi]
   order.arma = data.frame(matrix(NA, ncol = 3, nrow = length(all.dat)))
-  coef.arma = data.frame(matrix(NA, ncol = 3, nrow = length(all.dat)))
+  coef.arma = data.frame(matrix(NA, ncol = 4, nrow = length(all.dat)))
   for (i in c(1:nrow(reduced.list))) {
     name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
     dat.i = all.dat[[name.i]]
-    # arima.fit = fit.arima(dat.i[, paste0(name.test, "res")])
-    arima.fit = fit.arima.manual(dat.i[, paste0(name.test, "res")])
+    arima.fit = fit.arima(dat.i[, paste0(name.test, "res")]/sqrt(dat.i[, paste0(name.test, "var")]) )
+    # arima.fit = fit.arima.manual(dat.i[, paste0(name.test, "res")])
     order.arma[i,] = arima.fit$pq
     coef.arma[i,] = arima.fit$coef
   }
@@ -438,6 +441,74 @@ ggvenn(
   fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"),
   stroke_size = 0.5, set_name_size = 6
 )
+
+x <- list(
+  gps.gps = six.model.m$main[six.model.m$value=="AR(1)" & six.model.m$variable == "gps.gps"],
+  gps.era = six.model.m$main[six.model.m$value=="AR(1)" & six.model.m$variable == "gps.era"],
+  # gps.era1 = six.model.m$main[six.model.m$value=="AR(1)" & six.model.m$variable == "gps.era1"],
+  # gps1.era = six.model.m$main[six.model.m$value=="AR(1)" & six.model.m$variable == "gps1.era"],
+  gps1.era1 = six.model.m$main[six.model.m$value=="AR(1)" & six.model.m$variable == "gps1.era1"],
+  era.era1 = six.model.m$main[six.model.m$value=="AR(1)" & six.model.m$variable == "era.era"]
+)
+
+# bar plot 
+d= six.model
+res.p = data.frame(matrix(NA, ncol = 6, nrow = 6))
+for (i in c(1:6)) {
+  name.i = list.test[i]
+  c1 = sapply(c(1:6), function(x) length(which(d[name.i] == d[list.test[x]])))
+  c1[i] = 0
+  res.p[,i] = c1
+}
+colnames(res.p) = list.name.test
+res.p$other = list.name.test
+res.plot = reshape2::melt(res.p, id = "other")
+
+ggplot(data = res.plot, aes(x = variable, y = value/55*100, fill = other))+ theme_bw()+
+  geom_bar(position="dodge", stat="identity", width=0.5)+
+  ylab("Per. similar models") + 
+  xlab("") +
+  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
+        axis.title = element_text(size=14))
+
+# plot the coefficient of arima
+n=length(coef.arma.l$gps.era[[1]][,1])
+
+param.list <- c()
+model.list <- c()
+test.list  <- c()
+values <- c()
+list.param = c("phi", "theta")
+for (testi in c(1:6)) {
+  name.test = list.test[testi]
+  for (i in c(1:n)) {
+    if(is.na(six.model[i, testi]) == FALSE){
+      ind.par = unlist(extract_param(six.model[i, testi]))
+      param = coef.arma.l[[name.test]][[1]][i,ind.par]
+      param.list <- c(param.list, list.param[which(ind.par!=0)])
+      values <- c(values, param)
+      model.list <- c(model.list, rep(six.model[i, testi], length(param)))
+      test.list  <- c(test.list, rep(list.name.test[testi], length(param)))
+    }
+  }
+}
+
+extract_param <- function(x){
+  if(x =="ARMA(1,1)"){ y = list(rho = 1, theta = 3)}
+  if(x == "White"){ y = list(rho = 0, theta = 0)}
+  if(x == "AR(1)"){ y = list(rho = 1, theta = 0)}
+  if(x == "MA(1)"){ y = list(rho = 0, theta = 3)}
+  return(y)
+}
+dat.p = data.frame(name = test.list, param = param.list, model = model.list, value = unlist(values))
+ggplot(data = dat.p, aes( x = name, y = value, fill = param,col = model)) + theme_bw()+
+  geom_boxplot()+
+  xlab("") + ylab(" values of parameters ") +
+  theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
+        axis.title = element_text(size=16))+
+  scale_color_manual(values=c("red", "green", "purple"))
+
+
 # plot the length of data -------
 a = na.omit(full.list)
 b = sapply(c(1:nrow(a)), function(x) a[x,c(8,9)][a[x,12]])
@@ -480,6 +551,11 @@ plot_grid(
 
 # histogram of the mean 
 a = sapply(c(1:length(all.dat)), function(x) mean(all.dat[[x]]$gps.era, na.rm = TRUE))
+
+
+
+
+
 
 
 
