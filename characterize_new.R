@@ -18,7 +18,7 @@ choose_segment <- function(x){
   }
 }
 
-win.thres = 1
+win.thres = 10
 one.year=365
 L = one.year*win.thres
 # choose the longest segment from the screened data ----------------------------
@@ -306,17 +306,55 @@ fit.arima <- function(signal.test){
   pq = refit1$pq
   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
+fit.arima.manual <- function(signal.test){
+  white = Arima(signal.test, order = c(0, 0 ,0))
+  ar1 =  Arima(signal.test, order = c(1, 0 ,0))
+  ma1 =  Arima(signal.test, order = c(0, 0 ,1))
+  arma1 = Arima(signal.test, order = c(1, 0 ,1))
+  
+  list.model.name = c("white", "ar1", "ma1", "arma1")
+  list.model =  list(white, ar1, ma1, arma1)
+  bic.list = c(white$bic, ar1$bic, ma1$bic, arma1$bic)
+  ind.chosen = which.min(bic.list)
+  model.chosen = list.model[[ind.chosen]]
+  pq = arimaorder(model.chosen)
+  # choose only significant order and refit
+  test.signif = as.data.frame(coeftest(model.chosen)[,])
+  if(ncol(test.signif)==1){
+    model.s = "white"
+  }else{
+    test.signif = test.signif[-nrow(test.signif),]
+    ind.s = which(test.signif$`Pr(>|z|)`<0.05)
+    if(length(ind.s) < 1){
+      model.s = "white"
+    }else if(length(ind.s) == 1){
+      model.s = rownames(test.signif)
+    }else{model.s ="arma1"}
+  }
+  
+  model.chosen = list.model[[which(list.model.name %in% model.s)]]
+  # refit
+  pq = arimaorder(model.chosen)
+  coef.list = rep(0, 3)
+  coef.list[which(pq>0)] <- model.chosen$coef[-length(model.chosen$coef)]
+  test.signif = as.data.frame(coeftest(model.chosen)[,])
+  p.list = rep(1, 3)
+  p.list[which(pq>0)] <- test.signif$`Pr(>|z|)`[-length(model.chosen$coef)]
+  
+  return(list(pq = pq, coef = coef.list, p = p.list))
+}
 
 order.arma.l <- list()
 coef.arma.l <- list()
 for (testi in c(1:6)) {
   name.test = list.test[testi]
   order.arma = data.frame(matrix(NA, ncol = 3, nrow = length(all.dat)))
-  coef.arma = data.frame(matrix(NA, ncol = 4, nrow = length(all.dat)))
+  coef.arma = data.frame(matrix(NA, ncol = 3, nrow = length(all.dat)))
   for (i in c(1:nrow(reduced.list))) {
     name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
     dat.i = all.dat[[name.i]]
-    arima.fit = fit.arima(dat.i[, paste0(name.test, "res")])
+    # arima.fit = fit.arima(dat.i[, paste0(name.test, "res")])
+    arima.fit = fit.arima.manual(dat.i[, paste0(name.test, "res")])
     order.arma[i,] = arima.fit$pq
     coef.arma[i,] = arima.fit$coef
   }
@@ -357,9 +395,9 @@ for (i in 1:length(list.test)) {
   value.count = sapply(c(list.model), function(x) length(which(six.model[,i] == x)))
   six.values <- c( six.values, value.count)
 }
-res.plot = data.frame(series = rep(list.test, each = 9), mod = rep(list.model, 6), value = six.values*100/length.data)
+res.plot = data.frame(series = rep(list.name.test, each = 9), mod = rep(list.model, 6), value = six.values*100/length.data)
 res.plot$series = factor(res.plot$series, 
-                         levels=list.test)
+                         levels=list.name.test)
 res.plot$mod = factor(res.plot$mod, 
                       levels=list.model)
 
