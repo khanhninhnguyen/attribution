@@ -1,0 +1,244 @@
+# last version for the data characterization
+source(paste0(path_code_att,"simulate_time_series.R"))
+source(paste0(path_code_att,"newUsed_functions.R"))
+source(paste0(path_code_att,"sliding_variance.R"))
+source(paste0(path_code_att,"support_characterization.R"))
+
+# param
+win.thres = 10
+one.year=365
+L = one.year*win.thres
+
+# data 
+dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
+# list longest segment ---------------------
+list.break = data.frame(ref = substr(names(dat), start = 1, stop = 4), 
+                        brp = substr(names(dat), start = 6, stop = 15),
+                        nb = substr(names(dat), start = 17, stop = 20))
+list.break[] <- lapply(list.break, as.character)
+list.break$brp = as.Date(list.break$brp , format = "%Y-%m-%d")
+list.main = unique((list.break$ref))
+list.break[c("nbc1", "nbc2", "len1", "len2")] <- NA
+for (i in c(1:length(list.main))) {
+  list.s = list.break[which(list.break$ref == list.main[i]),]
+  list.nb = split(list.s, list.s$nb)
+  for (j in c(1:length(list.nb))) {
+    list.ij = paste0(list.nb[[j]]$ref,".",as.character(list.nb[[j]]$brp), ".", list.nb[[j]]$nb)
+    data.ij = dat[list.ij]
+    length.all <- sapply(c(1:length(data.ij)), function(x){
+      seg1 = data.ij[[x]][c(1:L),]
+      seg2 = data.ij[[x]][-c(1:L),]
+      y = c(nb.consecutive(list.day = seg1$date, x = seg1$gps.gps), nb.consecutive(list.day = seg2$date, x = seg2$gps.gps),
+            length(na.omit(seg1$gps.gps)), length(na.omit(seg2$gps.gps)))
+    })
+    
+    list.break[which(list.break$ref %in% list.nb[[j]]$ref & list.break$nb %in% list.nb[[j]]$nb), c("nbc1", "nbc2", "len1", "len2")] = (t(length.all))
+  }
+}
+list.break$r1 = list.break$nbc1/list.break$len1
+list.break$r2 = list.break$nbc2/list.break$len2
+list.break <- list.break[which(list.break$nb!= "kaza"),]
+# add distance
+distances <- as.data.frame(get(load(file = paste0(path_results, "attribution/", version_name, nearby_ver, "distances-pairs.RData"))))
+colnames(list.break)[c(1,3)] <- c("main", "nearby")
+full.list = left_join(list.break, distances, by = c("main", "nearby"))
+
+# selection of segment based on its ratio of number of consecutive pairs
+
+r = sapply(c(1:length(list.main)), function(x){
+  list.s1 = full.list[which(full.list$main == list.main[x]),]
+  ind.1 = which(list.s1$r1>0.9 | list.s1$r2>0.9)
+  list.s = list.s1[ind.1,]
+  ind.seg = ifelse(c(max(list.s$nbc1) > max(list.s$nbc2),  max(list.s$nbc1) > max(list.s$nbc2)), c(which.max(list.s$nbc1),1), c(which.max(list.s$nbc2),2))
+  y = rep(NA, nrow(list.s1))
+  y[ind.1[ind.seg[1]]] = ind.seg[2]
+  print(x)
+  return(y)
+})
+full.list$chose = unlist(r)
+save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
+# if limit 1 year, we limit data from 10 year ------------------
+full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
+reduced.list = na.omit(full.list)
+# compute range and mean of variance from regression IFGLS to see the heteroskedasticity------------------
+all.coef = list()
+all.dat = list()
+all.fit = list()
+for (i in c(1:nrow(reduced.list))) {
+  name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+  dat.i = dat[[name.i]]
+  dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
+  ind.all = which(is.na(dat.i[["gps.gps"]]) == FALSE)
+  print(i)
+  for (j in c(1:6)) {
+    name.series0 = list.test[j]
+    m = construct.design(dat.ij, name.series = name.series0)
+    tol0 = 0.000000001
+    if(i == 49 & j ==5){ tol0 = 0.0001 }
+    fit.igls = IGLS(design.m = m, tol =  tol0, day.list = dat.ij$date)
+    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'var')] <- unlist(fit.igls$var)
+    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'res')] <- unlist(fit.igls$residual)
+    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'fit')] <- unlist(fit.igls$fit)
+    all.coef[[name.series0]][[name.i]] = fit.igls$coefficients
+    print(j)
+  }
+  all.dat[[name.i]] = dat.i
+}
+save(all.coef, file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData"))
+save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData"))
+
+# plot the range and mean ---------
+all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
+range.all = list()
+range.mean = list()
+for (i in c(1:nrow(reduced.list))) {
+  name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+  dat.i = all.dat[[name.i]]
+  for (j in c(1:6)) {
+    name.series = list.test[j]
+    var.ij = dat.i[,paste0(name.series, 'var')]
+    range.all[[name.series]][[name.i]] = range.var(x = var.ij , day.list = dat.i$date, s = dat.i$gps.gps)
+    range.mean[[name.series]][[name.i]] = mean(var.ij, na.rm = TRUE)
+  }
+}
+a = rbind(reshape2::melt(range.mean), reshape2::melt(range.all))
+a$feature = rep(c("mean", "annual range"), each = nrow(a)/2)
+a$series = rep(rep(list.name.test, each = nrow(a)/12),2)
+a$series = factor(a$series,  levels = reoder.list.name)
+
+jpeg(paste0(path_results,"attribution/heteroskedasticity.jpg" ),width = 2500, height = 1800,res = 300)
+library(RColorBrewer)
+p <- ggplot(a, aes(x = value, col = series ))+ theme_bw()+
+  stat_ecdf(lwd = 0.5, aes(linetype=feature))+
+  scale_x_continuous(breaks = seq(0, 10, 1), limits = c(0,10))+
+  geom_hline(yintercept = 0.5, size = 0.3) +
+  scale_color_manual(values = brewer.pal(n = 6, name = 'Dark2'))+
+  labs(y = "CDF", x = "Moving window variance", linetype = "")+
+  theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
+        axis.title = element_text(size=16))
+print(p)
+dev.off()
+# Plot specific case to illustrate ------- CONTINUE --------
+
+
+# estimate the arima ------------------------------------------------------
+all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
+
+order.arma.l <- list()
+coef.arma.l <- list()
+for (testi in c(1:6)) {
+  name.test = list.test[testi]
+  order.arma = data.frame(matrix(NA, ncol = 3, nrow = length(all.dat)))
+  coef.arma = data.frame(matrix(NA, ncol = 4, nrow = length(all.dat)))
+  for (i in c(1:nrow(reduced.list))) {
+    name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+    dat.i = all.dat[[name.i]]
+    arima.fit = fit.arima(dat.i[, paste0(name.test, "res")]/sqrt(dat.i[, paste0(name.test, "var")]) )
+    # arima.fit = fit.arima.manual(dat.i[, paste0(name.test, "res")])
+    order.arma[i,] = arima.fit$pq
+    coef.arma[i,] = arima.fit$coef
+  }
+  order.arma.l[[name.test]] <- list(order.arma)
+  coef.arma.l[[name.test]] <- list(coef.arma)
+}
+save(order.arma.l, file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData"))
+save(coef.arma.l, file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData"))
+
+
+# plot the histogram of noise model -----------------
+order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+
+list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(1,2)", "ARMA(2,1)", "ARMA(2,2)")
+length.data =nrow(reduced.list)
+six.model = data.frame(matrix(NA, ncol = 6, nrow = length.data))
+for (i in 1:length(list.test)) {
+  name.test = list.test[i]
+  six.model[,i] = sapply(c(1:length.data), function(x) model.iden(as.numeric(unlist(order.arma.l[[name.test]][[1]][x,]))))
+}
+colnames(six.model) <- list.test
+six.values = c()
+for (i in 1:length(list.test)) {
+  value.count = sapply(c(list.model), function(x) length(which(six.model[,i] == x)))
+  six.values <- c( six.values, value.count)
+}
+res.plot = data.frame(series = rep(list.name.test, each = 9), mod = rep(list.model, 6), value = six.values*100/length.data)
+res.plot$series = factor(res.plot$series, 
+                         levels=list.name.test)
+res.plot$mod = factor(res.plot$mod, 
+                      levels=list.model)
+
+jpeg(paste0(path_results,"attribution/iden_model_longest.jpg" ),width = 3000, height = 1800,res = 300)
+p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) + 
+  geom_bar(position="dodge", stat="identity")+theme_bw()+ 
+  xlab("") + ylab("Percentage of model")+
+  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
+        axis.title = element_text(size=14))
+# theme(
+#   legend.title=element_blank(),
+#   legend.position = c(.5, .95),
+#   legend.justification = c("right", "top"),
+#   legend.box.just = "right",
+#   legend.margin = margin(6, 6, 6, 6)
+# )
+print(p)
+dev.off()
+# Plot coefficients ------------------------
+order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+
+n=length(coef.arma.l$gps.era[[1]][,1])
+
+param.list <- c()
+model.list <- c()
+test.list  <- c()
+values <- c()
+list.param = c("phi", "theta")
+for (testi in c(1:6)) {
+  name.test = list.test[testi]
+  for (i in c(1:n)) {
+    if(is.na(six.model[i, testi]) == FALSE){
+      ind.par = unlist(extract_param(six.model[i, testi]))
+      param = coef.arma.l[[name.test]][[1]][i,ind.par]
+      param.list <- c(param.list, list.param[which(ind.par!=0)])
+      values <- c(values, param)
+      model.list <- c(model.list, rep(six.model[i, testi], length(param)))
+      test.list  <- c(test.list, rep(list.name.test[testi], length(param)))
+    }
+  }
+}
+
+dat.p = data.frame(name = test.list, param = param.list, model = model.list, value = unlist(values))
+ggplot(data = dat.p, aes( x = name, y = value, fill = param,col = model)) + theme_bw()+
+  geom_boxplot()+
+  xlab("") + ylab(" values of parameters ") +
+  theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
+        axis.title = element_text(size=16))+
+  scale_color_manual(values=c("red", "green", "purple"))
+
+
+
+
+# estimate using ARMA(1,1) in general -------------------------------------
+
+all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
+
+coef.arma.l <- list()
+for (testi in c(1:6)) {
+  name.test = list.test[testi]
+  coef.arma = data.frame(matrix(NA, ncol = 2, nrow = length(all.dat)))
+  for (i in c(1:nrow(reduced.list))) {
+    name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+    dat.i = all.dat[[name.i]]
+    y = dat.i[, paste0(name.test, "res")]/sqrt(dat.i[, paste0(name.test, "var")]) 
+    arma11 = Arima( y, order = c(1,0,1))
+    coef.arma[i,] = arma11$coef[c(1,2)]
+  }
+  coef.arma.l[[name.test]] <- list(coef.arma)
+}
+save(order.arma.l, file = paste0(path_results,"attribution/order.model.arma", win.thres,"arma.RData"))
+save(coef.arma.l, file = paste0(path_results,"attribution/coef.model.arma", win.thres,"arma.RData"))

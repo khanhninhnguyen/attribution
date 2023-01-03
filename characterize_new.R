@@ -4,31 +4,7 @@ source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
 
-remove_na_2sides <- function(df, name.series){
-  a = which(is.na(df[name.series])== FALSE)
-  df = df[c(min(a):(max(a))), ]
-  return(df)
-}
 
-choose_segment <- function(x){
-  if(L == 365){
-    if(x==1){
-      y =c((9*L+1):(10*L))
-    }else{
-      y = c((10*L+1):(11*L))
-    }
-  }else{
-    if(x==1){
-      y =c(1:L)
-    }else{
-      y = c((L+1):(2*L))
-    }
-  }
-}
-
-win.thres = 1
-one.year=365
-L = one.year*win.thres
 # choose the longest segment from the screened data ----------------------------
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
 name.series <- "gps.gps"
@@ -85,7 +61,7 @@ r = sapply(c(1:length(list.main)), function(x){
 })
 full.list$chose = unlist(r)
 save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
-# if limit 1 year ------------------
+# if limit 1 year, we limit data from 10 year ------------------
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = na.omit(full.list)
@@ -223,63 +199,7 @@ ggplot(a, aes(x = value, col = series ))+ theme_bw()+
 # plot an example 
 # fit arma model on the residual from the IGLS ------------------------------
 # used function  --- ------------
-last_signif <- function(signal, pq, alpha, fit.b){  
-  nb.or <- sum(pq)
-  pq1 = rep(NA,3)
-  while ( identical(as.numeric(pq1), pq) == FALSE) { # iteratively identify the model, stop when the model are the same after the significant check
-    pq1 = pq
-    if(nb.or==0){
-      pandcoef <- list(p.value = rep(-1,4),coef = rep(0,4))
-    }else{
-      fitARIMA = try(arima( signal, pq, method="ML"), TRUE)
-      if (class(fitARIMA) == "try-error"){
-        fitARIMA = fit.b
-      }
-      pandcoef <- p.and.coef(fitARIMA, pq, nb.or)
-    }
-    pq = check_sig(p.val = pandcoef$p.value, alpha = alpha)
-    nb.or <- sum(pq)
-  }
-  return(list( pq = pq, pandcoef = pandcoef))
-}
-diff.var <- function(name.test){
-  if(name.test == "gps.gps"){
-    varname = c("GPS.x", "GPS.y")
-  }
-  if(name.test == "gps.era"){
-    varname = c("GPS.x", "ERAI.x")
-  }
-  if(name.test == "gps1.era"){
-    varname = c("GPS.y", "ERAI.x")
-  }
-  if(name.test == "gps.era1"){
-    varname = c("GPS.x", "ERAI.y")
-  }
-  if(name.test == "gps1.era1"){
-    varname = c("GPS.y", "ERAI.y")
-  }
-  if(name.test == "era.era"){
-    varname = c("ERAI.x", "ERAI.y")
-  }
-  return(varname)
-}
-p.and.coef <- function(fitARIMA, pq1, nb.or){
-  test.sig = coeftest(fitARIMA)
-  ord = pq1[c(1,3)]
-  orde = c(rbind(ord,ord-1))
-  orde[which(orde <0)] <- 0
-  ind.param = which(orde >0)
-  orde[ind.param] <- fitARIMA$coef[1:nb.or]
-  p.value <- rep(-1, 4)
-  p.value[ ind.param] <- test.sig[,4][1:nb.or]
-  return(list(p.value = p.value , coef = orde))
-}
-# return significant order
-check_sig <- function(p.val, alpha){
-  ar.or = length(which(p.val[1:2] >0 & p.val[1:2] <= alpha))
-  ma.or = length(which(p.val[3:4] >0 & p.val[3:4] <= alpha))
-  return(c(ar.or, 0, ma.or))
-}
+
 # read residual and fit arima-------------------
 # full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
 # reduced.list = na.omit(full.list)
