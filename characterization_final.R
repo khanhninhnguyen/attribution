@@ -240,5 +240,4 @@ for (testi in c(1:6)) {
   }
   coef.arma.l[[name.test]] <- list(coef.arma)
 }
-save(order.arma.l, file = paste0(path_results,"attribution/order.model.arma", win.thres,"arma.RData"))
 save(coef.arma.l, file = paste0(path_results,"attribution/coef.model.arma", win.thres,"arma.RData"))
