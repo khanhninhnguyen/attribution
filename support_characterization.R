@@ -116,9 +116,9 @@ check_sig <- function(p.val, alpha){
 
 fit.arima <- function(signal.test){
   fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
-                               max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+                               max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
   
-  pq <- arimaorder(fit.b)
+  pq <- forecast::arimaorder(fit.b)
   # order.init[k, c((testi*3-2): (testi*3))] <- pq
   options(warn = 2)
   
@@ -127,8 +127,8 @@ fit.arima <- function(signal.test){
   
   if( any(pq > 1)){
     fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
-                                  max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
-    pq = arimaorder(fit.b)
+                                  max.p = 1, max.q = 1, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
+    pq = forecast::arimaorder(fit.b)
   }
   
   refit1 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
@@ -177,5 +177,15 @@ extract_param <- function(x){
   if(x == "White"){ y = list(rho = 0, theta = 0)}
   if(x == "AR(1)"){ y = list(rho = 1, theta = 0)}
   if(x == "MA(1)"){ y = list(rho = 0, theta = 3)}
+  return(y)
+}
+
+convert.name.test <- function(x){
+  if (x == "gps.era"){ y = "GPS-ERA"}
+  if (x == "gps.era1"){ y = "GPS-ERA'"}
+  if (x == "gps1.era"){ y = "GPS'-ERA"}
+  if (x == "gps.gps"){ y = "GPS-GPS'"}
+  if (x == "era.era"){ y = "ERA-ERA'"}
+  if (x == "gps1.era1"){ y = "GPS'-ERA'"}
   return(y)
 }
