@@ -60,6 +60,10 @@ save(full.list, file = paste0(path_results, "attribution/list.segments.selected"
 # if limit 1 year, we limit data from 10 year ------------------
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = na.omit(full.list)
+reduced.list$l = sapply(c(1:55), function(x) reduced.list[x, c(4,5)][reduced.list$chose[x]])
+reduced.list$r = sapply(c(1:55), function(x) reduced.list[x, c(8,9)][reduced.list$chose[x]])
+rownames(reduced.list) = NULL
+
 # compute range and mean of variance from regression IFGLS to see the heteroskedasticity------------------
 all.coef = list()
 all.dat = list()
@@ -326,4 +330,47 @@ d$white1 = sapply(c(1:55), function(x) length(which(six.model[x,c(1:6)] == "Whit
 colnames(d) = c("rate1", "rate10", "nb.cons1", "nb.cons10", "nb.white1", "nb.white10")
 save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 
+
+
+# investigate the ARMA(1,1)-----------------------------
+six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
+
+all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
+dat.plot = remove_na_2sides(all.dat$`vill.2006-12-11.madr`, name.series = "gps.gps")
+y = dat.plot$gps.gpsres/sqrt(dat.plot$gps.gpsvar)
+fit.b = forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
+                             max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
+ar1 = forecast::Arima(y , order = c(1,0,0))
+arma1 = forecast::Arima(y , order = c(1,0,1))
+ma1 = forecast::Arima(y , order = c(0,0,1))
+p.val = data.frame(matrix(NA, ncol = 2, nrow = 35))
+for (l in c(1:35)) {
+  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(arma1$residuals, lag = l)$p.value)
+}
+
+y = arima.sim(model = list(ar = 0.23), n = 1000, sd = 1)
+y = arima.sim(model = list(ar = 0.57, ma = -0.36), n = 1000, sd = 1)
+
+mod_capt <- capture.output(forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
+                                                max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE))
+
+a = mod_capt[seq(2,which(mod_capt == "")[2]-1)] %>%
+  enframe(value = "raw_capture") %>%
+  extract(raw_capture,
+          into = c("model","mean","res"),
+          regex = "^ (ARIMA[(),\\d\\[\\]]+)[[:blank:]]+with (non-zero|zero) mean +:[[:blank:]]+([\\d.]+)$")
+
+ggplot(data = a, aes(x = model, y = res, col = mean))+ theme_bw()+
+  geom_point()+ylab("BIC")+ theme(axis.text.y = element_text(size = 10))
+
+
+# plot theoretical ACF and PACF
+a = ARMAacf(ar = 0.24, lag.max = 35, pacf = TRUE)
+df <- data.frame(lag = c(1:35), acf = a)
+s = c(qnorm((1 + 0.95)/2)/sqrt(sum(!is.na(y))), - qnorm((1 + 0.95)/2)/sqrt(sum(!is.na(y))))
+ggplot(data = df, mapping = aes(x = lag, y = acf)) + theme_bw()+
+  geom_hline(aes(yintercept = 0)) + ylab("pacf")+
+  geom_hline(yintercept = s, linetype = 2)+
+  geom_segment(mapping = aes(xend = lag, yend = 0))
+  
 

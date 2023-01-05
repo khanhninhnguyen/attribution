@@ -1,3 +1,4 @@
+library(nlme)
 Test_OLS_vcovhac <- function(Data.mod){
   # OLS estimates
   list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
