@@ -245,6 +245,7 @@ model.list <- c()
 test.list  <- c()
 values <- c()
 list.param = c("phi", "theta")
+list.name.station = c()
 for (testi in c(1:6)) {
   name.test = list.test[testi]
   for (i in c(1:n)) {
@@ -255,11 +256,12 @@ for (testi in c(1:6)) {
       values <- c(values, param)
       model.list <- c(model.list, rep(six.model[i, testi], length(param)))
       test.list  <- c(test.list, rep(list.name.test[testi], length(param)))
+      list.name.station = c(list.name.station, rep(names(all.dat)[i], length(param)))
     }
   }
 }
 
-dat.p = data.frame(name = test.list, param = param.list, model = model.list, value = unlist(values))
+dat.p = data.frame(name = test.list, param = param.list, model = model.list, value = unlist(values), station = list.name.station)
 dat.p$name = factor(dat.p$name,  levels = reoder.list.name)
 ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param)) + theme_bw()+
   geom_boxplot()+
@@ -336,7 +338,7 @@ save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
 
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
-dat.plot = remove_na_2sides(all.dat$`vill.2006-12-11.madr`, name.series = "gps.gps")
+dat.plot = remove_na_2sides(all.dat$`hers.2010-08-22.hert`, name.series = "gps.gps")
 y = dat.plot$gps.gpsres/sqrt(dat.plot$gps.gpsvar)
 fit.b = forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
                              max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
@@ -354,13 +356,11 @@ y = arima.sim(model = list(ar = 0.57, ma = -0.36), n = 1000, sd = 1)
 mod_capt <- capture.output(forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
                                                 max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE))
 
-a = mod_capt[seq(2,which(mod_capt == "")[2]-1)] %>%
-  enframe(value = "raw_capture") %>%
-  extract(raw_capture,
-          into = c("model","mean","res"),
-          regex = "^ (ARIMA[(),\\d\\[\\]]+)[[:blank:]]+with (non-zero|zero) mean +:[[:blank:]]+([\\d.]+)$")
-
-ggplot(data = a, aes(x = model, y = res, col = mean))+ theme_bw()+
+a = sapply(c(2:17), function(x) as.numeric(strsplit(mod_capt[x], split = ":")[[1]][2]))
+b = sapply(c(2:17), function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][2])
+d = sapply(c(2:17), function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][4]) 
+data.mod = data.frame(model =b, res =a, mean = d)
+ggplot(data = data.mod, aes(x = model, y = res, col = mean))+ theme_bw()+
   geom_point()+ylab("BIC")+ theme(axis.text.y = element_text(size = 10))
 
 

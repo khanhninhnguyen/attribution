@@ -109,8 +109,8 @@ p.and.coef <- function(fitARIMA, pq1, nb.or){
 }
 # return significant order
 check_sig <- function(p.val, alpha){
-  ar.or = length(which(p.val[1:2] >0 & p.val[1:2] <= alpha))
-  ma.or = length(which(p.val[3:4] >0 & p.val[3:4] <= alpha))
+  ar.or = length(which(p.val[1:2] >= 0 & p.val[1:2] <= alpha))
+  ma.or = length(which(p.val[3:4] >= 0 & p.val[3:4] <= alpha))
   return(c(ar.or, 0, ma.or))
 }
 
