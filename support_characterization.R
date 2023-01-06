@@ -115,8 +115,8 @@ check_sig <- function(p.val, alpha){
 }
 
 fit.arima <- function(signal.test){
-  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
-                               max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
+  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                               max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
   
   pq <- forecast::arimaorder(fit.b)
   # order.init[k, c((testi*3-2): (testi*3))] <- pq
@@ -126,14 +126,15 @@ fit.arima <- function(signal.test){
   pq = refit0$pq
   
   if( any(pq > 1)){
-    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
-                                  max.p = 1, max.q = 1, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
+    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                                  max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
     pq = forecast::arimaorder(fit.b)
   }
-  
+  test.pq = pq
   refit1 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
   
   pq = refit1$pq
+  if(identical(as.numeric(test.pq),pq) == FALSE){print(c(test.pq,pq))}
   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
 model.iden <- function(order){
@@ -151,7 +152,7 @@ model.iden <- function(order){
   return(model)
 }
 fit.arma11 <- function(signal.test){
-  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
+  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
                                max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
   
   pq <- arimaorder(fit.b)
@@ -162,7 +163,7 @@ fit.arma11 <- function(signal.test){
   pq = refit0$pq
   
   if( any(pq > 1)){
-    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
+    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
                                   max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
     pq = arimaorder(fit.b)
   }

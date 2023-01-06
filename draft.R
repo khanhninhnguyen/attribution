@@ -485,8 +485,16 @@ for (i in c(1:1000)) {
   a[i] = fit.hac$`Pr(>|t|)`[2]
 }
 
+res = data.frame(matrix(NA, ncol = 3, nrow = 10000))
+for (i in c(1:10000)) {
+  set.seed(i)
+  x = arima.sim(model = list(ma = 0.3), n =1000, n.start = 1000)
+  fit.b = forecast::auto.arima(x , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
+                               max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
+  res[i,] = arimaorder(fit.b)
+}
 
-
+a = sapply(c(1:100000), function(x) model.iden(as.numeric(unlist(res[x,]))))
 a = read.series(path_series = path_series_nearby, station = "pama", na.rm = F, add.full = 0 )
 b = read.series(path_series = path_series_main, station = "medi", na.rm = F, add.full = 0 )
 

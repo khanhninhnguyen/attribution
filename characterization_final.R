@@ -176,10 +176,12 @@ all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", wi
 order.arma.l <- list()
 coef.arma.l <- list()
 for (testi in c(1:6)) {
+  print(testi)
   name.test = list.test[testi]
   order.arma = data.frame(matrix(NA, ncol = 3, nrow = length(all.dat)))
   coef.arma = data.frame(matrix(NA, ncol = 4, nrow = length(all.dat)))
   for (i in c(1:nrow(reduced.list))) {
+    print(i)
     name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
     dat.i = all.dat[[name.i]]
     y = dat.i[, paste0(name.test, "res")]/sqrt(dat.i[, paste0(name.test, "var")]) 
@@ -284,17 +286,23 @@ for (testi in c(1:6)) {
   name.test = list.test[testi]
   coef.arma = data.frame(matrix(NA, ncol = 4, nrow = length(all.dat)))
   for (i in c(1:nrow(reduced.list))) {
-    name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
-    dat.i = all.dat[[name.i]]
-    y = dat.i[, paste0(name.test, "res")]/sqrt(dat.i[, paste0(name.test, "var")]) 
-    arma11 = Arima( y, order = c(1,0,1))
-    test.signif = as.data.frame(coeftest( arma11 )[,])
-    coef.arma[i,] = c(arma11$coef[c(1,2)], test.signif$`Pr(>|z|)`[1:2])
+    # remove the case of white noise bc it will cause an error
+    if(testi ==4 & i ==49){
+      coef.arma[i,] = c(0,0,1,1)
+    }else{
+      name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+      dat.i = all.dat[[name.i]]
+      y = dat.i[, paste0(name.test, "res")]/sqrt(dat.i[, paste0(name.test, "var")]) 
+      arma11 = Arima( y, order = c(1,0,1), include.mean = FALSE)
+      test.signif = as.data.frame(coeftest( arma11 )[,])
+      coef.arma[i,] = c(arma11$coef[c(1,2)], test.signif$`Pr(>|z|)`[1:2])
+    }
   }
   coef.arma.l[[name.test]] <- list(coef.arma)
 }
 save(coef.arma.l, file = paste0(path_results,"attribution/coef.model.arma", win.thres,"arma.RData"))
 all.coef = get(load( file = paste0(path_results,"attribution/coef.model.arma", win.thres,"arma.RData")))
+six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
 
 param.list <- c()
 model.list <- c()
@@ -335,30 +343,46 @@ save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 
 
 # investigate the ARMA(1,1)-----------------------------
+# read data case
+name.series = "era.era"
 six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
-
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
-dat.plot = remove_na_2sides(all.dat$`hers.2010-08-22.hert`, name.series = "gps.gps")
-y = dat.plot$gps.gpsres/sqrt(dat.plot$gps.gpsvar)
-fit.b = forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
+dat.plot = remove_na_2sides(all.dat$`tidb.2015-09-03.tid1`, name.series = name.series)
+y = dat.plot[paste0(name.series, "res")]/sqrt(dat.plot[paste0(name.series, "var")])
+# plot data and it acf and pacf 
+plot(dat.plot[name.series], ylab = "raw", type = "l", col = "gray")
+lines(dat.plot[paste0(name.series, "fit")])
+plot(y, ylab = "normalized residual", col = "coral")
+plot(dat.plot[paste0(name.series, "var")], ylab = "moving variance", col = "blue")
+acf(y, na.action = na.exclude)
+pacf(y, na.action = na.exclude)
+# auto.arima results
+fit.b = forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
                              max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
-ar1 = forecast::Arima(y , order = c(1,0,0))
-arma1 = forecast::Arima(y , order = c(1,0,1))
-ma1 = forecast::Arima(y , order = c(0,0,1))
+# fit model
+ar1 = forecast::Arima(y , order = c(1,0,0), include.mean = FALSE)
+arma1 = forecast::Arima(y , order = c(1,0,1), include.mean = FALSE)
+ma1 = forecast::Arima(y , order = c(0,0,1), include.mean = FALSE)
+# plot p value of boxtest
 p.val = data.frame(matrix(NA, ncol = 2, nrow = 35))
 for (l in c(1:35)) {
-  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(arma1$residuals, lag = l)$p.value)
+  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(ma1$residuals, lag = l)$p.value)
 }
-
-y = arima.sim(model = list(ar = 0.23), n = 1000, sd = 1)
-y = arima.sim(model = list(ar = 0.57, ma = -0.36), n = 1000, sd = 1)
-
+plot(p.val$X1, ylab = "p.value AR(1)")
+plot(p.val$X2, ylab = "p.value ARMA(1,1)")
+# ACF, PACF of the residual
+acf(ar1$residuals, na.action = na.exclude)
+pacf(ar1$residuals, na.action = na.exclude)
+acf(arma1$residuals, na.action = na.exclude)
+pacf(arma1$residuals, na.action = na.exclude)
+# plot BIC
 mod_capt <- capture.output(forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
                                                 max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE))
 
-a = sapply(c(2:17), function(x) as.numeric(strsplit(mod_capt[x], split = ":")[[1]][2]))
-b = sapply(c(2:17), function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][2])
-d = sapply(c(2:17), function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][4]) 
+ind.c = c(2:19)
+a = sapply(ind.c, function(x) as.numeric(strsplit(mod_capt[x], split = ":")[[1]][2]))
+b = sapply(ind.c, function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][2])
+d = sapply(ind.c, function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][4]) 
 data.mod = data.frame(model =b, res =a, mean = d)
 ggplot(data = data.mod, aes(x = model, y = res, col = mean))+ theme_bw()+
   geom_point()+ylab("BIC")+ theme(axis.text.y = element_text(size = 10))
@@ -372,5 +396,19 @@ ggplot(data = df, mapping = aes(x = lag, y = acf)) + theme_bw()+
   geom_hline(aes(yintercept = 0)) + ylab("pacf")+
   geom_hline(yintercept = s, linetype = 2)+
   geom_segment(mapping = aes(xend = lag, yend = 0))
-  
+
+# plot periodogram
+smooth.spec <- spec.pgram(x)
+spec.df <- data.frame(freq = smooth.spec$freq, spec = smooth.spec$spec)
+ggplot(data = spec.df) + theme_bw()+
+  geom_line(aes(x = freq, y = spec)) + 
+  scale_x_log10("Period (years)", 
+                breaks = yrs.freqs, labels = yrs.labels) + scale_y_log10()
+
+
+yrs.period <- rev(c(1/12, 1/6, 1/5, 1/4, 1/3, 0.5, 1, 3, 4))
+yrs.labels <- rev(c( "1/12", "1/6", "1/5", "1/4", "1/3", "1/2", "1", "3", "4"))
+yrs.freqs <- 1/yrs.period * 1/365
+
+
 
