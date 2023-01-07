@@ -5,7 +5,7 @@ library(gitcreds)
 # library(credentials)
 # set_github_pat() set token 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
 # Main program to read all data and its path 
-library("gridExtra")
+# library("gridExtra")
 library("dplyr") 
 #library("colorøspace")
 library("ggplot2")

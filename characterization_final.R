@@ -344,16 +344,16 @@ save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 
 # investigate the ARMA(1,1)-----------------------------
 # read data case
-name.series = "era.era"
 six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
+name.series = "era.era"
 dat.plot = remove_na_2sides(all.dat$`tidb.2015-09-03.tid1`, name.series = name.series)
-y = dat.plot[paste0(name.series, "res")]/sqrt(dat.plot[paste0(name.series, "var")])
+y = unlist(dat.plot[paste0(name.series, "res")]/sqrt(dat.plot[paste0(name.series, "var")]))
 # plot data and it acf and pacf 
-plot(dat.plot[name.series], ylab = "raw", type = "l", col = "gray")
-lines(dat.plot[paste0(name.series, "fit")])
+plot(unlist(dat.plot[name.series]), ylab = "raw", type = "l", col = "gray")
+lines(unlist(dat.plot[paste0(name.series, "fit")]))
 plot(y, ylab = "normalized residual", col = "coral")
-plot(dat.plot[paste0(name.series, "var")], ylab = "moving variance", col = "blue")
+plot(unlist(dat.plot[paste0(name.series, "var")]), ylab = "moving variance", col = "blue")
 acf(y, na.action = na.exclude)
 pacf(y, na.action = na.exclude)
 # auto.arima results
