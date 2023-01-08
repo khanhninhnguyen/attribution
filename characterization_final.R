@@ -346,8 +346,8 @@ save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 # read data case
 six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
-name.series = "era.era"
-dat.plot = remove_na_2sides(all.dat$`tidb.2015-09-03.tid1`, name.series = name.series)
+name.series = "gps.era"
+dat.plot = remove_na_2sides(all.dat$`guam.2017-09-26.guug`, name.series = name.series)
 y = unlist(dat.plot[paste0(name.series, "res")]/sqrt(dat.plot[paste0(name.series, "var")]))
 # plot data and it acf and pacf 
 plot(unlist(dat.plot[name.series]), ylab = "raw", type = "l", col = "gray")
@@ -358,7 +358,7 @@ acf(y, na.action = na.exclude)
 pacf(y, na.action = na.exclude)
 # auto.arima results
 fit.b = forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
-                             max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
+                             max.p = 1, max.q = 1, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
 # fit model
 ar1 = forecast::Arima(y , order = c(1,0,0), include.mean = FALSE)
 arma1 = forecast::Arima(y , order = c(1,0,1), include.mean = FALSE)
@@ -366,7 +366,7 @@ ma1 = forecast::Arima(y , order = c(0,0,1), include.mean = FALSE)
 # plot p value of boxtest
 p.val = data.frame(matrix(NA, ncol = 2, nrow = 35))
 for (l in c(1:35)) {
-  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(ma1$residuals, lag = l)$p.value)
+  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(arma1$residuals, lag = l)$p.value)
 }
 plot(p.val$X1, ylab = "p.value AR(1)")
 plot(p.val$X2, ylab = "p.value ARMA(1,1)")
@@ -376,26 +376,28 @@ pacf(ar1$residuals, na.action = na.exclude)
 acf(arma1$residuals, na.action = na.exclude)
 pacf(arma1$residuals, na.action = na.exclude)
 # plot BIC
-mod_capt <- capture.output(forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
+mod_capt <- capture.output(forecast::auto.arima(y , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
                                                 max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE))
 
-ind.c = c(2:19)
+ind.c = c(2:10)
 a = sapply(ind.c, function(x) as.numeric(strsplit(mod_capt[x], split = ":")[[1]][2]))
 b = sapply(ind.c, function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][2])
 d = sapply(ind.c, function(x) strsplit(strsplit(mod_capt[x], split = ":")[[1]][1], split = " ")[[1]][4]) 
 data.mod = data.frame(model =b, res =a, mean = d)
 ggplot(data = data.mod, aes(x = model, y = res, col = mean))+ theme_bw()+
-  geom_point()+ylab("BIC")+ theme(axis.text.y = element_text(size = 10))
+  geom_point()+ylab("BIC")+ theme(axis.text = element_text(size = 10))
 
 
 # plot theoretical ACF and PACF
-a = ARMAacf(ar = 0.24, lag.max = 35, pacf = TRUE)
+a = ARMAacf(ar = 0.3, lag.max = 35, pacf = TRUE)
 df <- data.frame(lag = c(1:35), acf = a)
 s = c(qnorm((1 + 0.95)/2)/sqrt(sum(!is.na(y))), - qnorm((1 + 0.95)/2)/sqrt(sum(!is.na(y))))
 ggplot(data = df, mapping = aes(x = lag, y = acf)) + theme_bw()+
   geom_hline(aes(yintercept = 0)) + ylab("pacf")+
   geom_hline(yintercept = s, linetype = 2)+
-  geom_segment(mapping = aes(xend = lag, yend = 0))
+  geom_segment(mapping = aes(xend = lag, yend = 0))+
+  theme(axis.title=element_text(size=15,face="bold"),
+    axis.text = element_text(size = 15))
 
 # plot periodogram
 smooth.spec <- spec.pgram(x)
