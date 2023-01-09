@@ -122,15 +122,18 @@ a$series = factor(a$series,  levels = reoder.list.name)
 jpeg(paste0(path_results,"attribution/heteroskedasticity.jpg" ),width = 2500, height = 1800,res = 300)
 library(RColorBrewer)
 p <- ggplot(a, aes(x = value, col = series ))+ theme_bw()+
-  stat_ecdf(lwd = 0.5, aes(linetype=feature))+
+  stat_ecdf(lwd = 0.3, aes(linetype=feature))+
   scale_x_continuous(breaks = seq(0, 10, 1), limits = c(0,10))+
   geom_hline(yintercept = 0.5, size = 0.3) +
   scale_color_manual(values = brewer.pal(n = 6, name = 'Dark2'))+
   labs(y = "CDF", x = "Moving window variance", linetype = "")+
-  theme(axis.text = element_text(size = 16),legend.text=element_text(size=12),
-        axis.title = element_text(size=16))
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=3),
+        axis.title = element_text(size=5), legend.key.size = unit(0.15, "cm"),
+        legend.title= element_blank())
 print(p)
 dev.off()
+ggsave(paste0(path_results,"attribution/heteroskedasticity.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 1200)
+
 # Plot specific case to illustrate ------- CONTINUE --------
 # construct data 
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
@@ -138,33 +141,42 @@ dat.plot = all.dat$`albh.2015-12-29.sc02`
 library(gtable)    
 library(grid)
 library(gridExtra) 
-colors <- c("GPS-ERA" = "gray", "Fitted" = "black")
-
+colors <- c("GPS-ERA" = "gray", "Fitted" = "black", "Moving median" = "red")
+dat.plot$medi.var = sliding.median(dat.plot, name.var = "gps.erares",length.wind = 60)
 p1 <- ggplot(data = dat.plot, aes( x = date))+theme_bw()+
-  geom_line(aes(y = gps.era, color = "GPS-ERA"))+
-  geom_line(aes(y = gps.erafit, color = "Fitted"))+ ylab("GPS-ERA")+
+  geom_line(aes(y = gps.era), col = "gray", lwd = 0.3)+
+  geom_line(aes(y = gps.erafit, color = "Fitted"), lwd = 0.3)+ ylab("GPS-ERA")+
   scale_color_manual(values = colors)+
-  theme(axis.text = element_text(size = 14),legend.text=element_text(size=10),
-        axis.title = element_text(size=14))+
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size=5), legend.key.size = unit(0.2, "cm"))+
   theme(
   legend.title=element_blank(),
   legend.background = element_rect(fill=alpha('white', 0.01)),
   legend.position = c(0.1, 0.12)
 )
 p2 <- ggplot(data = dat.plot, aes( x = date))+theme_bw()+
-  geom_line(aes(y = gps.erares), col = "coral")+ ylab("Residual")+ 
-  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
-                                                                         axis.title = element_text(size=14))
+  geom_line(aes(y = gps.erares), col = "coral", lwd = 0.3)+
+  geom_line(aes(y = medi.var, color = "Moving median"), lwd = 0.3) + 
+  scale_color_manual(values = colors)+
+  ylab("Residual")+ 
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4),
+  axis.title = element_text(size=5), legend.key.size = unit(0.2, "cm"), 
+  legend.title=element_blank(),
+  legend.background = element_rect(fill=alpha('white', 0.01)),
+  legend.position = c(0.1, 0.12))
 p3 <- ggplot(data = dat.plot, aes( x = date))+theme_bw()+
-  geom_line(aes(y = gps.eravar), col = "black")+ylab("Moving window variance")+
-  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
-        axis.title = element_text(size=14))
+  geom_line(aes(y = gps.eravar), col = "black", lwd = 0.3)+ylab("Moving window variance")+
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size=5))
 gA <- ggplotGrob(p1)
 gB <- ggplotGrob(p2)
 gC <- ggplotGrob(p3)
 
 gA$widths <- gC$widths
 gB$widths <- gC$widths
+
+p = grid.arrange(gA, gB, gC, nrow = 3)
+ggsave(paste0(path_results,"attribution/specific_case.jpg" ), plot = p, width = 8.8, height = 10, units = "cm", dpi = 1200)
 
 jpeg(paste0(path_results,"figure/", 1,".jpeg"),width = 3000, height = 3000,res = 300) # change
 print(grid.arrange(gA, gB, gC, nrow = 3))
@@ -221,12 +233,13 @@ res.plot$series = factor(res.plot$series,
 res.plot$mod = factor(res.plot$mod, 
                       levels=list.model)
 res.plot = res.plot[which(res.plot$value != 0),]
-jpeg(paste0(path_results,"attribution/iden_model_longest.jpg" ),width = 3000, height = 1800,res = 300)
+# jpeg(paste0(path_results,"attribution/iden_model_longest.jpg" ),width = 3000, height = 1800,res = 300)
 p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
   xlab("") + ylab("Count")+
-  theme(axis.text = element_text(size = 14),legend.text=element_text(size=12),
-        axis.title = element_text(size=14))
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
+        legend.title=element_blank())
 # theme(
 #   legend.title=element_blank(),
 #   legend.position = c(.5, .95),
@@ -234,8 +247,11 @@ p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) +
 #   legend.box.just = "right",
 #   legend.margin = margin(6, 6, 6, 6)
 # )
-print(p)
-dev.off()
+# print(p)
+# dev.off()
+
+ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+
 # Plot coefficients ------------------------
 order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
 coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
@@ -346,8 +362,8 @@ save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 # read data case
 six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
-name.series = "gps.era"
-dat.plot = remove_na_2sides(all.dat$`guam.2017-09-26.guug`, name.series = name.series)
+name.series = "era.era"
+dat.plot = remove_na_2sides(all.dat$`dav1.2003-12-12.davr`, name.series = name.series)
 y = unlist(dat.plot[paste0(name.series, "res")]/sqrt(dat.plot[paste0(name.series, "var")]))
 # plot data and it acf and pacf 
 plot(unlist(dat.plot[name.series]), ylab = "raw", type = "l", col = "gray")

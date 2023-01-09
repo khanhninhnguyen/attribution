@@ -485,19 +485,32 @@ for (i in c(1:1000)) {
   a[i] = fit.hac$`Pr(>|t|)`[2]
 }
 
-res = data.frame(matrix(NA, ncol = 3, nrow = 10000))
-for (i in c(1:10000)) {
+res = data.frame(matrix(NA, ncol = 3, nrow = 1000))
+res.bic = data.frame(matrix(NA, ncol = 4, nrow = 1000))
+for (i in c(1:1000)) {
   set.seed(i)
-  x = arima.sim(model = list(ma = 0.3), n =1000, n.start = 1000)
-  fit.b = forecast::auto.arima(x , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =TRUE,lambda = NULL,
-                               max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE)
+  x = rnorm(1000, 0, 1)
+  fit.b = forecast::auto.arima(x , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
+                               max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+  arma1= Arima(x, order = c(1,0,1), include.mean = FALSE)
+  whitenoise = Arima(x, order = c(0,0,0), include.mean = FALSE)
+  # mod_capt <- capture.output(forecast::auto.arima(x , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
+  #                                                max.p = 2, max.q = 2, start.p = 0, trace = TRUE, allowdrift = FALSE,  approximation=FALSE))
+  # ind.c = sapply(c(1:length(mod_capt)), function(x)  grepl( c("ARIMA"), mod_capt[x]))
+  # ind.c = which(ind.c == TRUE)
+  # ind.c =   ind.c[-c((length(ind.c)-1),length(ind.c))]
+  # mod.list = mod_capt[ind.c]
+  # a = sapply(c(1:length(mod.list)), function(x) as.numeric(strsplit(mod.list[x], split = ":")[[1]][2]))
+  # b = sapply(c(1:length(mod.list)), function(x) strsplit(strsplit(mod.list[x], split = ":")[[1]][1], split = " ")[[1]][2])
+  
+  res.bic[i,] = c( whitenoise$bic, arma1$bic, whitenoise$loglik, arma1$loglik)
   res[i,] = arimaorder(fit.b)
 }
 
-a = sapply(c(1:100000), function(x) model.iden(as.numeric(unlist(res[x,]))))
+
+a = sapply(c(1:1000), function(x) model.iden(as.numeric(unlist(res[x,]))))
 a = read.series(path_series = path_series_nearby, station = "pama", na.rm = F, add.full = 0 )
 b = read.series(path_series = path_series_main, station = "medi", na.rm = F, add.full = 0 )
-
 
 
 
