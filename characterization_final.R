@@ -18,7 +18,7 @@ list.break = data.frame(ref = substr(names(dat), start = 1, stop = 4),
 list.break[] <- lapply(list.break, as.character)
 list.break$brp = as.Date(list.break$brp , format = "%Y-%m-%d")
 list.main = unique((list.break$ref))
-list.break[c("nbc1", "nbc2", "len1", "len2")] <- NA
+list.break[c("nbc1", "nbc2", "len1", "len2", "min.var")] <- NA
 for (i in c(1:length(list.main))) {
   list.s = list.break[which(list.break$ref == list.main[i]),]
   list.nb = split(list.s, list.s$nb)
@@ -28,11 +28,13 @@ for (i in c(1:length(list.main))) {
     length.all <- sapply(c(1:length(data.ij)), function(x){
       seg1 = data.ij[[x]][c(1:L),]
       seg2 = data.ij[[x]][-c(1:L),]
+      # compute the minimum of variance too 
+      min.var = min(sapply(c(1:6), function(k) sd(unlist(seg1$era.era),na.rm=TRUE)^2))
       y = c(nb.consecutive(list.day = seg1$date, x = seg1$gps.gps), nb.consecutive(list.day = seg2$date, x = seg2$gps.gps),
-            nrow(remove_na_2sides(df = seg1, name.series = "gps.gps")), nrow(remove_na_2sides(df = seg2, name.series = "gps.gps")))
+            nrow(remove_na_2sides(df = seg1, name.series = "gps.gps")), nrow(remove_na_2sides(df = seg2, name.series = "gps.gps")), min.var)
     })
     
-    list.break[which(list.break$ref %in% list.nb[[j]]$ref & list.break$nb %in% list.nb[[j]]$nb), c("nbc1", "nbc2", "len1", "len2")] = (t(length.all))
+    list.break[which(list.break$ref %in% list.nb[[j]]$ref & list.break$nb %in% list.nb[[j]]$nb), c("nbc1", "nbc2", "len1", "len2", "min.var")] = (t(length.all))
   }
 }
 list.break$r1 = list.break$nbc1/list.break$len1
@@ -47,11 +49,16 @@ full.list = left_join(list.break, distances, by = c("main", "nearby"))
 
 r = sapply(c(1:length(list.main)), function(x){
   list.s1 = full.list[which(full.list$main == list.main[x]),]
-  ind.1 = which(list.s1$r1>0.5 | list.s1$r2>0.5)
+  list.s1$ind = c(1:nrow(list.s1))
+  # ind.1 = which(list.s1$r1>0.7 | list.s1$r2>0.7)
+  # ind.2 = which(list.s1$min.var>0.05)
+  ind.1 = which(list.s1$min.var>0.05)
   list.s = list.s1[ind.1,]
-  ind.seg = ifelse(c(max(list.s$nbc1) > max(list.s$nbc2),  max(list.s$nbc1) > max(list.s$nbc2)), c(which.max(list.s$nbc1),1), c(which.max(list.s$nbc2),2))
+  a = data.frame(nb =  c(list.s$nbc1, list.s$nbc2), rl = c(list.s$r1, list.s$r2), ind = c(list.s$ind, list.s$ind), ind.seg = c(rep(c(1,2), each = nrow(list.s))))
+  ind2 = a[which(a$rl>0.7),]
+  ind3 = ind2[which.max(ind2$nb),]
   y = rep(NA, nrow(list.s1))
-  y[ind.1[ind.seg[1]]] = ind.seg[2]
+  y[ind3$ind] = ind3$ind.seg
   print(x)
   return(y)
 })
@@ -60,10 +67,10 @@ save(full.list, file = paste0(path_results, "attribution/list.segments.selected"
 # if limit 1 year, we limit data from 10 year ------------------
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = na.omit(full.list)
-reduced.list$l = sapply(c(1:55), function(x) reduced.list[x, c(4,5)][reduced.list$chose[x]])
-reduced.list$r = sapply(c(1:55), function(x) reduced.list[x, c(8,9)][reduced.list$chose[x]])
+reduced.list$chose[51] =1
+reduced.list$l = sapply(c(1:52), function(x) reduced.list[x, c(4,5)][reduced.list$chose[x]])
+reduced.list$r = sapply(c(1:52), function(x) reduced.list[x, c(9,10)][reduced.list$chose[x]])
 rownames(reduced.list) = NULL
-
 # compute range and mean of variance from regression IFGLS to see the heteroskedasticity------------------
 all.coef = list()
 all.dat = list()
@@ -109,9 +116,9 @@ for (i in c(1:nrow(reduced.list))) {
   dat.i = all.dat[[name.i]]
   for (j in c(1:6)) {
     name.series = list.test[j]
-    var.ij = dat.i[,paste0(name.series, 'var')]
-    range.all[[name.series]][[name.i]] = range.var(x = var.ij , day.list = dat.i$date, s = dat.i$gps.gps)
-    range.mean[[name.series]][[name.i]] = mean(var.ij, na.rm = TRUE)
+    sd.ij = sqrt(dat.i[,paste0(name.series, 'var')])
+    range.all[[name.series]][[name.i]] = range.var(x = sd.ij , day.list = dat.i$date, s = dat.i$gps.gps)
+    range.mean[[name.series]][[name.i]] = mean(sd.ij, na.rm = TRUE)
   }
 }
 a = rbind(reshape2::melt(range.mean), reshape2::melt(range.all))
@@ -123,15 +130,15 @@ jpeg(paste0(path_results,"attribution/heteroskedasticity.jpg" ),width = 2500, he
 library(RColorBrewer)
 p <- ggplot(a, aes(x = value, col = series ))+ theme_bw()+
   stat_ecdf(lwd = 0.3, aes(linetype=feature))+
-  scale_x_continuous(breaks = seq(0, 10, 1), limits = c(0,10))+
+  scale_x_continuous(breaks = seq(0, 3, 1), limits = c(0,3))+
   geom_hline(yintercept = 0.5, size = 0.3) +
   scale_color_manual(values = brewer.pal(n = 6, name = 'Dark2'))+
-  labs(y = "CDF", x = "Moving window variance", linetype = "")+
-  theme(axis.text = element_text(size = 5),legend.text=element_text(size=3),
+  labs(y = "CDF", x = "Moving window standard deviation", linetype = "")+
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4.5),
         axis.title = element_text(size=5), legend.key.size = unit(0.15, "cm"),
-        legend.title= element_blank())
+        legend.box.spacing = unit(0, "pt"), legend.title= element_blank())
 print(p)
-dev.off()
+# dev.off()
 ggsave(paste0(path_results,"attribution/heteroskedasticity.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 1200)
 
 # Plot specific case to illustrate ------- CONTINUE --------
@@ -165,7 +172,7 @@ p2 <- ggplot(data = dat.plot, aes( x = date))+theme_bw()+
   legend.background = element_rect(fill=alpha('white', 0.01)),
   legend.position = c(0.1, 0.12))
 p3 <- ggplot(data = dat.plot, aes( x = date))+theme_bw()+
-  geom_line(aes(y = gps.eravar), col = "black", lwd = 0.3)+ylab("Moving window variance")+
+  geom_line(aes(y = sqrt(gps.eravar)), col = "black", lwd = 0.3)+ylab("Moving window standard deviation")+
   theme(axis.text = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size=5))
 gA <- ggplotGrob(p1)
@@ -237,7 +244,7 @@ res.plot = res.plot[which(res.plot$value != 0),]
 p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
   xlab("") + ylab("Count")+
-  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4),
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4.5),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
         legend.title=element_blank())
 # theme(
@@ -250,7 +257,7 @@ p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) +
 # print(p)
 # dev.off()
 
-ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima1.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 # Plot coefficients ------------------------
 order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
@@ -347,12 +354,12 @@ ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param)) + the
 
 # impact of gaps on model characterization 
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres= 1,".RData")))
-nb.c = sapply(c(1:55), function(x) nb.consecutive(list.day = all.dat[[x]]$date, x = all.dat[[x]]$gps.gpsres))
+nb.c = sapply(c(1:52), function(x) nb.consecutive(list.day = all.dat[[x]]$date, x = all.dat[[x]]$gps.gpsres))
 six.model$nb.c = nb.c
-six.model$len = sapply(c(1:55), function(x) nrow(remove_na_2sides(df = all.dat[[x]], name.series = "gps.gpsres")))
+six.model$len = sapply(c(1:52), function(x) nrow(remove_na_2sides(df = all.dat[[x]], name.series = "gps.gpsres")))
 
 d = data.frame(lim1 = unlist(six.model$r), lim10 = unlist(check1$r), l1 = six.model$nb.c, l10 = unlist(check1$L))
-d$white1 = sapply(c(1:55), function(x) length(which(six.model[x,c(1:6)] == "White")))
+d$white1 = sapply(c(1:52), function(x) length(which(six.model[x,c(1:6)] == "White")))
 colnames(d) = c("rate1", "rate10", "nb.cons1", "nb.cons10", "nb.white1", "nb.white10")
 save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 
@@ -362,8 +369,8 @@ save(d, file = paste0(path_results, "attribution/length_white_relation.RData"))
 # read data case
 six.model = get(load(file = paste0(path_results,"attribution/six.models", win.thres,".RData")))
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
-name.series = "era.era"
-dat.plot = remove_na_2sides(all.dat$`dav1.2003-12-12.davr`, name.series = name.series)
+name.series = "gps.gps"
+dat.plot = remove_na_2sides(all.dat$`albh.2015-12-29.sc02`, name.series = name.series)
 y = unlist(dat.plot[paste0(name.series, "res")]/sqrt(dat.plot[paste0(name.series, "var")]))
 # plot data and it acf and pacf 
 plot(unlist(dat.plot[name.series]), ylab = "raw", type = "l", col = "gray")
@@ -382,10 +389,13 @@ ma1 = forecast::Arima(y , order = c(0,0,1), include.mean = FALSE)
 # plot p value of boxtest
 p.val = data.frame(matrix(NA, ncol = 2, nrow = 35))
 for (l in c(1:35)) {
-  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(arma1$residuals, lag = l)$p.value)
+  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(ma1$residuals, lag = l)$p.value)
 }
 plot(p.val$X1, ylab = "p.value AR(1)")
-plot(p.val$X2, ylab = "p.value ARMA(1,1)")
+abline(h = 0.05)
+plot(p.val$X2, ylab = "p.value MA(1,1)")
+abline(h = 0.05)
+
 # ACF, PACF of the residual
 acf(ar1$residuals, na.action = na.exclude)
 pacf(ar1$residuals, na.action = na.exclude)
@@ -405,11 +415,11 @@ ggplot(data = data.mod, aes(x = model, y = res, col = mean))+ theme_bw()+
 
 
 # plot theoretical ACF and PACF
-a = ARMAacf(ar = 0.3, lag.max = 35, pacf = TRUE)
-df <- data.frame(lag = c(1:35), acf = a)
+a = ARMAacf(ar = 0.2, ma =0.28, lag.max = 35, pacf = FALSE)
+df <- data.frame(lag = c(0:35), acf = a)
 s = c(qnorm((1 + 0.95)/2)/sqrt(sum(!is.na(y))), - qnorm((1 + 0.95)/2)/sqrt(sum(!is.na(y))))
 ggplot(data = df, mapping = aes(x = lag, y = acf)) + theme_bw()+
-  geom_hline(aes(yintercept = 0)) + ylab("pacf")+
+  geom_hline(aes(yintercept = 0)) + ylab("acf")+
   geom_hline(yintercept = s, linetype = 2)+
   geom_segment(mapping = aes(xend = lag, yend = 0))+
   theme(axis.title=element_text(size=15,face="bold"),
@@ -427,6 +437,59 @@ ggplot(data = spec.df) + theme_bw()+
 yrs.period <- rev(c(1/12, 1/6, 1/5, 1/4, 1/3, 0.5, 1, 3, 4))
 yrs.labels <- rev(c( "1/12", "1/6", "1/5", "1/4", "1/3", "1/2", "1", "3", "4"))
 yrs.freqs <- 1/yrs.period * 1/365
+
+
+# fit ARMA for 4 series  --------------------------------------------------
+data.test = dat.ij
+a = read.series(path_series_main, station = "albh", na.rm = 0, add.full = 1)
+b = inner_join(data.test, a, by = "date")
+data.test$gps = b$GPS
+data.test$era = b$ERAI
+data.test$gps1 = data.test$gps - data.test$gps.gps
+data.test$era1 = data.test$era - data.test$era.era
+m = construct.design(data.test, name.series = "era.era")
+fit.igls = IGLS(design.m = m, tol =  tol0, day.list = data.test$date)
+y = fit.igls$residual/sqrt(fit.igls$var)
+fit.arima(y)
+
+res = data.frame(matrix(NA, ncol = 3, nrow = 1000))
+res.coef = data.frame(matrix(NA, ncol = 4, nrow = 1000))
+list.ser = c("gps","gps1","era","era1")
+for (i in c(1:nrow(reduced.list))) {
+  name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
+  dat.i = dat[[name.i]]
+  dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
+  a = read.series(path_series_main, station = reduced.list$main[i], na.rm = 0, add.full = 1)
+  b = left_join(data.test, a, by = "date")
+  data.test$gps = b$GPS
+  data.test$era = b$ERAI
+  data.test$gps1 = data.test$gps - data.test$gps.gps
+  data.test$era1 = data.test$era - data.test$era.era
+  for (j in c(1:4)) {
+    name.series0 = list.ser[j]
+    m = construct.design(data.test, name.series = name.series0)
+    tol0 = 0.000000001
+    fit.igls = IGLS(design.m = m, tol =  tol0, day.list = data.test$date)
+    y = fit.igls$residual/sqrt(fit.igls$var)
+    fit.arma = fit.arima(y)
+    res[(52*(j-1)+i),] = fit.arma$pq
+    res.coef[(52*(j-1)+i),] = fit.arma$coef
+    print(j)
+  }
+  all.dat[[name.i]] = dat.i
+}
+
+save(res, file=paste0(path_results,"attribution/model.4series.RData"))
+
+save(res.coef, file=paste0(path_results,"attribution/coef.4series.RData"))
+
+
+
+
+
+
+
 
 
 
