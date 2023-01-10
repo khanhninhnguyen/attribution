@@ -529,13 +529,15 @@ res = data.frame(matrix(NA, ncol = 3, nrow = 1000))
 res.coef = data.frame(matrix(NA, ncol = 2, nrow = 1000))
 for (i in c(1:1000)) {
   set.seed(i)
-  x = arima.sim(model = list(ar=0.42, ma = 0.225), n =1000, sd=1) 
-  set.seed(i+1000)
-  y= arima.sim(model = list(ar=0.45, ma = 0.22), n =1000, sd=1) 
+  x = arima.sim(model = list(ar=0.5, ma = 0.25), n =1000, sd=1) 
+  set.seed(i)
+  y= arima.sim(model = list(ar=0.5, ma = 0.25), n =1000, sd=1) 
   fit.b = forecast::auto.arima((x-y), d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
                                max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
   res[i,] = arimaorder(fit.b)
-  res.coef[i,] = fit.b$coef
+  coef = rep(NA,2)
+  coef[length(fit.b$coef)] <- fit.b$coef
+  res.coef[i,] = coef
 }
 
 

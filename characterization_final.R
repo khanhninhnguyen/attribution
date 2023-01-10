@@ -460,6 +460,7 @@ for (i in c(1:nrow(reduced.list))) {
   dat.i = dat[[name.i]]
   dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
   dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
+  data.test = dat.ij
   a = read.series(path_series_main, station = reduced.list$main[i], na.rm = 0, add.full = 1)
   b = left_join(data.test, a, by = "date")
   data.test$gps = b$GPS
@@ -484,7 +485,10 @@ save(res, file=paste0(path_results,"attribution/model.4series.RData"))
 
 save(res.coef, file=paste0(path_results,"attribution/coef.4series.RData"))
 
+res = get(load(file=paste0(path_results,"attribution/model.4series.RData")))
+res.coef = get(load(file=paste0(path_results,"attribution/coef.4series.RData")))
 
+a = sapply(c(1:1000), function(x) model.iden(as.numeric(unlist(res[x,]))))
 
 
 
