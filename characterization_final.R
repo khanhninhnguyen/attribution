@@ -50,7 +50,7 @@ full.list = left_join(list.break, distances, by = c("main", "nearby"))
 r = sapply(c(1:length(list.main)), function(x){
   list.s1 = full.list[which(full.list$main == list.main[x]),]
   list.s1$ind = c(1:nrow(list.s1))
-  # ind.1 = which(list.s1$r1>0.7 | list.s1$r2>0.7)
+  # ind.1 = which(list.s1$r1>0.5 | list.s1$r2>0.5)
   # ind.2 = which(list.s1$min.var>0.05)
   ind.1 = which(list.s1$min.var>0.05)
   list.s = list.s1[ind.1,]
@@ -64,7 +64,7 @@ r = sapply(c(1:length(list.main)), function(x){
 })
 full.list$chose = unlist(r)
 save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
-# if limit 1 year, we limit data from 10 year ------------------
+# LIST OF STATION   ------------------
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = na.omit(full.list)
 reduced.list$chose[51] =1
@@ -125,6 +125,8 @@ a = rbind(reshape2::melt(range.mean), reshape2::melt(range.all))
 a$feature = rep(c("mean", "annual range"), each = nrow(a)/2)
 a$series = rep(rep(list.name.test, each = nrow(a)/12),2)
 a$series = factor(a$series,  levels = reoder.list.name)
+b= list(mean = range.mean, range = range.all)
+save(b, file = paste0(path_results, "moving.var.RData"))
 
 jpeg(paste0(path_results,"attribution/heteroskedasticity.jpg" ),width = 2500, height = 1800,res = 300)
 library(RColorBrewer)
@@ -440,17 +442,26 @@ yrs.freqs <- 1/yrs.period * 1/365
 
 
 # fit ARMA for 4 series  --------------------------------------------------
-data.test = dat.ij
-a = read.series(path_series_main, station = "albh", na.rm = 0, add.full = 1)
-b = inner_join(data.test, a, by = "date")
-data.test$gps = b$GPS
-data.test$era = b$ERAI
-data.test$gps1 = data.test$gps - data.test$gps.gps
-data.test$era1 = data.test$era - data.test$era.era
-m = construct.design(data.test, name.series = "era.era")
+data.test = dat$`guam.2017-09-26.guug`
+be = data.test[c(1:3650),]
+af = data.test[c(3651:7300),]
+s = "gps.gps"
+
+m = construct.design(be, name.series = s)
+fit.igls = IGLS(design.m = m, tol =  tol0, day.list = be$date)
+y1 = fit.igls$residual/sqrt(fit.igls$var)
+fit.arima(y1)
+m = construct.design(af, name.series = s)
+fit.igls = IGLS(design.m = m, tol =  tol0, day.list = af$date)
+y = fit.igls$residual/sqrt(fit.igls$var)
+fit.arima(y)
+
+data.test$res = c(y1, y)
+m = construct.design(data.test, name.series = "res")
 fit.igls = IGLS(design.m = m, tol =  tol0, day.list = data.test$date)
 y = fit.igls$residual/sqrt(fit.igls$var)
 fit.arima(y)
+
 
 res = data.frame(matrix(NA, ncol = 3, nrow = 1000))
 res.coef = data.frame(matrix(NA, ncol = 4, nrow = 1000))
@@ -470,7 +481,7 @@ for (i in c(1:nrow(reduced.list))) {
   for (j in c(1:4)) {
     name.series0 = list.ser[j]
     m = construct.design(data.test, name.series = name.series0)
-    tol0 = 0.000000001
+    tol0 = 0.00001
     fit.igls = IGLS(design.m = m, tol =  tol0, day.list = data.test$date)
     y = fit.igls$residual/sqrt(fit.igls$var)
     fit.arma = fit.arima(y)
@@ -478,7 +489,6 @@ for (i in c(1:nrow(reduced.list))) {
     res.coef[(52*(j-1)+i),] = fit.arma$coef
     print(j)
   }
-  all.dat[[name.i]] = dat.i
 }
 
 save(res, file=paste0(path_results,"attribution/model.4series.RData"))
@@ -488,7 +498,101 @@ save(res.coef, file=paste0(path_results,"attribution/coef.4series.RData"))
 res = get(load(file=paste0(path_results,"attribution/model.4series.RData")))
 res.coef = get(load(file=paste0(path_results,"attribution/coef.4series.RData")))
 
-a = sapply(c(1:1000), function(x) model.iden(as.numeric(unlist(res[x,]))))
+a = sapply(c(1:208), function(x) model.iden(as.numeric(unlist(b[x,]))))
+
+b = na.omit(res)
+d = na.omit(res.coef)
+
+e = d[which(d$model=="AR(1)"),]
+f = d[which(d$model=="ARMA(1,1)"),]
+
+d$model = a
+d$series = rep(list.ser, each = 52)
+
+
+
+
+# study seasonal bias -----------------------------------------------------
+all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
+tot.s = list()
+for (i in c(1:6)) {
+  name.series = list.test[i]
+  dat.coef = as.data.frame(t(as.data.frame(all.coef[[name.series]])))
+  dat.coef$oneyear = sqrt(dat.coef$cos1^2 + dat.coef$sin1^2)
+  dat.coef$halfyear = sqrt(dat.coef$cos2^2 + dat.coef$sin2^2)
+  dat.coef$thirdyear = sqrt(dat.coef$cos3^2 + dat.coef$sin3^2)
+  dat.coef$quartyear = sqrt(dat.coef$cos4^2 + dat.coef$sin4^2)
+  tot.s[[name.series]] = dat.coef
+}
+a = data.frame(value = sapply(c(1:6), function(x) tot.s[[x]]$haftyear))
+colnames(a)[1:6] = list.name.test
+b = reshape2::melt(a)
+b$series = factor(b$variable,  levels = reoder.list.name)
+
+library(RColorBrewer)
+p <- ggplot(b, aes(x = value, col = series ))+ theme_bw()+
+  stat_ecdf(lwd = 0.3)+
+  scale_x_continuous(breaks = seq(0, 1, 0.2), limits = c(0,1))+
+  geom_hline(yintercept = 0.5, size = 0.3) +
+  scale_color_manual(values = brewer.pal(n = 6, name = 'Dark2'))+
+  labs(y = "CDF", x = "Moving window standard deviation", linetype = "")+
+  theme(axis.text = element_text(size = 5),legend.text=element_text(size=4.5),
+        axis.title = element_text(size=5), legend.key.size = unit(0.15, "cm"),
+        legend.box.spacing = unit(0, "pt"), legend.title= element_blank())
+print(p)
+# dev.off()
+ggsave(paste0(path_results,"attribution/coef_haftyear.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 1200)
+# study the variance 
+a = get(load( file = paste0(path_results, "moving.var.RData")))
+
+
+
+
+
+
+
+# WHAT HAPPEN IF WE CONCATENATE ALL DATA BEFORE AND AFTER  ----------------
+
+all.coef = list()
+all.dat = list()
+all.fit = list()
+for (i in c(1:length(dat))) {
+  name.i = names(dat)[i]
+  dat.i = dat[[name.i]]
+  # dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
+  six.ser = na.omit(dat.i)
+  dat.i = tidyr::complete(six.ser, date = seq(dat.i$date[1], dat.i$date[7300], by = "day"))
+  print(i)
+  for (j in c(1:6)) {
+    name.series0 = list.test[j]
+    dat.ib = dat.i[c(1:3650),]
+    dat.ia = dat.i[c(3651:7300),]
+    
+    mb = construct.design(dat.ib, name.series = name.series0)
+    ma = construct.design(dat.ia, name.series = name.series0)
+    
+    tol0 = 0.0001 
+    
+    fit.iglsa = IGLS(design.m = ma, tol =  tol0, day.list = dat.ia$date)
+    fit.iglsb = IGLS(design.m = mb, tol =  tol0, day.list = dat.ib$date)
+    
+    dat.i[, paste0(name.series0, 'var')] <- c( unlist(fit.iglsb$var), unlist(fit.iglsa$var))
+    dat.i[, paste0(name.series0, 'res')] <- c( unlist(fit.iglsb$residual), unlist(fit.iglsa$residual))
+    dat.i[, paste0(name.series0, 'fit')] <- c( unlist(fit.iglsb$fit), unlist(fit.iglsa$fit))
+    all.coef[[name.series0]][[name.i]] = list(bef = fit.iglsb$coefficients, aft = fit.iglsa$coefficients)
+    print(j)
+  }
+}
+save(all.coef, file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData"))
+save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData"))
+
+
+
+
+
+
+
+
 
 
 
