@@ -529,10 +529,10 @@ res = data.frame(matrix(NA, ncol = 3, nrow = 1000))
 res.coef = data.frame(matrix(NA, ncol = 2, nrow = 1000))
 for (i in c(1:1000)) {
   set.seed(i)
-  x = arima.sim(model = list(ar=0.42, ma = 0.22), n =1000, sd=1) 
-  set.seed(i+1000)
-  y= arima.sim(model = list(ar=0.44, ma = 0.22), n =1000, sd=1) 
-  fit.b = forecast::auto.arima((x-y), d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
+  x = arima.sim(model = list(ar=0.6, ma = -0.4), n =1000, sd=1) 
+  # set.seed(i+1000)
+  # y= arima.sim(model = list(ar=0.44, ma = 0.22), n =1000, sd=1) 
+  fit.b = forecast::auto.arima(x, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
                                max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
   res[i,] = arimaorder(fit.b)
   coef = rep(NA,2)
@@ -553,3 +553,7 @@ b = get(load(file = paste0(path_results,"attribution/ver1/six.models", win.thres
 b1 = na.omit(b)
 b2 = get(load(file = paste0(path_results,"attribution/ver2/six.models", win.thres,".RData")))
 b2 = na.omit(b2)
+
+
+
+d =  get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))

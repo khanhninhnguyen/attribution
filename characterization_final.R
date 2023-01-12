@@ -1,6 +1,6 @@
 # last version for the data characterization
 source(paste0(path_code_att,"simulate_time_series.R"))
-source(paste0(path_code_att,"newUsed_functions.R"))
+# source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"support_characterization.R"))
 
@@ -78,19 +78,22 @@ all.fit = list()
 for (i in c(1:nrow(reduced.list))) {
   name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
   dat.i = dat[[name.i]]
-  dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
-  dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
+  # dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  # dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
   ind.all = which(is.na(dat.i[["gps.gps"]]) == FALSE)
   print(i)
   for (j in c(1:6)) {
     name.series0 = list.test[j]
-    m = construct.design(dat.ij, name.series = name.series0)
-    tol0 = 0.000000001
+    m = construct.design(dat.i, name.series = name.series0)
+    tol0 = 0.01
     if(i == 49 & j ==5){ tol0 = 0.0001 }
-    fit.igls = IGLS(design.m = m, tol =  tol0, day.list = dat.ij$date)
-    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'var')] <- unlist(fit.igls$var)
-    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'res')] <- unlist(fit.igls$residual)
-    dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'fit')] <- unlist(fit.igls$fit)
+    fit.igls = IGLS(design.m = m, tol =  tol0, day.list = dat.i$date)
+    # dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'var')] <- unlist(fit.igls$var)
+    # dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'res')] <- unlist(fit.igls$residual)
+    # dat.i[c(min(ind.all): max(ind.all)), paste0(name.series0, 'fit')] <- unlist(fit.igls$fit)
+    dat.i[, paste0(name.series0, 'var')] <- unlist(fit.igls$var)
+    dat.i[, paste0(name.series0, 'res')] <- unlist(fit.igls$residual)
+    dat.i[, paste0(name.series0, 'fit')] <- unlist(fit.igls$fit)
     all.coef[[name.series0]][[name.i]] = fit.igls$coefficients
     print(j)
   }
@@ -230,7 +233,7 @@ for (i in 1:length(list.test)) {
   six.model[,i] = sapply(c(1:length.data), function(x) model.iden(as.numeric(unlist(order.arma.l[[name.test]][[1]][x,]))))
 }
 colnames(six.model) <- list.test
-save(six.model, file = paste0(path_results,"attribution/six.models", win.thres,".RData"))
+# save(six.model, file = paste0(path_results,"attribution/six.models", win.thres,".RData"))
 six.values = c()
 for (i in 1:length(list.test)) {
   value.count = sapply(c(list.model), function(x) length(which(six.model[,i] == x)))
@@ -259,7 +262,7 @@ p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) +
 # print(p)
 # dev.off()
 
-ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima1.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima2.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 # Plot coefficients ------------------------
 order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
@@ -391,7 +394,7 @@ ma1 = forecast::Arima(y , order = c(0,0,1), include.mean = FALSE)
 # plot p value of boxtest
 p.val = data.frame(matrix(NA, ncol = 2, nrow = 35))
 for (l in c(1:35)) {
-  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(ma1$residuals, lag = l)$p.value)
+  p.val[l,] = c(Box.test(ar1$residuals, lag = l)$p.value, Box.test(arma1$residuals, lag = l)$p.value)
 }
 plot(p.val$X1, ylab = "p.value AR(1)")
 abline(h = 0.05)
@@ -556,6 +559,8 @@ a = get(load( file = paste0(path_results, "moving.var.RData")))
 all.coef = list()
 all.dat = list()
 all.fit = list()
+# for (i in c(1:nrow(reduced.list))) {
+#   name.i =  paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
 for (i in c(1:length(dat))) {
   name.i = names(dat)[i]
   dat.i = dat[[name.i]]
@@ -571,8 +576,8 @@ for (i in c(1:length(dat))) {
     mb = construct.design(dat.ib, name.series = name.series0)
     ma = construct.design(dat.ia, name.series = name.series0)
     
-    tol = 0.000001
-    if(i %in% c(30,521) & j ==2){
+    tol0 = 0.000001
+    if(i %in% c(30,521)){
       tol0 = 0.001 
     }
     
@@ -585,9 +590,10 @@ for (i in c(1:length(dat))) {
     all.coef[[name.series0]][[name.i]] = list(bef = fit.iglsb$coefficients, aft = fit.iglsa$coefficients)
     print(j)
   }
+  all.dat[[name.i]] = dat.i
 }
-save(all.coef, file = paste0(path_results, "attribution/all.coef.longest", win.thres,"all.RData"))
-save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thres,"all.RData"))
+save(all.coef, file = paste0(path_results, "attribution/all.coef.longest", win.thres,"full.RData"))
+save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thres,"full.RData"))
 
 
 

@@ -28,6 +28,53 @@ nb.consecutive <- function(list.day, x){
   return(y)
 }
 
+# fit IGLS
+construct.design <- function(data.df, name.series){
+  Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
+    rename(signal=name.series) %>% 
+    mutate(complete.time=1:nrow(data.df)) %>% 
+    dplyr::select(-date)
+  for (i in 1:4){
+    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+  }
+  Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+  n0 = nrow(Data.mod)/2
+  Data.mod$right = rep(c(0,1), each=n0)
+  Data.mod$left = rep(c(1,0), each=n0)
+  
+  return(Data.mod)
+}
+
+IGLS <- function(design.m, tol, day.list){
+  resi0 = rep(NA, nrow(design.m))
+  # call expression
+  list.para <- colnames(design.m)[2:dim(design.m)[2]]
+  mod.X <-  list.para %>% stringr::str_c(collapse = "+")
+  mod.expression <- c("signal","~",mod.X, -1) %>% stringr::str_c(collapse = "")
+  # ols
+  ols.fit = lm( mod.expression, data = design.m)
+  resi0[which(is.na(design.m$signal)==FALSE)] <- ols.fit$residuals
+  old.coef = ols.fit$coefficients
+  # estimate initial moving variance 
+  Y0 = data.frame(date = day.list, residus = resi0)
+  w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
+  change1 = 10
+  i=0
+  while (change1 > tol) {
+    design.m$w = w0^2
+    gls.fit = eval(parse(text=paste0("gls(",mod.expression,",data=design.m, correlation = NULL, na.action = na.omit, weights=varFixed(value = ~w)",")")))
+    change1 = sum((gls.fit$coefficients - old.coef)^2)
+    # deg =  cbind(rep(1, nrow(design.m)), as.matrix(design.m[,c(2:9)])) 
+    fit.val = as.matrix(design.m[,list.para]) %*% as.matrix(gls.fit$coefficients)
+    resi0 = design.m$signal - fit.val
+    Y0 = data.frame(date = day.list, residus = resi0)
+    w0 = RobEstiSlidingVariance.S(Y = Y0, name.var = "residus", alpha = 0, estimator = "Sca", length.wind = 60)
+    old.coef = gls.fit$coefficients
+    i=1+i
+  }
+  print(i)
+  return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0, fit = fit.val))
+}
 # heteroskedascity
 range.var <- function(x, day.list, s){
   df = data.frame(date = day.list, x = x)
@@ -41,6 +88,7 @@ range.var <- function(x, day.list, s){
     ifelse(length(anu.max)!=1,  mean( (anu.max-anu.min), na.rm = TRUE), NA)
   }
 }
+
 diff.range.var <- function(x, day.list,s){
   df = data.frame(date = day.list, x = x)
   df$y = format(df$date, "%Y")
@@ -75,6 +123,7 @@ last_signif <- function(signal, pq, alpha, fit.b){
   }
   return(list( pq = pq, pandcoef = pandcoef))
 }
+
 diff.var <- function(name.test){
   if(name.test == "gps.gps"){
     varname = c("GPS.x", "GPS.y")
@@ -96,6 +145,7 @@ diff.var <- function(name.test){
   }
   return(varname)
 }
+
 p.and.coef <- function(fitARIMA, pq1, nb.or){
   test.sig = coeftest(fitARIMA)
   ord = pq1[c(1,3)]
@@ -137,6 +187,7 @@ fit.arima <- function(signal.test){
   if(identical(as.numeric(test.pq),pq) == FALSE){print(c(test.pq,pq))}
   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
+
 model.iden <- function(order){
   model = c()
   if (identical(order, c(1,0,1))){ model = "ARMA(1,1)"}
@@ -151,6 +202,7 @@ model.iden <- function(order){
   
   return(model)
 }
+
 fit.arma11 <- function(signal.test){
   fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean = FALSE,lambda = NULL,
                                max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
@@ -173,6 +225,7 @@ fit.arma11 <- function(signal.test){
   pq = refit1$pq
   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
 }
+
 extract_param <- function(x){
   if(x =="ARMA(1,1)"){ y = list(rho = 1, theta = 3)}
   if(x == "White"){ y = list(rho = 0, theta = 0)}
@@ -190,3 +243,5 @@ convert.name.test <- function(x){
   if (x == "gps1.era1"){ y = "GPS'-ERA'"}
   return(y)
 }
+
+
