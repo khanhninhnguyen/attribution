@@ -55,7 +55,7 @@ r = sapply(c(1:length(list.main)), function(x){
   ind.1 = which(list.s1$min.var>0.05)
   list.s = list.s1[ind.1,]
   a = data.frame(nb =  c(list.s$nbc1, list.s$nbc2), rl = c(list.s$r1, list.s$r2), ind = c(list.s$ind, list.s$ind), ind.seg = c(rep(c(1,2), each = nrow(list.s))))
-  ind2 = a[which(a$rl>0.7),]
+  ind2 = a[which(a$rl>0),]
   ind3 = ind2[which.max(ind2$nb),]
   y = rep(NA, nrow(list.s1))
   y[ind3$ind] = ind3$ind.seg
@@ -67,7 +67,7 @@ save(full.list, file = paste0(path_results, "attribution/list.segments.selected"
 # LIST OF STATION   ------------------
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = na.omit(full.list)
-reduced.list$chose[51] =1
+# reduced.list$chose[51] =1
 reduced.list$l = sapply(c(1:52), function(x) reduced.list[x, c(4,5)][reduced.list$chose[x]])
 reduced.list$r = sapply(c(1:52), function(x) reduced.list[x, c(9,10)][reduced.list$chose[x]])
 rownames(reduced.list) = NULL
@@ -571,7 +571,10 @@ for (i in c(1:length(dat))) {
     mb = construct.design(dat.ib, name.series = name.series0)
     ma = construct.design(dat.ia, name.series = name.series0)
     
-    tol0 = 0.0001 
+    tol = 0.000001
+    if(i %in% c(30,521) & j ==2){
+      tol0 = 0.001 
+    }
     
     fit.iglsa = IGLS(design.m = ma, tol =  tol0, day.list = dat.ia$date)
     fit.iglsb = IGLS(design.m = mb, tol =  tol0, day.list = dat.ib$date)
@@ -583,8 +586,8 @@ for (i in c(1:length(dat))) {
     print(j)
   }
 }
-save(all.coef, file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData"))
-save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData"))
+save(all.coef, file = paste0(path_results, "attribution/all.coef.longest", win.thres,"all.RData"))
+save(all.dat, file = paste0(path_results, "attribution/all.dat.longest", win.thres,"all.RData"))
 
 
 
