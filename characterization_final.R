@@ -262,7 +262,7 @@ p <- ggplot(res.plot, aes(fill=mod, y=value, x=series)) +
 # print(p)
 # dev.off()
 
-ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima2.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima3.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 # Plot coefficients ------------------------
 order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
