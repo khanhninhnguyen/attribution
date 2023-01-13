@@ -138,7 +138,7 @@ for (i in c(1:nrow(reduced.list))) {
   dat.i = all.dat[[name.i]]
   for (j in c(1:6)) {
     name.series = list.test[j]
-    sd.ij = sqrt(dat.i[,paste0(name.series, 'var')])
+    sd.ij = sqrt(unlist(dat.i[,paste0(name.series, 'var')]))
     range.all[[name.series]][[name.i]] = range.var(x = sd.ij , day.list = dat.i$date, s = dat.i$gps.gps)
     range.mean[[name.series]][[name.i]] = mean(sd.ij, na.rm = TRUE)
   }
@@ -253,7 +253,7 @@ for (i in 1:length(list.test)) {
 }
 colnames(six.model) <- list.test
 # ind1 = which(reduced.list$min.var >0.05 & reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5)
-ind1 = which(reduced.list$min.var >0.05)
+ind1 = which(reduced.list$nbc >1000 & reduced.list$min.var >0.002& reduced.list$r1>0.75 & reduced.list$r2>0.75)
 six.model = six.model[ind1,]
 # save(six.model, file = paste0(path_results,"attribution/six.models", win.thres,".RData"))
 
@@ -278,7 +278,7 @@ p <- ggplot(res.plot, aes(fill=mod, y=value, x=series, label = scales::percent(p
   theme(axis.text = element_text(size = 5),legend.text=element_text(size=4.5),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
         legend.title=element_blank())
-ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima5.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_N.1000_var_rate.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 # Plot coefficients ------------------------
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
@@ -319,6 +319,8 @@ dat.p$name = factor(dat.p$name,  levels = reoder.list.name)
 # sort data
 # ind1 = which(reduced.list$min.var >0.05)
 ind1 = which(reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5 & reduced.list$min.var>0.002& reduced.list$distances<50)
+# ind1 = which(reduced.list$nbc>1000 & reduced.list$min.var>0.002)
+
 name.selected = reduced.list$station[ind1]
 dat.p = dat.p[which(dat.p$station %in% name.selected),]
 
@@ -330,7 +332,7 @@ p <-ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param)) +
         legend.title=element_blank())+
   scale_color_manual(values=c("red", "green", "purple", "blue", "orange"))
 
-ggsave(paste0(path_results,"attribution/Datacharacterization_coef.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_coef_N1000_var_distsmall.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 
 # estimate using ARMA(1,1) in general -------------------------------------
