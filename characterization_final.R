@@ -255,7 +255,7 @@ colnames(six.model) <- list.test
 six.model$gps.era[which(is.na(reduced.list$chose)==TRUE)] =NA
 # ind1 = which(reduced.list$min.var >0.05 & reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5)
 # apply filter on length and variance
-ind1 = which(reduced.list$nbc >1000 & reduced.list$min.var >0.002& reduced.list$r1>0.75 & reduced.list$r2>0.75)
+ind1 = which(reduced.list$min.var >0.002& reduced.list$nbc>1000& reduced.list$r1>0.75 & reduced.list$r2>0.75& reduced.list$distances>150)
 
 six.model = six.model[ind1,]
 # save(six.model, file = paste0(path_results,"attribution/six.models", win.thres,".RData"))
@@ -265,23 +265,25 @@ for (i in 1:length(list.test)) {
   value.count = sapply(c(list.model), function(x) length(which(six.model[,i] == x)))
   six.values <- c( six.values, value.count)
 }
-res.plot = data.frame(series = rep(list.name.test, each = 4), mod = rep(list.model, 6), value = six.values, pct =  six.values/(nrow(six.model)))
+res.plot = data.frame(series = rep(list.name.test, each = 4), mod = rep(list.model, 6), value = six.values, 
+                      n = c(rep(length(which(is.na(six.model$gps.era)==FALSE)),4), rep(nrow(six.model),20)))
+res.plot$pct = res.plot$value/res.plot$n*100
 res.plot$series = factor(res.plot$series, 
                          levels=reoder.list.name)
 res.plot$mod = factor(res.plot$mod, 
                       levels=list.model)
 # res.plot = res.plot[which(res.plot$value != 0),]
 # jpeg(paste0(path_results,"attribution/iden_model_longest.jpg" ),width = 3000, height = 1800,res = 300)
-p <- ggplot(res.plot, aes(fill=mod, y=value, x=series, label = scales::percent(pct))) + 
+p <- ggplot(res.plot, aes(fill=mod, y=pct, x=series, label = value)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
-  xlab("") + ylab("Count")+
-  geom_text(position = position_dodge(width = .9),    # move to center of bars
+  xlab("") + ylab("Peercentaf")+
+  geom_text(position = position_dodge(width = .5),    # move to center of bars
             vjust = -0.5,    # nudge above top of bar
             size = 1)+
   theme(axis.text = element_text(size = 5),legend.text=element_text(size=4.5),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
         legend.title=element_blank())
-ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_N.1000_var_rate.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_full_var_N_r_distlarge.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 # Plot coefficients ------------------------
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
@@ -321,8 +323,8 @@ dat.p = data.frame(name = test.list, param = param.list, model = model.list, val
 dat.p$name = factor(dat.p$name,  levels = reoder.list.name)
 # sort data
 # ind1 = which(reduced.list$min.var >0.05)
-ind1 = which(reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5 & reduced.list$min.var>0.002& reduced.list$distances<50)
-# ind1 = which(reduced.list$nbc>1000 & reduced.list$min.var>0.002)
+# ind1 = which(reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5 & reduced.list$min.var>0.002& reduced.list$distances<50)
+ind1 = which(reduced.list$min.var>0.002&reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5& reduced.list$distances>150)
 
 name.selected = reduced.list$station[ind1]
 dat.p = dat.p[which(dat.p$station %in% name.selected),]
@@ -335,7 +337,7 @@ p <-ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param)) +
         legend.title=element_blank())+
   scale_color_manual(values=c("red", "green", "purple", "blue", "orange"))
 
-ggsave(paste0(path_results,"attribution/Datacharacterization_coef_N1000_var_distsmall.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_coef_full_var_N_r_distlarge.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 
 # estimate using ARMA(1,1) in general -------------------------------------
