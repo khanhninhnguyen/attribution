@@ -546,7 +546,7 @@ table(a)
 
 a = get(load(file = paste0(path_results,"attribution/ver1/list.segments.selected", win.thres,".RData")))
 a1 = na.omit(a)
-a2 = get(load(file = paste0(path_results,"attribution/ver6/list.segments.selected", win.thres=10,".RData")))
+a2 = get(load(file = paste0(path_results,"attribution/ver7/list.segments.selected", win.thres=10,".RData")))
 a2 = na.omit(a2)
 
 b = get(load(file = paste0(path_results,"attribution/ver3/six.models", win.thres,".RData")))

@@ -52,7 +52,7 @@ r = sapply(c(1:length(list.main)), function(x){
   list.s1$ind = c(1:nrow(list.s1))
   # ind.1 = which(list.s1$r1>0.5 | list.s1$r2>0.5)
   # ind.2 = which(list.s1$min.var>0.05)
-  ind.1 = which(list.s1$min.var>0.05)
+  ind.1 = which(list.s1$min.var>0.0)
   list.s = list.s1[ind.1,]
   list.s$nbc = list.s$nbc1+list.s$nbc2
   # a = data.frame(nb =  c(list.s$nbc1, list.s$nbc2), rl = c(list.s$r1, list.s$r2), ind = c(list.s$ind, list.s$ind), ind.seg = c(rep(c(1,2), each = nrow(list.s))))
@@ -66,8 +66,8 @@ r = sapply(c(1:length(list.main)), function(x){
     ind0 = aggregate(nbc~nearby, data = list.s, FUN = max) # choose longest segment for each nearby
     ind0 = inner_join(list.s, ind0)
     ind2 = sort(ind0$nbc, index.return=TRUE, decreasing = TRUE)
-    if(length(ind2$ix)>2){
-      ind3 = ind0[ind2$ix[c(1:3)],]
+    if(length(ind2$ix)>0){
+      ind3 = ind0[ind2$ix[1],]
     }else {
       ind3 = list.s
     }
@@ -95,11 +95,10 @@ all.fit = list()
 for (i in c(1:nrow(reduced.list))) {
   name.i = paste0(reduced.list$main[i],".",as.character(reduced.list$brp[i]), ".", reduced.list$nearby[i])
   dat.i = dat[[name.i]]
-  six.ser = na.omit(dat.i)
-  dat.i = tidyr::complete(six.ser, date = seq(dat.i$date[1], dat.i$date[7300], by = "day"))
-  # dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
+  # six.ser = na.omit(dat.i)
+  # dat.i = tidyr::complete(six.ser, date = seq(dat.i$date[1], dat.i$date[7300], by = "day"))
+  # # dat.i = dat.i[choose_segment(reduced.list$chose[i]),]
   # dat.ij = remove_na_2sides(dat.i, name.series = "gps.gps")
-  ind.all = which(is.na(dat.i[["gps.gps"]]) == FALSE)
   print(i)
   for (j in c(1:6)) {
     name.series0 = list.test[j]
@@ -252,8 +251,12 @@ for (i in 1:length(list.test)) {
   six.model[,i] = sapply(c(1:length.data), function(x) model.iden(as.numeric(unlist(order.arma.l[[name.test]][[1]][x,]))))
 }
 colnames(six.model) <- list.test
+# remove dupplicated GPS-ERA
+six.model$gps.era[which(is.na(reduced.list$chose)==TRUE)] =NA
 # ind1 = which(reduced.list$min.var >0.05 & reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5)
+# apply filter on length and variance
 ind1 = which(reduced.list$nbc >1000 & reduced.list$min.var >0.002& reduced.list$r1>0.75 & reduced.list$r2>0.75)
+
 six.model = six.model[ind1,]
 # save(six.model, file = paste0(path_results,"attribution/six.models", win.thres,".RData"))
 
