@@ -3,7 +3,7 @@ source(paste0(path_code_att,"simulate_time_series.R"))
 # source(paste0(path_code_att,"newUsed_functions.R"))
 source(paste0(path_code_att,"sliding_variance.R"))
 source(paste0(path_code_att,"support_characterization.R"))
-
+# UPDATE OR REMOVE PAMA STATION 
 # param
 win.thres = 10
 one.year=365
@@ -255,8 +255,7 @@ colnames(six.model) <- list.test
 six.model$gps.era[which(is.na(reduced.list$chose)==TRUE)] =NA
 # ind1 = which(reduced.list$min.var >0.05 & reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5)
 # apply filter on length and variance
-ind1 = which(reduced.list$min.var >0.002& reduced.list$nbc>1000& reduced.list$r1>0.75 & reduced.list$r2>0.75& reduced.list$distances>150)
-
+ind1 = which(reduced.list$min.var >0.002& reduced.list$nbc>1000 & reduced.list$r1>0.9 & reduced.list$r2>0.9)
 six.model = six.model[ind1,]
 # save(six.model, file = paste0(path_results,"attribution/six.models", win.thres,".RData"))
 
@@ -276,14 +275,15 @@ res.plot$mod = factor(res.plot$mod,
 # jpeg(paste0(path_results,"attribution/iden_model_longest.jpg" ),width = 3000, height = 1800,res = 300)
 p <- ggplot(res.plot, aes(fill=mod, y=pct, x=series, label = value)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
-  xlab("") + ylab("Peercentaf")+
+  xlab("") + ylab("Percentage")+
   geom_text(position = position_dodge(width = .5),    # move to center of bars
             vjust = -0.5,    # nudge above top of bar
             size = 1)+
+  ylim(c(0,100))+
   theme(axis.text = element_text(size = 5),legend.text=element_text(size=4.5),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
         legend.title=element_blank())
-ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_full_var_N_r_distlarge.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_full_var_N_r0.5_distsmall.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 1200)
 
 # Plot coefficients ------------------------
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
@@ -324,7 +324,7 @@ dat.p$name = factor(dat.p$name,  levels = reoder.list.name)
 # sort data
 # ind1 = which(reduced.list$min.var >0.05)
 # ind1 = which(reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5 & reduced.list$min.var>0.002& reduced.list$distances<50)
-ind1 = which(reduced.list$min.var>0.002&reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5& reduced.list$distances>150)
+ind1 = which(reduced.list$min.var>0.002&reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5& reduced.list$distances>50)
 
 name.selected = reduced.list$station[ind1]
 dat.p = dat.p[which(dat.p$station %in% name.selected),]
