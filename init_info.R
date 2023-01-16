@@ -16,6 +16,7 @@ library("usethis")
 library("lmtest")
 library("lubridate")
 library(usethis)
+library("RColorBrewer")
 
 # main paths  --------------------------------------------------------------
 path_main="/home/knguyen/Documents/PhD/"
