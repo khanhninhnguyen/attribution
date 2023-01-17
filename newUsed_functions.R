@@ -299,17 +299,17 @@ Test_OLS_vcovhac1 <- function(Data.mod){
   return(list(fit.hac = fit.hac.r, fit.ols = fit.ols.r, vcov.para = vcov.para.r, predicted = fit.ols.r$fitted.values))
 }
 
-construct.design <- function(data.df, name.series){
-  Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
-    rename(signal=name.series) %>% 
-    mutate(complete.time=1:nrow(data.df)) %>% 
-    dplyr::select(-date)
-  for (i in 1:4){
-    eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
-  }
-  Data.mod <- Data.mod %>% dplyr::select(-complete.time)
-  return(Data.mod)
-}
+# construct.design <- function(data.df, name.series){
+#   Data.mod <- data.df %>% dplyr::select(name.series,date) %>%
+#     rename(signal=name.series) %>% 
+#     mutate(complete.time=1:nrow(data.df)) %>% 
+#     dplyr::select(-date)
+#   for (i in 1:4){
+#     eval(parse(text=paste0("Data.mod <- Data.mod %>% mutate(cos",i,"=cos(i*complete.time*(2*pi)/one.year),sin",i,"=sin(i*complete.time*(2*pi)/one.year))")))
+#   }
+#   Data.mod <- Data.mod %>% dplyr::select(-complete.time)
+#   return(Data.mod)
+# }
 
 IGLS <- function(design.m, tol, day.list){
   resi0 = rep(NA, nrow(design.m))
