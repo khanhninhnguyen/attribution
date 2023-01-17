@@ -342,3 +342,13 @@ IGLS <- function(design.m, tol, day.list){
   return(list( coefficients = gls.fit$coefficients, var = w0^2, residual = resi0, fit = fit.val))
 }
 
+
+FGLS <- function(data.df, name.series){
+  # estimate the moving variance
+  
+}
+
+
+
+
+
