@@ -4,7 +4,7 @@ source(paste0(path_code_att,"FGLS.R"))
 # source(paste0(path_code_att,"newUsed_functions.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
-off.set = 0.3
+off.set = 0
 heteroscedast = 0
 autocor = 1
 x.axis = "rho"
@@ -12,7 +12,7 @@ one.year = 365
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
 nb.sim = 100
-n = 1000
+n = 500
 t = c(1:n)-n/2
 list.param.ar = 0.9
 list.param.sig = seq(0.1, 0.35, 0.05)
@@ -73,9 +73,9 @@ for (l in c(1:length(gen.test$ar))) {
     y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
                          monthly.var = 0)
     y[(n/2):n] <- y[(n/2):n] + off.set
-    df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2014-07-31"), by="days"))
-    Data.mod = construct.design(data.df = df, name.series = "y", break.ind = 100)
-    
+    df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2015-05-27"), by="days"))
+    Data.mod = construct.design(data.df = df, name.series = "y", break.ind = n/2)
+    Data.mod =  Data.mod[,c(1,10,11)]
     # Test with vcov (HAC)
     list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
     mod.X <-  list.para %>% stringr::str_c(collapse = "+")
@@ -107,10 +107,10 @@ for (l in c(1:length(gen.test$ar))) {
     print(i)
   }
   # significance level
-  pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[9,4]))
-  pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[9,4]))
-  pval.fgls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fgls$t.table[9,4]))
-  pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$gls$t.table[9,4]))
+  pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[1,4]))
+  pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[1,4]))
+  pval.fgls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fgls$t.table[1,4]))
+  pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$gls$t.table[1,4]))
   
   p.val = c(length(which(pval.ols>0.05)),
             length(which(pval.fgls>0.05)),
