@@ -11,7 +11,7 @@ x.axis = "rho"
 one.year = 365
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
-nb.sim = 100
+nb.sim = 1000
 n = 500
 t = c(1:n)-n/2
 list.param.ar = 0.9
@@ -55,12 +55,14 @@ gen.test = mod.sim(heteroscedastic = heteroscedast, autocorr = autocor, var.inno
 
 
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
-Res.fin = data.frame(matrix(NA, ncol = 4, nrow = length(gen.test$ar)))
+Res.fin = data.frame(matrix(NA, ncol = 5, nrow = length(gen.test$ar)))
 
 hetero = gen.test$hetero
 burn.in = gen.test$burn.in
 sigma.sim = gen.test$sigma.t[1]
-time.c = c
+time.c = c()
+time.c1 = c()
+
 # test simulation FGLS
 for (l in c(1:length(gen.test$ar))) {
   tot.res <- list()
@@ -73,7 +75,7 @@ for (l in c(1:length(gen.test$ar))) {
     y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
                          monthly.var = 0)
     y[(n/2):n] <- y[(n/2):n] + off.set
-    df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2015-05-27"), by="days"))
+    df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2015-05-27"), by="days")[1:n])
     Data.mod = construct.design(data.df = df, name.series = "y", break.ind = n/2)
     Data.mod =  Data.mod[,c(1,10,11)]
     # Test with vcov (HAC)
@@ -90,10 +92,8 @@ for (l in c(1:length(gen.test$ar))) {
     #GLS with true covariance matrix
     if(ar==0){
       gls.fit = ols.fit
-      
     }else{
       gls.fit = GLS(phi = ar, theta = 0, var.t = rep(sigma.sim,n), design.matrix = Data.mod)
-      
     }
     # FGLS
     start_time <- Sys.time()
@@ -101,19 +101,26 @@ for (l in c(1:length(gen.test$ar))) {
     end_time <- Sys.time()
     time.c = c(time.c, (end_time - start_time))
     
-    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fgls = fgls.fit, gls = gls.fit)
-    coef.res[[i]] = list( ols = ols.fit$coefficients, fgls = fgls.fit$coefficients, gls = gls.fit$Coefficients )
-    var.res[[i]] = list( ols = vcov(ols.fit), fgls = fgls.fit$varBeta, hac = vcov.para, gls = gls.fit$vcov)
+    start_time <- Sys.time()
+    fgls.fit1 = FGLS2(design.m = Data.mod, tol=0.0001, day.list = df$date, noise.model = c(1,0,0))
+    end_time <- Sys.time()
+    time.c1 = c(time.c1, (end_time - start_time))
+    
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fgls = fgls.fit, fgls1 = fgls.fit1, gls = gls.fit)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, fgls = fgls.fit$coefficients,  fgls1 = fgls.fit1$coefficients, gls = gls.fit$Coefficients )
+    var.res[[i]] = list( ols = vcov(ols.fit), fgls = fgls.fit$varBeta, fgls1 = fgls.fit1$varBeta, hac = vcov.para, gls = gls.fit$vcov)
     print(i)
   }
   # significance level
   pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[1,4]))
   pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[1,4]))
-  pval.fgls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fgls$t.table[1,4]))
-  pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$gls$t.table[1,4]))
+  pval.fgls <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fgls$t.table[1,4]))
+  pval.fgls1 <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fgls1$t.table[1,4]))
+  pval.gls <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$gls$t.table[1,4]))
   
   p.val = c(length(which(pval.ols>0.05)),
             length(which(pval.fgls>0.05)),
+            length(which(pval.fgls1>0.05)),
             length(which(pval.gls>0.05)), 
             length(which(pval.hac>0.05)))
   
@@ -121,7 +128,10 @@ for (l in c(1:length(gen.test$ar))) {
   
 }
 
-save(tot.res, file=paste0(path_result,"tt.RData"))
+save(tot.res, file=paste0(path_result,"attribution/tt.RData"))
+a = data.frame(c1 = time.c, c2 = time.c1)
+save(tot.res, file=paste0(path_result,"attribution/time.RData"))
+
 colnames(Res.fin) <- c("OLS", "FGLS", "GLS", "OLS-HAC")
 Res.fin <- Res.fin[c("OLS","OLS-HAC", "FGLS", "GLS")]
 
