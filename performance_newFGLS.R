@@ -5,8 +5,8 @@ source(paste0(path_code_att,"FGLS.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
 off.set = 0.3
-heteroscedast = 1
-autocor = 0
+heteroscedast = 0
+autocor = 1
 x.axis = "rho"
 one.year = 365
 
@@ -55,54 +55,92 @@ gen.test = mod.sim(heteroscedastic = heteroscedast, autocorr = autocor, var.inno
 
 
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
-Res.fin = data.frame(matrix(NA, ncol = 4, nrow = length(gen.test$ar)))
+Res.fin = data.frame(matrix(NA, ncol = 3, nrow = length(gen.test$ar)))
 
 hetero = gen.test$hetero
 burn.in = gen.test$burn.in
-sigma.sim = gen.test$sigma.t[,3]
-ar=0.45
-tot.res <- list()
-coef.res <- list()
-var.res <- list()
+sigma.sim = gen.test$sigma.t[1]
+
 # test simulation FGLS
-for (i in c(1:nb.sim)) {
-  set.seed(i)
-  y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
-                       monthly.var = 0)
-  y[(n/2):n] <- y[(n/2):n] + off.set
-  df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2014-07-31"), by="days"))
-  Data.mod = construct.design(data.df = df, name.series = "y", break.ind = 100)
+for (l in c(1:length(gen.test$ar))) {
+  tot.res <- list()
+  coef.res <- list()
+  var.res <- list()
+  ar = gen.test$ar[l]
   
-  # Test with vcov (HAC)
-  list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
-  mod.X <-  list.para %>% stringr::str_c(collapse = "+")
-  mod.expression <- c("signal","~",mod.X, -1) %>% stringr::str_c(collapse = "")
-  # ols
-  ols.fit = lm(mod.expression, data = Data.mod)
-  vcov.para=sandwich::kernHAC(ols.fit, prewhite = TRUE, approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+  for (i in c(1:nb.sim)) {
+    set.seed(i)
+    y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
+                         monthly.var = 0)
+    y[(n/2):n] <- y[(n/2):n] + off.set
+    df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2014-07-31"), by="days"))
+    Data.mod = construct.design(data.df = df, name.series = "y", break.ind = 100)
+    
+    # Test with vcov (HAC)
+    list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]
+    mod.X <-  list.para %>% stringr::str_c(collapse = "+")
+    mod.expression <- c("signal","~",mod.X, -1) %>% stringr::str_c(collapse = "")
+    # ols
+    ols.fit = lm(mod.expression, data = Data.mod)
+    vcov.para=sandwich::kernHAC(ols.fit, prewhite = TRUE, approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
+    
+    fit.hac=lmtest::coeftest(ols.fit,df=(n-2-trend.reg),vcov.=vcov.para)[, ] %>% as.data.frame()
+    fit.ols=lmtest::coeftest(ols.fit,df=(n-2-trend.reg))[, ] %>% as.data.frame()
+    
+    #GLS with true covariance matrix
+    # gls.fit.true = gls.true(var.t = Data.mod$weight1, phi = ar, theta = 0, design.matrix = Data.mod, trend = trend.reg)
+    
+    # FGLS
+    fit.gls = FGLS(design.m = Data.mod, tol=0.0001, day.list = df$date)
+    
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls = fit.gls)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = fit.gls$coefficients)
+    var.res[[i]] = list( ols = vcov(ols.fit), gls = fit.gls$varBeta, hac = vcov.para)
+    
+  }
+  # significance level
+  pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[9,4]))
+  pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[9,4]))
+  pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls$t.table[9,4]))
   
+  p.val = c(length(which(pval.ols>0.05)),
+            # length(which(pval.gls.true>0.05)),
+            length(which(pval.gls>0.05)), 
+            length(which(pval.hac>0.05)))
   
-  fit.hac=lmtest::coeftest(ols.fit,df=(n-2-trend.reg),vcov.=vcov.para)[, ] %>% as.data.frame()
-  fit.ols=lmtest::coeftest(ols.fit,df=(n-2-trend.reg))[, ] %>% as.data.frame()
-  
-  #GLS with true covariance matrix
-  # gls.fit.true = gls.true(var.t = Data.mod$weight1, phi = ar, theta = 0, design.matrix = Data.mod, trend = trend.reg)
-  
-  # FGLS
-  fit.gls = FGLS(design.m = Data.mod, tol=0.00001, day.list = df$date)
-  
-  tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls = fit.gls)
-  coef.res[[i]] = list( ols = ols.fit$coefficients, gls = fit.gls$coefficients)
-  var.res[[i]] = list( ols = vcov(ols.fit), gls = fit.gls$varBeta, hac = vcov.para)
+  Res.fin[l,] = p.val
   
 }
-# significance level
-pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[2,4]))
-pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[2,4]))
-pval.gls.true <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls.true[2,4]))
-pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls$`Pr(>|t|)`[2,4]))
 
-p.val = c(length(which(pval.ols>0.05)),
-          # length(which(pval.gls.true>0.05)),
-          length(which(pval.gls>0.05)), 
-          length(which(pval.hac>0.05)))
+colnames(Res.fin) <- c("OLS", "GLS", "FGLS", "OLS-HAC")
+Res.fin <- Res.fin[c("OLS","OLS-HAC", "FGLS", "GLS")]
+
+if(off.set == 0){
+  res = (nb.sim- Res.fin)/nb.sim
+}else{
+  res = (nb.sim- Res.fin)/nb.sim
+}
+name.x = x.axis
+if(x.axis == "rho"){
+  param.test = list.param.ar
+}else{
+  param.test = list.param.sig*100/0.4
+}
+res[name.x] = param.test
+dat.plot =reshape2::melt(res, id = name.x)
+face1 = "bold"
+x.axis1 = "p"
+
+jpeg(paste0(path_results,"attribution/h.", heteroscedast, "a.", autocor, x.axis, y.axis, "trend.reg", trend.reg,"1.jpg" ),
+     width = 2600, height = 1800,res = 300)
+p2 <- eval(parse(
+  text=paste0("ggplot(dat.plot, aes(x =", x.axis, ",y = value, col = variable))+
+  geom_point(size=3) + geom_line() +theme_bw() +
+  ylab(y.axis) + 
+  xlab(x.axis1) +
+  scale_y_continuous(breaks=seq(0, 1, 0.15), limits =c(0,1))+
+  scale_x_continuous(breaks=list.param.ar )+
+  theme(axis.text = element_text(size = 25),legend.text=element_text(size=15),legend.title=element_blank(),
+      axis.title = element_text(size=25,face=face1))")))
+print(p2)
+dev.off()
