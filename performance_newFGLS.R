@@ -12,9 +12,9 @@ one.year = 365
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
 nb.sim = 100
-n = 200
+n = 1000
 t = c(1:n)-n/2
-list.param.ar = seq(0, 0.9, 0.15)
+list.param.ar = 0.9
 list.param.sig = seq(0.1, 0.35, 0.05)
 
 # specify simulation model
@@ -55,12 +55,12 @@ gen.test = mod.sim(heteroscedastic = heteroscedast, autocorr = autocor, var.inno
 
 
 res.var = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
-Res.fin = data.frame(matrix(NA, ncol = 3, nrow = length(gen.test$ar)))
+Res.fin = data.frame(matrix(NA, ncol = 4, nrow = length(gen.test$ar)))
 
 hetero = gen.test$hetero
 burn.in = gen.test$burn.in
 sigma.sim = gen.test$sigma.t[1]
-
+time.c = c
 # test simulation FGLS
 for (l in c(1:length(gen.test$ar))) {
   tot.res <- list()
@@ -84,27 +84,36 @@ for (l in c(1:length(gen.test$ar))) {
     ols.fit = lm(mod.expression, data = Data.mod)
     vcov.para=sandwich::kernHAC(ols.fit, prewhite = TRUE, approx = c("AR(1)"), kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
     
-    fit.hac=lmtest::coeftest(ols.fit,df=(n-2-trend.reg),vcov.=vcov.para)[, ] %>% as.data.frame()
-    fit.ols=lmtest::coeftest(ols.fit,df=(n-2-trend.reg))[, ] %>% as.data.frame()
+    fit.hac=lmtest::coeftest(ols.fit,df=(n-trend.reg),vcov.=vcov.para)[, ] %>% as.data.frame()
+    fit.ols=lmtest::coeftest(ols.fit,df=(n-trend.reg))[, ] %>% as.data.frame()
     
     #GLS with true covariance matrix
-    # gls.fit.true = gls.true(var.t = Data.mod$weight1, phi = ar, theta = 0, design.matrix = Data.mod, trend = trend.reg)
-    
+    if(ar==0){
+      gls.fit = ols.fit
+      
+    }else{
+      gls.fit = GLS(phi = ar, theta = 0, var.t = rep(sigma.sim,n), design.matrix = Data.mod)
+      
+    }
     # FGLS
-    fit.gls = FGLS(design.m = Data.mod, tol=0.0001, day.list = df$date)
+    start_time <- Sys.time()
+    fgls.fit = FGLS1(design.m = Data.mod, tol=0.0001, day.list = df$date, noise.model = c(1,0,0))
+    end_time <- Sys.time()
+    time.c = c(time.c, (end_time - start_time))
     
-    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fit.gls = fit.gls)
-    coef.res[[i]] = list( ols = ols.fit$coefficients, gls = fit.gls$coefficients)
-    var.res[[i]] = list( ols = vcov(ols.fit), gls = fit.gls$varBeta, hac = vcov.para)
-    
+    tot.res[[i]] = list(fit.hac =fit.hac, fit.ols = fit.ols, fgls = fgls.fit, gls = gls.fit)
+    coef.res[[i]] = list( ols = ols.fit$coefficients, fgls = fgls.fit$coefficients, gls = gls.fit$Coefficients )
+    var.res[[i]] = list( ols = vcov(ols.fit), fgls = fgls.fit$varBeta, hac = vcov.para, gls = gls.fit$vcov)
+    print(i)
   }
   # significance level
   pval.ols <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.ols[9,4]))
   pval.hac <- unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.hac[9,4]))
-  pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fit.gls$t.table[9,4]))
+  pval.fgls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$fgls$t.table[9,4]))
+  pval.gls <-  unlist(sapply(c(1:nb.sim), function(x) tot.res[[x]]$gls$t.table[9,4]))
   
   p.val = c(length(which(pval.ols>0.05)),
-            # length(which(pval.gls.true>0.05)),
+            length(which(pval.fgls>0.05)),
             length(which(pval.gls>0.05)), 
             length(which(pval.hac>0.05)))
   
@@ -112,7 +121,8 @@ for (l in c(1:length(gen.test$ar))) {
   
 }
 
-colnames(Res.fin) <- c("OLS", "GLS", "FGLS", "OLS-HAC")
+save(tot.res, file=paste0(path_result,"tt.RData"))
+colnames(Res.fin) <- c("OLS", "FGLS", "GLS", "OLS-HAC")
 Res.fin <- Res.fin[c("OLS","OLS-HAC", "FGLS", "GLS")]
 
 if(off.set == 0){
