@@ -68,7 +68,33 @@ simulate.general <- function(N, arma.model, burn.in = 0,
 }
 
 
-# set.seed(1)
+simulate.general1 <- function(N, arma.model, burn.in = 0, 
+                             hetero, sigma,
+                             gaps = 0, 
+                             outlier.model = 0, prob.outliers = 0, size.outliers = 0){
+  # if(hetero == 1){
+  #   sigma <- rep(sigma, times = round(N/length(sigma)))
+  # }
+  
+  # initiate noise and simulated series 
+  # Y.sim <- rep(NA, N)
+  # Y.sim[1] <- 0
+  # monthly.noise <- rep(NA, N)
+  # ini.noise =  rnorm(n = N, mean = 0, sd = 1)
+  # 
+  # considering the autocorrelation
+  alpha =  arma.model[1]
+  beta = arma.model[2]
+  coef = (1+2*alpha*beta+beta**2)/(1-alpha**2)
+  sigma = sqrt((sigma**2)/coef)
+  
+  x.ini = arima.sim(model = list(ar = alpha, ma = beta), n = N, n.start = burn.in, sd = 1)
+  sim.series = x.ini*sigma
+  
+  return(sim.series)
+}
+
+
 a = simulate.general(burn.in = 1000,
                      arma.model = c(0.5,0),
                      hetero = 1,
