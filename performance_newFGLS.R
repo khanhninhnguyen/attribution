@@ -11,7 +11,7 @@ x.axis = "rho"
 one.year = 365
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
-nb.sim = 1000
+nb.sim = 100
 n = 730
 t = c(1:n)-n/2
 list.param.ar = seq(0,0.9,0.15)

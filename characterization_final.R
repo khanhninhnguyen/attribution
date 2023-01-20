@@ -80,6 +80,7 @@ dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 
 # full.list$chose = unlist(r)
 # save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
 # LIST OF STATION   ------------------
+
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = full.list
 # reduced.list$chose[51] =1
@@ -646,6 +647,8 @@ library(ggplot2)
 library(gtable)    
 library(grid)
 library(gridExtra) 
+unicode_minus = function(x) sub('^-', '\U2212', format(x))
+# unicode_minus(format(round(SE,  digits = 3), nsmall = 3))
 
 all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
 order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
@@ -680,12 +683,14 @@ res.plot$mod = factor(res.plot$mod,
 p1 <- ggplot(res.plot, aes(fill=mod, y=pct, x=series, label = value)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
   xlab("") + ylab("Percentage")+
+  labs(tag = "(a)") + 
   geom_text(position = position_dodge(width = .5),    # move to center of bars
             vjust = -0.5,    # nudge above top of bar
             size = 1)+
   ylim(c(0,100))+
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
+        plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
 # plot2-----
 
@@ -717,12 +722,13 @@ res.plot$mod = factor(res.plot$mod,
 p2 <- ggplot(res.plot, aes(fill=mod, y=pct, x=series, label = value)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
   xlab("") + ylab("Percentage")+
+  labs(tag = "(b)") + 
   geom_text(position = position_dodge(width = .5),    # move to center of bars
             vjust = -0.5,    # nudge above top of bar
             size = 1)+
   ylim(c(0,100))+
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
-        axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
+        axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
 
 # plot3 -----
@@ -739,7 +745,7 @@ param.list <- c()
 model.list <- c()
 test.list  <- c()
 values <- c()
-list.param = c("phi", "theta")
+list.param = c("Phi", "theta")
 list.name.station = c()
 
 for (testi in c(1:6)) {
@@ -767,9 +773,9 @@ dat.p = dat.p[which(dat.p$station %in% name.selected),]
 
 p3 <- ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param)) + theme_bw()+
   geom_boxplot(lwd=0.2, outlier.size=0.2)+
-  xlab("") + ylab(" values of coefficients ") + ylim(-1,1)+
+  xlab("") + ylab(" values of coefficients ") + ylim(-1,1)+ labs(tag = "(c)") + 
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
-        axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
+        axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))+
   scale_color_manual(values = c("green", "deepskyblue4"), labels = expression(phi, theta))+
   scale_fill_manual(values = c("#D6604D", "#FDDBC7", "#92C5DE"))
@@ -785,9 +791,9 @@ dat.p = dat.p[which(dat.p$station %in% name.selected),]
 
 p4 <- ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param)) + theme_bw()+
   geom_boxplot(lwd=0.2, outlier.size=0.2)+
-  xlab("") + ylab(" values of coefficients ") + ylim(-1,1)+
+  xlab("") + ylab(" values of coefficients ") + ylim(-1,1)+ labs(tag = "(d)") + 
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
-        axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
+        axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))+
   scale_color_manual(values = c("green", "deepskyblue4"), labels = expression(phi, theta))+
   scale_fill_manual(values = c("#D6604D", "#FDDBC7", "#92C5DE"))
@@ -804,9 +810,9 @@ gD$widths <- gA$widths
 # Arrange the two charts.
 
 grid.newpage()
-p = (grid.arrange(gA, gB, gC, gD, nrow = 2))
+p = (grid.arrange(gA, gB, gC, gD,nrow = 2))
 
-ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima.jpg" ), plot = p, width = 14, height = 9, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/Autoarima.jpg" ), plot = p, width = 14.4, height = 9, units = "cm", dpi = 1200)
 
 
 
@@ -830,17 +836,31 @@ for (i in c(1:nrow(reduced.list))) {
 }
 mean.res$gps.era[which(is.na(reduced.list$chose)==TRUE)] =NA
 range.res$gps.era[which(is.na(reduced.list$chose)==TRUE)] =NA
+tot.res = cbind(mean.res, range.res)
+
 ind1 = which(reduced.list$min.var>0.002&reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5)
-mean.res[ind1,] =NA
-range.res[ind1,] =NA
-res = data.frame(mean = colMeans(mean.res, na.rm = TRUE),
-                 sd.mean = sapply(c(1:6), function(x) sd(mean.res[,x], na.rm = TRUE)), 
-                 range = colMeans(range.res, na.rm = TRUE),
-                 sd.range = sapply(c(1:6), function(x) sd(range.res[,x], na.rm = TRUE)),
+ind2 = which(reduced.list$min.var>0.002&reduced.list$nbc>1000 & reduced.list$r1>0.5 & reduced.list$r2>0.5 & reduced.list$distances >50)
+ind = ind1
+res = data.frame(mean = colMeans(tot.res[ind,c(1:6)], na.rm = TRUE),
+                 sd.mean = sapply(c(1:6), function(x) sd(tot.res[ind,x], na.rm = TRUE)), 
+                 range = colMeans(tot.res[ind,c(7:12)], na.rm = TRUE),
+                 sd.range = sapply(c(1:6), function(x) sd(tot.res[ind,(x+6)], na.rm = TRUE)),
                  name = list.name.test)
 
 a = res[match(reoder.list.name, res$name),]
 a[,c(1:4)]= round(a[,c(1:4)], digits = 2)
+b = a
+
+ind = ind2
+res = data.frame(mean = colMeans(tot.res[ind,c(1:6)], na.rm = TRUE),
+                 sd.mean = sapply(c(1:6), function(x) sd(tot.res[ind,x], na.rm = TRUE)), 
+                 range = colMeans(tot.res[ind,c(7:12)], na.rm = TRUE),
+                 sd.range = sapply(c(1:6), function(x) sd(tot.res[ind,(x+6)], na.rm = TRUE)),
+                 name = list.name.test)
+a = res[match(reoder.list.name, res$name),]
+a[,c(1:4)]= round(a[,c(1:4)], digits = 2)
+
+out = data.frame(cbind(b[,c(1:2)], a[,c(1:2)]), b[,c(3:4)], a[,c(3:4)], b[,5])
 write.table(a, file = paste0(path_results,"attribution/sd_table.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
 
 
