@@ -5,7 +5,7 @@ source(paste0(path_code_att,"FGLS.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
 one.year = 365
-nb.sim = 10
+nb.sim = 1000
 n = 730
 list.param.ar = seq(0,0.9,0.15)
 list.param.sig = seq(0.1, 0.45, 0.05)
@@ -43,7 +43,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   thres =  ifelse(off.set !=0, 0.95, 0.05)
   if(x.axis=="rho"){
     sample = list.param.ar
-    individual = 4
+    individual = 8
   }else{
     sample = list.param.sig
     individual = 3
@@ -163,7 +163,7 @@ case = data.frame(h = rep(c(0,1,1,1),2),
                   x.axis = rep(c("rho", "sig"),4))
 
 
-for (j in c(1:8)) {
+for (j in c(1,3,5,7)) {
     off.set = case$offset[j]
     heteroscedast = case$h[j]
     autocor = case$a[j]
