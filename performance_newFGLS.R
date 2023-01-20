@@ -12,7 +12,7 @@ one.year = 365
 
 y.axis = ifelse(off.set !=0, "TPR", "FPR")
 nb.sim = 1000
-n = 1000
+n = 730
 t = c(1:n)-n/2
 list.param.ar = seq(0,0.9,0.15)
 list.param.sig = seq(0.1, 0.35, 0.05)
@@ -72,8 +72,7 @@ for (l in c(1:length(gen.test$ar))) {
   
   for (i in c(1:nb.sim)) {
     set.seed(i)
-    y = simulate.general(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim),
-                         monthly.var = 0)
+    y = simulate.general1(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
     y[(n/2):n] <- y[(n/2):n] + off.set
     df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2018-05-27"), by="days")[1:n])
     Data.mod = construct.design(data.df = df, name.series = "y", break.ind = n/2)
@@ -128,18 +127,15 @@ for (l in c(1:length(gen.test$ar))) {
   total[[l]] = tot.res
 }
 
-save(total, file=paste0(path_results,"attribution/tt.RData"))
+save(total, file=paste0(path_results,"attribution/tt1.RData"))
 a = data.frame(c1 = time.c, c2 = time.c1)
 save(tot.res, file=paste0(path_result,"attribution/time.RData"))
 
 colnames(Res.fin) <- c("OLS", "FGLS", "GLS", "OLS-HAC")
 Res.fin <- Res.fin[c("OLS","OLS-HAC", "FGLS", "GLS")]
 
-if(off.set == 0){
-  res = (nb.sim- Res.fin)/nb.sim
-}else{
-  res = (nb.sim- Res.fin)/nb.sim
-}
+res = (nb.sim- Res.fin)/nb.sim
+
 name.x = x.axis
 if(x.axis == "rho"){
   param.test = list.param.ar
@@ -157,15 +153,18 @@ p2 <- eval(parse(
   text=paste0("ggplot(dat.plot, aes(x =", x.axis, ",y = value, col = variable))+
   geom_point(size=3) + geom_line() +theme_bw() +
   ylab(y.axis) + 
-  xlab(x.axis1) +
+  xlab(x.axis1) + geom_hline(yintercept =0.05)+
   scale_y_continuous(breaks=seq(0, 1, 0.15), limits =c(0,1))+
   scale_x_continuous(breaks=list.param.ar )+
-  theme(axis.text = element_text(size = 25),legend.text=element_text(size=15),legend.title=element_blank(),
-      axis.title = element_text(size=25,face=face1))")))
+  theme(axis.text = element_text(size = 5), legend.text=element_text(size=4.5),
+        axis.title = element_text(size = 5), legend.title=element_blank())")))
 print(p2)
 dev.off()
 
-# investigate the convergence problem 
+ggsave(paste0(path_results,"attribution/test_sim_h",heteroscedast,"auto",autocor, x.axis, y.axis,".jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+
+
+# investigate the convergence problem -------------------
 l = 3
 max.i = c()
 pb = c()

@@ -85,12 +85,16 @@ simulate.general1 <- function(N, arma.model, burn.in = 0,
   # considering the autocorrelation
   alpha =  arma.model[1]
   beta = arma.model[2]
-  coef = (1+2*alpha*beta+beta**2)/(1-alpha**2)
-  sigma = sqrt((sigma**2)/coef)
+  if(alpha!=0 | beta!=0){
+    coef = (1+2*alpha*beta+beta**2)/(1-alpha**2)
+    sigma = sqrt((sigma**2)/coef)
+    x.ini = arima.sim(model = list(ar = alpha, ma = beta), n = N, n.start = burn.in, sd = 1)
+   
+  }else{
+    x.ini = rnorm(n = N, mean =0, sd = 1)
+  }
   
-  x.ini = arima.sim(model = list(ar = alpha, ma = beta), n = N, n.start = burn.in, sd = 1)
   sim.series = x.ini*sigma
-  
   return(sim.series)
 }
 
