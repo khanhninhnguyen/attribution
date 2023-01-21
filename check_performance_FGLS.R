@@ -2,12 +2,12 @@
 list.param.ar = seq(0,0.9,0.15)
 list.param.sig = seq(0.1, 0.45, 0.05)
 
-hetero = 0
-autocor = 1
+hetero = 1
+autocor = 0
 y.axis = "TPR"
 jump = ifelse(y.axis=="FPR", 0, 0.3)
 noise.name = "ar1"
-k = 1 
+k = 1
 x.axis = "rho"
 
 if(hetero==0){
@@ -19,13 +19,16 @@ if(hetero==0){
   if(autocor==1){
     ar = 0.3
   }else{
+    if(x.axis == "rho"){
+      true.sim.sd = sqrt(0.5 - list.param.sig[4]*cos(2*pi*(c(1:730)/365) -pi))
+    }else{}
     ar =0
     x.axis = "sig"
     noise.name = "white"
+    true.sim.sd = sqrt(0.5 - list.param.sig[k]*cos(2*pi*(c(1:730)/365) -pi))
+    # true.sim.sd = sqrt(0.5 - list.param.sig[4]*cos(2*pi*(c(1:730)/365) -pi))
   }
-  true.sim.sd = sqrt(0.5 - list.param.sig[4]*cos(2*pi*(c(1:730)/365) -pi))
 }
-
 Res = get(load(file = paste0(path_results,"attribution/N1000/",hetero,"auto",autocor, x.axis, y.axis,noise.name,"R.Data")))
 
 true.sd.beta = sqrt(Res$total[[k]][[1]]$gls$vcov[1,1])
@@ -47,7 +50,7 @@ fgls.sd.beta = sapply(c(1:1000), function(x) Res$total[[k]][[x]]$fgls$t.table$`S
 # Check the t-statistic 
 fgls.t = sapply(c(1:1000), function(x) Res$total[[k]][[x]]$fgls$t.table$`t value`[1])
 # plot sd (offset)
-jpeg(paste0(path_results,"attribution/FGLS",hetero,autocor,ar,x.axis, y.axis, ".jpg"), width = 800, height = 600)
+jpeg(paste0(path_results,"attribution/FGLS",hetero,autocor,ar,x.axis, y.axis,k, ".jpg"), width = 800, height = 600)
 
 par(mfrow=c(2,2))
 
@@ -84,8 +87,8 @@ abline(v=mean.est, col ="blue")
 mean.est = mean(fgls.t)
 sd.est = sd(fgls.t)
 hist(fgls.t, breaks = 100, xlab = "t-value",
-     main = paste0("True = ",round(jump, digits = 3), ", Est = ", round(mean.est, digits = 3), ", SD = ", round(sd.est, digits = 3)))
-abline(v=(jump/true.sim.sd), col ="red")
+     main = paste0("True = ",round((jump/true.sd.beta), digits = 3), ", Est = ", round(mean.est, digits = 3), ", SD = ", round(sd.est, digits = 3)))
+abline(v=(jump/true.sd.beta), col ="red")
 abline(v=mean.est, col ="blue")
 dev.off()
 
