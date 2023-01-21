@@ -12,11 +12,11 @@ list.param.sig = seq(0.1, 0.45, 0.05)
 
 # specify the condition
 mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.param.ar, x.axis, individual, n, T1, noise.name){
-  a = cos(2*pi*(c(1:n)/T1) -pi)
+  periodic = cos(2*pi*(c(1:n)/T1) -pi)
   if(heteroscedastic == 1 & autocorr == 0){
     hetero = 1
     burn.in = 0
-    sigma.t = sapply(c(1:length(list.param.sig)), function(x) var.inno - a*list.param.sig[x])
+    sigma.t = sapply(c(1:length(list.param.sig)), function(x) var.inno - periodic*list.param.sig[x])
     ar = rep(0, length(list.param.sig))
   } else if(heteroscedastic == 0 & autocorr == 1){
     hetero = 0
@@ -27,11 +27,11 @@ mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.pa
     hetero = 1
     burn.in = 1000
     if(x.axis == "rho"){
-      sigma.0 = var.inno - a*list.param.sig[individual]
+      sigma.0 = var.inno - periodic*list.param.sig[individual]
       sigma.t = matrix( rep(sigma.0,  length(list.param.ar)) , ncol =  length(list.param.ar), byrow = FALSE )
       ar = list.param.ar
     } else if(x.axis == "sig"){
-      sigma.t = sapply(c(1:length(list.param.sig)), function(x) var.inno - a*list.param.sig[x])
+      sigma.t = sapply(c(1:length(list.param.sig)), function(x) var.inno - periodic*list.param.sig[x])
       ar = rep(list.param.ar[individual],length(list.param.sig))
     }
   }
@@ -175,7 +175,7 @@ for (j in c(1,3,5,7)) {
       noise.list = c(1,0,0)
       model.name = "ar1"
     }
-    a = simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim, list.param.ar, list.param.sig,
+    a = simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim=1, list.param.ar, list.param.sig,
                          noise.model=noise.list, noise.name = model.name)
     print(j)
 }
