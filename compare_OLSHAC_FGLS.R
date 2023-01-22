@@ -5,9 +5,10 @@ source(paste0(path_code_att,"FGLS.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
 one.year = 365
-nb.sim = 1000
+nb.sim = 100
 n = 730
-list.param.ar = seq(0,0.9,0.15)
+list.param.ar = c(0.5,0.6)
+list.ma = c(-0.3, -0.4)
 list.param.sig = seq(0.1, 0.45, 0.05)
 
 # specify the condition
@@ -37,7 +38,8 @@ mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.pa
   }
   return(list(hetero = hetero, burn.in = burn.in, sigma.t = sigma.t, ar = ar))
 }
-simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, list.param.ar, list.param.sig, noise.model,noise.name){
+simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, list.ma, 
+                             list.param.ar, list.param.sig, noise.model,noise.name){
   # generate params
   y.axis = ifelse(off.set !=0, "TPR", "FPR")
   thres =  ifelse(off.set !=0, 0.95, 0.05)
@@ -66,7 +68,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
       sigma.sim = gen.test$sigma.t[,l]
     }
     ar = gen.test$ar[l]
-    ma=0
+    ma = list.ma[l]
     for (i in c(1:nb.sim)) {
       set.seed(i)
       if(length(sigma.sim)==1){
@@ -86,7 +88,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
       fit.ols=lmtest::coeftest(ols.fit,df=(n-2))[, ] %>% as.data.frame()
       
       #GLS, HAC with true covariance matrix
-      gls.fit = GLS(phi = ar, theta = 0, var.t = sigma.sim, design.matrix = Data.mod)
+      gls.fit = GLS(phi = ar, theta = ma, var.t = sigma.sim, design.matrix = Data.mod)
         
       vcov.para=sandwich::kernHAC(ols.fit, prewhite = TRUE, kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
       fit.hac=lmtest::coeftest(ols.fit,df=(n-2),vcov.=vcov.para)[, ] %>% as.data.frame()
@@ -175,11 +177,12 @@ for (j in c(1,3,5,7)) {
       noise.list = c(1,0,0)
       model.name = "ar1"
     }
-    a = simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim=1, list.param.ar, list.param.sig,
+    a = simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim=nb.sim, list.param.ar, list.param.sig,list.ma = list.ma,
                          noise.model=noise.list, noise.name = model.name)
     print(j)
 }
-
+noise.list = c(1,0,1)
+model.name = "arma1"
 # noise.list = list(c(1,0,0), c(0,0,1),c(1,0,1))
 # model.name = c("ar1","ma1","arma")
 # for (i in c(1:3)) {

@@ -2,12 +2,12 @@
 list.param.ar = seq(0,0.9,0.15)
 list.param.sig = seq(0.1, 0.45, 0.05)
 
-hetero = 1
+hetero = 0
 autocor = 1
 y.axis = "FPR"
 jump = ifelse(y.axis=="FPR", 0, 0.3)
-noise.name = "ar1"
-k = 7
+noise.name = "ARMA(1,1)"
+k = 1
 x.axis = "rho"
 # true.sim.sd = sqrt(0.5 - list.param.sig[k]*cos(2*pi*(c(1:730)/365) -pi))
 # ar = 0.3

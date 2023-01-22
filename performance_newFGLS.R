@@ -14,7 +14,7 @@ y.axis = ifelse(off.set !=0, "TPR", "FPR")
 nb.sim = 100
 n = 730
 t = c(1:n)-n/2
-list.param.ar = seq(0,0.9,0.15)
+list.param.ar = 0.6
 list.param.sig = seq(0.1, 0.35, 0.05)
 
 # specify simulation model
@@ -72,7 +72,7 @@ for (l in c(1:length(gen.test$ar))) {
   
   for (i in c(1:nb.sim)) {
     set.seed(i)
-    y = simulate.general1(N = n, arma.model = c(ar,0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    y = simulate.general1(N = n, arma.model = c(0.6,-0.4), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
     y[(n/2):n] <- y[(n/2):n] + off.set
     df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2018-05-27"), by="days")[1:n])
     Data.mod = construct.design(data.df = df, name.series = "y", break.ind = n/2)
@@ -92,7 +92,7 @@ for (l in c(1:length(gen.test$ar))) {
       vcov.para=vcov(ols.fit)
     }else{
       # gls.fit = GLS(phi = ar, theta = 0, var.t = rep(sigma.sim,n), design.matrix = Data.mod)
-      gls.fit = GLS(phi = ar, theta = 0, var.t = sigma.sim, design.matrix = Data.mod)
+      gls.fit = GLS(phi = 0.6, theta = -0.4, var.t = sigma.sim, design.matrix = Data.mod)
       vcov.para=sandwich::kernHAC(ols.fit, prewhite = TRUE, kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
       fit.hac=lmtest::coeftest(ols.fit,df=(n-trend.reg),vcov.=vcov.para)[, ] %>% as.data.frame()
     }
@@ -103,7 +103,7 @@ for (l in c(1:length(gen.test$ar))) {
     # time.c = c(time.c, (end_time - start_time))
     # 
     start_time <- Sys.time()
-    fgls.fit = FGLS2(design.m = Data.mod, tol=0.0001, day.list = df$date, noise.model = c(1,0,0))
+    fgls.fit = FGLS2(design.m = Data.mod, tol=0.0001, day.list = df$date, noise.model = c(1,0,1))
     end_time <- Sys.time()
     time.c1 = c(time.c1, (end_time - start_time))
     
