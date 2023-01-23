@@ -44,7 +44,7 @@ for (i in c(1:nrow(full.list))) {
     # fit.hac=lmtest::coeftest(ols.fit,df=(ols.fit$df.residual),vcov.=vcov.para)[, ] %>% as.data.frame()
     fit.fgls = FGLS1(design.m = Data.mod, tol=0.01, day.list = df.test$date, noise.model = noise.model)
     # fit.fgls1 = FGLS2(design.m = Data.mod, tol=0.0001, day.list = df.test$date, noise.model = noise.model)
-    
+    print(noise.model)
     fit.i[[name.series]] = fit.fgls
   }
   save(fit.i, file = paste0(path_results,"attribution/FGLS/", name.i, "fgls.RData"))
@@ -53,6 +53,6 @@ for (i in c(1:nrow(full.list))) {
   print(i)
 }
 
-save(all.res, file = paste0(path_results,"attribution/all_hac.RData"))
+save(all.res, file = paste0(path_results,"attribution/all_fgls.RData"))
 wls_model <- lm(mod.expression , data = Data.mod, weights=var.t)
 
