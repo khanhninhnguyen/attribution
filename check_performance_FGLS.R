@@ -9,6 +9,7 @@ jump = ifelse(y.axis=="FPR", 0, 0.3)
 noise.name = "ARMA(1,1)"
 k = 1
 x.axis = "rho"
+n =100
 # true.sim.sd = sqrt(0.5 - list.param.sig[k]*cos(2*pi*(c(1:730)/365) -pi))
 # ar = 0.3
 
@@ -33,7 +34,7 @@ ar = list.param.ar[k]
 #     # 
 #   }
 # }
-Res = get(load(file = paste0(path_results,"attribution/N1000/",hetero,"auto",autocor, x.axis, y.axis,noise.name,"R.Data")))
+Res = get(load(file = paste0(path_results,"attribution/N100/",hetero,"auto",autocor, x.axis, y.axis,noise.name,"R.Data")))
 
 true.sd.beta = sqrt(Res$total[[k]][[1]]$gls$vcov[1,1])
 
@@ -42,19 +43,19 @@ true.sd.beta
 # Check the variance estimates 
 
 if(hetero!=0){
-  fgls.sd = rowMeans(sapply(c(1:1000), function(x) sqrt(Res$total[[k]][[x]]$fgls$var)))
+  fgls.sd = rowMeans(sapply(c(1:n), function(x) sqrt(Res$total[[k]][[x]]$fgls$var)))
 }else{
-  fgls.sd = colMeans(sapply(c(1:1000), function(x) sqrt(Res$total[[k]][[x]]$fgls$var)))
+  fgls.sd = colMeans(sapply(c(1:n), function(x) sqrt(Res$total[[k]][[x]]$fgls$var)))
 }
 
 # Check the coefficients estimates, phi, theta
-fgls.beta = sapply(c(1:1000), function(x) Res$total[[k]][[x]]$fgls$t.table$Estimate[1])
+fgls.beta = sapply(c(1:n), function(x) Res$total[[k]][[x]]$fgls$t.table$Estimate[1])
 # Check the variance of beta 
-fgls.sd.beta = sapply(c(1:1000), function(x) Res$total[[k]][[x]]$fgls$t.table$`Std. Error`[1])
+fgls.sd.beta = sapply(c(1:n), function(x) Res$total[[k]][[x]]$fgls$t.table$`Std. Error`[1])
 # Check the t-statistic 
-fgls.t = sapply(c(1:1000), function(x) Res$total[[k]][[x]]$fgls$t.table$`t value`[1])
+fgls.t = sapply(c(1:n), function(x) Res$total[[k]][[x]]$fgls$t.table$`t value`[1])
 # plot sd (offset)
-jpeg(paste0(path_results,"attribution/FGLS",hetero,autocor,ar,x.axis, y.axis,k, ".jpg"), width = 800, height = 600)
+jpeg(paste0(path_results,"attribution/FGLS",hetero,autocor,x.axis, y.axis,k,noise.name="arma1", ".jpg"), width = 800, height = 600)
 
 par(mfrow=c(2,2))
 
