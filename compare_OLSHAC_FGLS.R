@@ -7,9 +7,9 @@ source(paste0(path_code_att,"FGLS.R"))
 one.year = 365
 nb.sim = 100
 n = 730
-list.param.ar = c(0.5,0.6)
-list.ma = c(-0.3, -0.4)
-list.param.sig = seq(0.1, 0.45, 0.05)
+list.param.ar = seq(0, 0.9, 0.3)
+list.ma = rep(0, length(list.param.ar))
+list.param.sig = seq(0.1, 0.45, 0.1)
 
 # specify the condition
 mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.param.ar, x.axis, individual, n, T1, noise.name){
@@ -45,7 +45,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   thres =  ifelse(off.set !=0, 0.95, 0.05)
   if(x.axis=="rho"){
     sample = list.param.ar
-    individual = 8
+    individual = 4
   }else{
     sample = list.param.sig
     individual = 3
@@ -94,7 +94,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
       fit.hac=lmtest::coeftest(ols.fit,df=(n-2),vcov.=vcov.para)[, ] %>% as.data.frame()
       #FGLS
       start_time <- Sys.time()
-      fgls.fit = FGLS2(design.m = Data.mod, tol=0.0001, day.list = df$date, noise.model = noise.model)
+      fgls.fit = FGLS1(design.m = Data.mod, tol=0.01, day.list = df$date, noise.model = noise.model)
       end_time <- Sys.time()
       time.c = c(time.c, (end_time - start_time))
       
@@ -165,7 +165,7 @@ case = data.frame(h = rep(c(0,1,1,1),2),
                   x.axis = rep(c("rho", "sig"),4))
 
 
-for (j in c(1,3,5,7)) {
+for (j in c(1:4)) {
     off.set = case$offset[j]
     heteroscedast = case$h[j]
     autocor = case$a[j]
