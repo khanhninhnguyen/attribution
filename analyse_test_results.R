@@ -53,16 +53,31 @@ ind.avai = which(full.list$station %in% all_station == TRUE)
 full.list = full.list[ind.avai,]
 # Reduced list  
 full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4:5)]))
-ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>200 & full.list$nbc.max >365)
+# ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>200 & full.list$nbc.max >365)
+ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>270)
 reduced.list = full.list[ind.sel,]
 rownames(reduced.list) = NULL
 # reduced.list$chose[c(65,140,144,204,300,337,378,381,383,384)]=1
 
 # check the significance of GPS-ERA
-list.GE= reduced.list[which(is.na(reduced.list$chose)==FALSE),]
-rownames(list.GE) = NULL
+# a = aggregate(nbc~main+brp, reduced.list, which.max)
+# colnames(a)[3] = "ind"
+# d = left_join(reduced.list, a, by = c("main", "brp"))
+# d$GE = NA
+# for (i in c(1:nrow(a))) {
+#   ind = which(d$main == a$main[i] & d$brp == a$brp[i])
+#   
+#   d$GE[ind[a$ind[i]]] = 1
+# }
+# 
+# reduced.list$GE = d$GE
+# list.GE = reduced.list[which(is.na(reduced.list$GE)==FALSE),]
+# rownames(list.GE) = NULL
+
+a = list.files(path = paste0(path_results, "attribution/FGLS-GE/"))
+list.GE = data.frame(station = substr(a, 1, 20))
 t.value.GE = sapply(c(1:nrow(list.GE)), function(x){
-  station = get(load(file = paste0(path_results,"attribution/FGLS-full/", list.GE$station[x], "fgls.RData")))
+  station = get(load(file = paste0(path_results,"attribution/FGLS-GE/", list.GE$station[x], "fgls.RData")))
   station$gps.era$t.table$`t value`[9]
 } )
 
@@ -126,13 +141,14 @@ contradict$contra = sapply(c(1:length(contra)), function(x) ifelse(contra[x] ==0
 sum(contradict$contra[which(contradict$distances<50)])
 sum(contradict$contra[which(contradict$distances>50)])
 
-# Output 
-reduced.list$t[which(is.na(reduced.list$chose)==FALSE)] = t.value.GE
-Out.res = cbind(reduced.list[,c(1:3,17)], Total.res[,c(6:10)], reduced.list[,c(4,5,11)])
+# Output -------------
+reduced.list$t = NA
+reduced.list$t[which(is.na(reduced.list$GE)==FALSE)] = t.value.GE
+Out.res = cbind(reduced.list[,c(1:3,18)], Total.res[,c(6:10)], reduced.list[,c(4,5,11)])
 Out.res$GE = reduced.list$chose
 Out.res$GE[which(is.na(Out.res$GE)==FALSE)]=1
 
 colnames(Out.res)[4] = paste("t", list.name.test[1])
-
-write.table(Out.res, file = paste0(path_results, "attribution/FGLS_on_real_data.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+format(Out.res, digits=2)
+write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
 
