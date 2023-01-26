@@ -843,7 +843,7 @@ ind2 = which(reduced.list$min.var>0.002&reduced.list$nbc>1000 & reduced.list$r1>
 ind = ind1
 res = data.frame(mean = colMeans(tot.res[ind,c(1:6)], na.rm = TRUE),
                  sd.mean = sapply(c(1:6), function(x) sd(tot.res[ind,x], na.rm = TRUE)), 
-                 range = colMeans(tot.res[ind,c(7:12)], na.rm = TRUE),
+                 range = colMeans(tot.res[ind,c(7:12)]/ tot.res[ind,c(1:6)], na.rm = TRUE),
                  sd.range = sapply(c(1:6), function(x) sd(tot.res[ind,(x+6)], na.rm = TRUE)),
                  name = list.name.test)
 
@@ -862,6 +862,12 @@ a[,c(1:4)]= round(a[,c(1:4)], digits = 2)
 
 out = data.frame(cbind(b[,c(1:2)], a[,c(1:2)]), b[,c(3:4)], a[,c(3:4)], b[,5])
 write.table(a, file = paste0(path_results,"attribution/sd_table.txt"), sep = "\t", quote = FALSE, row.names = FALSE)
+
+# percentage pf range 
+
+for (i in c(1:6)) {
+  print(mean(range.res[,i]/mean.res[,i], na.rm=TRUE ))
+}
 
 
 

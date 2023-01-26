@@ -5,7 +5,7 @@ source(paste0(path_code_att,"FGLS.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
 one.year = 200
-nb.sim = 10
+nb.sim = 1000
 n = 400
 list.param.ar = seq(0, 0.9, 0.15)
 list.ma = rep(0, length(list.param.ar))
@@ -45,10 +45,10 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   thres =  ifelse(off.set !=0, 0.95, 0.05)
   if(x.axis=="rho"){
     sample = list.param.ar
-    individual = 3
+    individual = 5
   }else{
     sample = list.param.sig
-    individual = 3
+    individual = 5
   }
   gen.test = mod.sim(heteroscedast = heteroscedast, autocorr = autocor, var.inno = 1, list.param.ar = list.param.ar, 
                      list.param.sig = list.param.sig, x.axis = x.axis, individual = individual, n = n, T1 = n/2)
@@ -125,7 +125,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   }
   
   Res = list(p = Res.fin, total = total, time= time.c)
-  save(Res, file = paste0(path_results,"attribution/",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,"R.Data"))
+  save(Res, file = paste0(path_results,"attribution/",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,"1R.Data"))
   
   res = (nb.sim- Res.fin)/nb.sim
   name.x = x.axis
@@ -151,7 +151,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   theme(axis.text = element_text(size = 5), legend.text=element_text(size=4.5),
         axis.title = element_text(size = 5), legend.title=element_blank())")))
   
-  ggsave(paste0(path_results,"attribution/test_sim_h",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,".jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+  ggsave(paste0(path_results,"attribution/test_sim_h",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,"1.jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
   
   return(Res)
   
@@ -166,7 +166,7 @@ case = data.frame(h = rep(c(0,1,1,1),2),
                   x.axis = rep(c("rho", "sig"),4))
 
 
-for (j in c(1:4)) {
+for (j in c(3:4)) {
     off.set = case$offset[j]
     heteroscedast = case$h[j]
     autocor = case$a[j]
@@ -184,19 +184,12 @@ for (j in c(1:4)) {
 }
 noise.list = c(1,0,1)
 model.name = "arma1"
-# noise.list = list(c(1,0,0), c(0,0,1),c(1,0,1))
-# model.name = c("ar1","ma1","arma")
-# for (i in c(1:3)) {
-#   noise.model = noise.list[[i]]
-#   noise.name = model.name[i]
-#   for (j in c(1:8)) {
-#     off.set = case$offset[j]
-#     heteroscedast = case$h[j]
-#     autocor = case$a[j]
-#     x.axis = case$x.axis[j]
-#     a = simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim, list.param.ar, list.param.sig,
-#                          noise.model=noise.model, noise.name = noise.name)
-#     print(j)
-#   }
-#   print(noise.model)
-# }
+
+
+# from the FPR to TPR 
+
+
+
+
+
+
