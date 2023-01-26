@@ -9,7 +9,7 @@ full.list = get(load( file = paste0(path_results, "attribution/list.segments.sel
 full.list$station = paste0(full.list$main,".",as.character(full.list$brp), ".", full.list$nearby)
 full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]))
 full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4:5)]))
-ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc >200 & full.list$nbc.max >365)
+ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc >200 )
 
 reduced.list = full.list[ind.sel,]
 rownames(reduced.list) = NULL
@@ -19,15 +19,16 @@ order.arma.l1 = lapply(list.test, function(x) {
   return(a[ind.sel,])})
 # run the FGLS 
 all.res = list()
-for (i in c(301:310)) {
+a1 = list.files(path = paste0(path_results, "attribution/FGLS-GE/"))
+list.old = as.character(substr(a1, 1, 20))
+a2 =  as.character(substr(reduced.list$station, 1, 20))
+list.select = which(a2 %in% list.old == FALSE)
+
+for (i in c(list.select)) {
   df = dat[[reduced.list$station[i]]]
   fit.i = list()
   name.i = reduced.list$station[i]
-  if(is.na(reduced.list$chose[i]) == TRUE){
-    list.6 = c(2:6)
-  }else{
-    list.6 = c(1:6)
-  }
+  list.6 = c(1:6)
   for (j in list.6) {
     name.series = list.test[j]
     df.test = remove_na_2sides(df, name.series)
@@ -84,6 +85,8 @@ for (i in c(1:nrow(a))) {
 reduced.list$GE = d$GE
 list.selected = which(is.na(reduced.list$GE)==FALSE)
 all.res = list()
+
+list.selected = c(13,15,281,282,283,290,516)
 for (i in list.selected) {
   df = dat[[reduced.list$station[i]]]
   fit.i = list()

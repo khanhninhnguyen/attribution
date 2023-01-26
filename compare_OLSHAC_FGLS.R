@@ -4,16 +4,16 @@ source(paste0(path_code_att,"FGLS.R"))
 # source(paste0(path_code_att,"newUsed_functions.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
-one.year = 365
-nb.sim = 100
-n = 730
-list.param.ar = seq(0, 0.9, 0.3)
+one.year = 200
+nb.sim = 10
+n = 400
+list.param.ar = seq(0, 0.9, 0.15)
 list.ma = rep(0, length(list.param.ar))
-list.param.sig = seq(0.1, 0.45, 0.1)
+list.param.sig = seq(0, 0.8, 0.2)
 
 # specify the condition
 mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.param.ar, x.axis, individual, n, T1, noise.name){
-  periodic = cos(2*pi*(c(1:n)/T1) -pi)
+  periodic = cos(2*pi*(c(1:n)/T1))
   if(heteroscedastic == 1 & autocorr == 0){
     hetero = 1
     burn.in = 0
@@ -45,12 +45,12 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   thres =  ifelse(off.set !=0, 0.95, 0.05)
   if(x.axis=="rho"){
     sample = list.param.ar
-    individual = 4
+    individual = 3
   }else{
     sample = list.param.sig
     individual = 3
   }
-  gen.test = mod.sim(heteroscedast = heteroscedast, autocorr = autocor, var.inno = 0.5, list.param.ar = list.param.ar, 
+  gen.test = mod.sim(heteroscedast = heteroscedast, autocorr = autocor, var.inno = 1, list.param.ar = list.param.ar, 
                      list.param.sig = list.param.sig, x.axis = x.axis, individual = individual, n = n, T1 = n/2)
   burn.in = gen.test$burn.in
   hetero = gen.test$hetero
@@ -76,8 +76,9 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
       }
       y = simulate.general1(N = n, arma.model = c(ar,ma), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
       y[(n/2):n] <- y[(n/2):n] + off.set
+      # ggsave(paste0(path_results,"attribution/test.jpg" ), plot = plot(y), width = 5, height = 5, units = "cm", dpi = 1200)
       df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2018-05-27"), by="days")[1:n])
-      Data.mod = construct.design(data.df = df, name.series = "y", break.ind = n/2)
+      Data.mod = construct.design(data.df = df, name.series = "y", break.ind = n/2, one.year)
       Data.mod =  Data.mod[,c(1,10,11)]
       # Test with vcov (HAC)
       list.para <- colnames(Data.mod)[2:dim(Data.mod)[2]]

@@ -78,6 +78,8 @@ validation.file.near = paste0(path.validation,nb_test = nb_test.near,"-",screen_
 list.test = c("gps.era", "gps.gps", "gps.era1", "era.era", "gps1.era1", "gps1.era")
 list.name.test = c("G-E", "G-G'", "G-E'", "E-E'", "G'-E'", "G'-E")
 reoder.list.name = c("G-E", "G'-E'", "G-G'", "E-E'","G-E'","G'-E")
+reoder.list.name1 = c("G-E", "G-E'", "G-G'","G'-E'","G'-E", "E-E'")
+
 # list of 81 stations -----------------------------------------------------
 
 list.station = read.table(paste0(path_data_support,"list-cross-stations.txt"),header = TRUE)

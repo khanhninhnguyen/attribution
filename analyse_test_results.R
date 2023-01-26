@@ -41,32 +41,29 @@ check_contradict <- function(y, table.selected){
 
 
 # synthesis result --------------------------------------------------------
+# significant level
 win.thres = 10
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
 full.list$station = paste0(full.list$main,".",as.character(full.list$brp), ".", full.list$nearby)
 full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]))
-full.list$chose[c(119, 260, 278, 378, 587, 661, 728, 742, 760, 770)]=1
-# check available results 
-all_file = list.files(path =paste0(path_results,"attribution/FGLS-full/"))
-all_station = substr(all_file, 1, 20)
-ind.avai = which(full.list$station %in% all_station == TRUE)
-full.list = full.list[ind.avai,]
 # Reduced list  
 full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4:5)]))
-# ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>200 & full.list$nbc.max >365)
-ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>270)
+ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>200)
+# ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>270)
 reduced.list = full.list[ind.sel,]
+reduced.list = reduced.list[-8,]
 rownames(reduced.list) = NULL
+
 # reduced.list$chose[c(65,140,144,204,300,337,378,381,383,384)]=1
 
 # check the significance of GPS-ERA
-# a = aggregate(nbc~main+brp, reduced.list, which.max)
+a = aggregate(nbc~main+brp, reduced.list, which.max)
 # colnames(a)[3] = "ind"
 # d = left_join(reduced.list, a, by = c("main", "brp"))
 # d$GE = NA
 # for (i in c(1:nrow(a))) {
 #   ind = which(d$main == a$main[i] & d$brp == a$brp[i])
-#   
+# 
 #   d$GE[ind[a$ind[i]]] = 1
 # }
 # 
@@ -74,10 +71,12 @@ rownames(reduced.list) = NULL
 # list.GE = reduced.list[which(is.na(reduced.list$GE)==FALSE),]
 # rownames(list.GE) = NULL
 
-a = list.files(path = paste0(path_results, "attribution/FGLS-GE/"))
-list.GE = data.frame(station = substr(a, 1, 20))
-t.value.GE = sapply(c(1:nrow(list.GE)), function(x){
-  station = get(load(file = paste0(path_results,"attribution/FGLS-GE/", list.GE$station[x], "fgls.RData")))
+a1 = list.files(path = paste0(path_results, "attribution/FGLS-GE/"))
+list.GE = data.frame(station = as.character(substr(a1, 1, 20)))
+list.GE = list.GE[which(list.GE$station %in% reduced.list$station == TRUE),]
+
+t.value.GE = sapply(c(1:length(list.GE)), function(x){
+  station = get(load(file = paste0(path_results,"attribution/FGLS-GE/", list.GE[x], "fgls.RData")))
   station$gps.era$t.table$`t value`[9]
 } )
 
@@ -91,7 +90,7 @@ for (i in c(1:nrow(reduced.list))) {
   Total.res[i,] = c(jump.est, t.values, p.values)
 }
 
-colnames(Total.res) = c( paste("jump", list.name.test[2:6]), paste("t", list.name.test[2:6]), paste("p", list.name.test[2:6]))
+colnames(Total.res) = c( paste0("jump", list.name.test[2:6]), paste0("t", list.name.test[2:6]), paste0("p", list.name.test[2:6]))
 Total.res$distance = reduced.list$distances
 Total.res = cbind(Total.res, reduced.list[,c(4:5)])
 
@@ -102,7 +101,7 @@ convert_coded <- function(x){
 
 Total.coded = data.frame(matrix(NA, ncol = 5, nrow = nrow(Total.res)))
 for (i in c(1:nrow(Total.res))) {
-  case.i = Total.res[i, c(paste("t", list.name.test[2:6]))]
+  case.i = Total.res[i, c(paste0("t", list.name.test[2:6]))]
   Total.coded[i,] = convert_coded(case.i)
 }
 
@@ -112,9 +111,10 @@ contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Tota
 )
 table(unlist(contra))
 
-# plot distribution
+# plot distribution FOR PAPER ----------------------------
 colnames(Total.coded) = list.name.test[2:6]
 data1 = Total.coded[which(reduced.list$distances<50),]
+# data1 = Total.coded
 data.p = reshape2::melt(data1) 
 data.p = rbind(data.p, data.frame(variable = rep(list.name.test[1], length(t.value.GE)), value = convert_coded(t.value.GE)))
 data.p$c = 1
@@ -123,14 +123,56 @@ data.plot$S= nrow(data1)
 data.plot$S[which(data.plot$variable == list.name.test[1])] = length(t.value.GE)
 data.plot$fre = data.plot$c/data.plot$S
 data.plot$value = as.factor(data.plot$value)
-data.plot$variable = factor(data.plot$variable,  levels = reoder.list.name)
+data.plot$variable = factor(data.plot$variable,  levels = reoder.list.name1)
+library(gtable)    
+library(grid)
+library(gridExtra) 
+unicode_minus = function(x) sub('^-', '\U2212', format(x))
+p1 <- ggplot(data.plot, aes(fill=value, y=c, x=variable)) + 
+  geom_bar(position="stack", stat="identity")+theme_bw()+
+  geom_text(aes(label = c),
+            colour = "black",  size=2,
+            position = position_stack(vjust = 0.5)) +
+  labs(x = NULL, y ="Count", tag = "(a)") + 
+  theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
+        plot.tag = element_text(size = 6),
+        legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
 
-ggplot(data.plot, aes(x=variable, y = fre, fill = value))+theme_bw()+
-  geom_col(position = position_fill()) +
-  geom_text(aes(label = scales::percent(fre)),
-            colour = "black",
-            position = position_fill(vjust = 0.5)) +
-  labs(x = NULL, y ="Series", subtitle =  "Distance <50 km")  
+data1 = Total.coded[which(reduced.list$distances>50),]
+# data1 = Total.coded
+data.p = reshape2::melt(data1) 
+data.p = rbind(data.p, data.frame(variable = rep(list.name.test[1], length(t.value.GE)), value = convert_coded(t.value.GE)))
+data.p$c = 1
+data.plot = aggregate(c~., data = data.p, sum)
+data.plot$S= nrow(data1)
+data.plot$S[which(data.plot$variable == list.name.test[1])] = length(t.value.GE)
+data.plot$fre = data.plot$c/data.plot$S
+data.plot$value = as.factor(data.plot$value)
+data.plot$variable = factor(data.plot$variable,  levels = reoder.list.name1)
+
+p2 <- ggplot(data.plot, aes(fill=value, y=c, x=variable)) + 
+  geom_bar(position="stack", stat="identity")+theme_bw()+
+  geom_text(aes(label = c),
+            colour = "black",  size=2,
+            position = position_stack(vjust = 0.5)) +
+  labs(x = NULL, y ="Count", tag = "(b)") + 
+  theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
+        plot.tag = element_text(size = 6),
+        legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
+
+gA <- ggplotGrob(p1)
+gB <- ggplotGrob(p2)
+
+gB$widths <- gA$widths
+# Arrange the two charts.
+
+grid.newpage()
+p = (grid.arrange(gA, gB,nrow = 1))
+
+ggsave(paste0(path_results,"attribution/pop_significance_level.jpg" ), plot = p, width = 14.4, height = 5, units = "cm", dpi = 1200)
+
 
 
 # scale_y_discrete()+
@@ -141,14 +183,106 @@ contradict$contra = sapply(c(1:length(contra)), function(x) ifelse(contra[x] ==0
 sum(contradict$contra[which(contradict$distances<50)])
 sum(contradict$contra[which(contradict$distances>50)])
 
-# Output -------------
-reduced.list$t = NA
-reduced.list$t[which(is.na(reduced.list$GE)==FALSE)] = t.value.GE
-Out.res = cbind(reduced.list[,c(1:3,18)], Total.res[,c(6:10)], reduced.list[,c(4,5,11)])
-Out.res$GE = reduced.list$chose
-Out.res$GE[which(is.na(Out.res$GE)==FALSE)]=1
 
-colnames(Out.res)[4] = paste("t", list.name.test[1])
-format(Out.res, digits=2)
-write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+a = read.table(file = paste0(path_results, "attribution/FGLS_on_real_data.txt"),header = TRUE, sep = "\t")
+
+# arima model and variance 
+arima.res = data.frame(matrix(NA, ncol = 10, nrow = nrow(reduced.list)))
+var.res = data.frame(matrix(NA, ncol = 10, nrow = nrow(reduced.list)))
+# for the 5 series
+for (i in c(1:nrow(reduced.list))) {
+  name.i = reduced.list$station[i]
+  dat.i = get(load(file = paste0(path_results,"attribution/FGLS-full/", name.i, "fgls.RData")))
+  arma.coefs = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$coef.arma)
+  
+  var.inf = sapply(c(2:6), function(x){
+    y = na.omit(dat.i[[list.test[x]]]$var)
+    ye = round(length(y)/365)
+    range. = mean(sapply(c(1:ye), function(x) (max(y[(365*x):(365*(x-1))],na.rm=TRUE) - min(y[(365*x):(365*(x-1))],na.rm=TRUE))/2 ))
+    return(list(mean(y, na.rm =TRUE), range.))
+  }) 
+    
+  arima.res[i,] = unlist(arma.coefs )
+  var.res[i,] = unlist(var.inf)
+}
+# for G-E
+arima.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
+var.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
+for (i in c(1:length(list.GE))) {
+  name.i = list.GE[i]
+  dat.i = get(load(file = paste0(path_results,"attribution/FGLS-GE/", name.i, "fgls.RData")))
+  arma.coefs = dat.i$gps.era$coef.arma
+  
+  var.inf = sapply(c(1), function(x){
+    y = na.omit(dat.i$gps.era$var)
+    ye = round(length(y)/365)
+    range. = mean(sapply(c(1:ye), function(x) (max(y[(365*x):(365*(x-1))],na.rm=TRUE) - min(y[(365*x):(365*(x-1))],na.rm=TRUE))/2 ))
+    return(list(mean(y, na.rm =TRUE), range.))
+  }) 
+  
+  arima.res.1[i,] = unlist(arma.coefs )
+  var.res.1[i,] = unlist(var.inf)
+}
+arima.res.1.m =  data.frame(matrix(NA, ncol = 2, nrow = nrow(reduced.list)))
+arima.res.1.m[which(reduced.list$station %in% list.GE == TRUE),] =  arima.res.1
+all.arima = cbind(arima.res.1.m, arima.res)
+
+var.res.1.m =  data.frame(matrix(NA, ncol = 2, nrow = nrow(reduced.list)))
+var.res.1.m[which(reduced.list$station %in% list.GE == TRUE),] =  var.res.1
+all.var = cbind(var.res.1.m, var.res)
+
+colnames(all.var) = c(paste0(c("mean.","range"), rep(list.name.test,each=2)))
+colnames(all.arima) = c(paste0(c("phi.","theta"), rep(list.name.test,each=2)))
+
+write.table(format(all.var, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data_var.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+write.table(format(all.arima, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data_autocorrelation.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+
+
+# update the length in the table --------------------
+data.vai = data.frame(matrix(NA, ncol =7, nrow = nrow(reduced.list)))
+for (i in c(1:nrow(reduced.list))) {
+  name.i = reduced.list$station[i]
+  dat.i = get(load(file = paste0(path_results,"attribution/FGLS-full/", name.i, "fgls.RData")))
+  a = dat[[name.i]]
+  b = remove_na_2sides(a, "gps.gps")
+  l1 = length(na.omit(a[c(1:3650),"gps.gps"]))
+  l2 = length(na.omit(a[c(3651:7300),"gps.gps"]))
+  l3 = length(na.omit(a[c(2650:3650),"gps.gps"]))
+  l4 = length(na.omit(a[c(3651:4651),"gps.gps"]))
+  n = length(dat.i$gps.gps$fit)
+  duration = length(na.omit(dat.i$gps.gps$var))
+  data.vai[i,] = c(n, duration, nrow(b),l1, l2, l3, l4)
+}
+colnames(data.vai) = c("n","duration","duration.raw", "l1", "l2","l3","l4")
+data.vai = cbind(data.vai, reduced.list[,c(4,5)])
+data.vai$treat = 2
+data.vai$treat[which(data.vai$n == (data.vai$l3+data.vai$l4))]=3
+data.vai$treat[which(data.vai$n == (data.vai$l1+data.vai$l2))]=1
+data.vai$l1m = NA
+
+n12 = data.frame(matrix(NA, ncol = 2, nrow = nrow(data.vai)))
+for (j in c(1:nrow(data.vai))) {
+  cri = data.vai$treat[j]
+  if(cri==1){
+    n12[j,] = c(data.vai$l1[j], data.vai$l2[j])
+  }else if(cri==3){
+    n12[j,] = c(data.vai$l3[j], data.vai$l4[j])
+  }else{
+    l.raw = data.vai[j,c("l1","l2")]
+    ind.c = which.min(data.vai[j,c("nbc1","nbc2")])
+    l.raw[-ind.c] = data.vai$n[j]- l.raw[ind.c] 
+    n12[j,] = l.raw
+  }
+}
+reduced.list = cbind(reduced.list, n12)
+
+# Output significant level -------------
+reduced.list$t = NA
+reduced.list$t[which(reduced.list$station %in% list.GE ==TRUE)] = t.value.GE
+Out.res = cbind(reduced.list[,c(1:3,19)], Total.res[,c(6:10)], reduced.list[,c(17,18,11)])
+
+colnames(Out.res)[c(4,10,11)] = c(paste0("t", list.name.test[1]), "n1", "n2")
+write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data1.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+
+
 
