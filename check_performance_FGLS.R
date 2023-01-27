@@ -103,19 +103,6 @@ fgls.sd
 
 
 # FOR PAPER ---------------------------------------------------------------
-list.param.ar = seq(0,0.9,0.15)
-list.param.sig = seq(0, 0.8, 0.2)
-
-nb.sim=1000
-hetero = 1
-autocor = 1
-y.axis = "FPR"
-x.axis = "rho"
-# x.axis = "sig"
-noise.name = ifelse(autocor==0, "white", "ar1")
-
-Res = get(load(file = paste0(path_results,"attribution/N1000n/",hetero,"auto",autocor, x.axis, y.axis,noise.name,"1R.Data")))
-
 rate.ext <- function(Res, list.sample, off.set){
   tot.tpr = data.frame(matrix(NA, ncol = 4, nrow = length(list.sample)))
   for (j in c(1:length(list.sample))) {
@@ -125,13 +112,13 @@ rate.ext <- function(Res, list.sample, off.set){
     fgls.sd.beta = sapply(c(1:nb.sim), function(x) Res$total[[j]][[x]]$fgls$t.table$`Std. Error`[1])
     SD.jump.fgls = fgls.sd.beta 
     t.values.fgls = mu.fgls/SD.jump.fgls
-    tpr.fgsl = length(which(abs(t.values.fgls) > 1.96))
+    tpr.fgls = length(which(abs(t.values.fgls) > 1.96))
     
     # GLS 
     gls.beta = sapply(c(1:nb.sim), function(x) Res$total[[j]][[x]]$gls$t.table$Estimate[1])
     mu.gls = gls.beta + off.set
     gls.sd.beta = sapply(c(1:nb.sim), function(x) Res$total[[j]][[x]]$gls$t.table$`Std. Error`[1])
-    SD.jump.gls = fgls.sd.beta 
+    SD.jump.gls = gls.sd.beta 
     t.values.gls = mu.gls/SD.jump.gls
     tpr.gls = length(which(abs(t.values.gls) > 1.96))
     
@@ -149,7 +136,7 @@ rate.ext <- function(Res, list.sample, off.set){
     t.values.hac = mu.ols/SD.jump.hac
     tpr.hac = length(which(abs(t.values.hac) > 1.96))
     
-    tot.tpr[j,] = c(tpr.fgsl, tpr.gls, tpr.ols, tpr.hac)
+    tot.tpr[j,] = c(tpr.fgls, tpr.gls, tpr.ols, tpr.hac)
   }
   colnames(tot.tpr) = c("FGLS", "GLS", "OLS", "OLS-HAC")
   out = tot.tpr[,c("GLS","FGLS", "OLS-HAC", "OLS")]
@@ -157,7 +144,24 @@ rate.ext <- function(Res, list.sample, off.set){
   
 }
 
-list.sample = list.param.ar
+list.param.ar = seq(0,0.9,0.15)
+list.param.sig = seq(0, 0.8, 0.2)
+
+N = 400
+nb.sim=1000
+hetero = 1
+autocor = 1
+y.axis = "FPR"
+# x.axis = "rho"
+extrem = 1
+x.axis = "sig"
+# list.sample = list.param.ar
+list.sample = list.param.sig
+
+noise.name = ifelse(autocor==0, "white", "ar1")
+Res = get(load(file = paste0(path_results,"attribution/N1000n/",hetero,"auto",autocor, x.axis, y.axis,noise.name,extrem,"R.Data")))
+
+
 rate.ext(Res, list.sample = list.sample, off.set = 0)
 
 FPR = rate.ext(Res, list.sample = list.sample, off.set = 0)/nb.sim
@@ -199,7 +203,7 @@ p2 <- eval(parse(
         axis.title = element_text(size = 6), legend.key.size = unit(0.2, unit1), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0,unit2 ), plot.margin = rep(unit(0,unit3),4))")))
 
-ggsave(paste0(path_results,"attribution/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,"1.jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/FGLS_HAC/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,N,extrem,".jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
 # plot TPR
@@ -218,12 +222,45 @@ p2 <- eval(parse(
         axis.title = element_text(size = 6), legend.key.size = unit(0.2, unit1), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0,unit2 ), plot.margin = rep(unit(0,unit3),4))")))
 
-ggsave(paste0(path_results,"attribution/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,"1.jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/FGLS_HAC/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,N,extrem,".jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
 
+# test -------------------- -----------------------------------------------
 
 
+one.year = 50
+nb.sim = 1000
+n = 100
 
+periodic = cos(2*pi*(c(1:n)/(n/2)) )
+sigma.0 = (1 - periodic*0.8)
+sigma.0 = rep(1,n)
+var0 = sigma.0^2
 
+testr = rep(NA, nb.sim)
+testw = rep(NA, nb.sim)
+sd = rep(NA, nb.sim)
+for (i in c(1:nb.sim)) {
+  set.seed(i)
+  y = simulate.general1(N = n, arma.model = c(0,0), burn.in = burn.in, hetero = 1, sigma = (sigma.0))
+  sd[i] = sd(y)
+  df = data.frame(y = y, date = seq(as.Date("2014-01-13"), as.Date("2018-05-27"), by="days")[1:n])
+  Data.mod = construct.design(data.df = df, name.series = "y", break.ind = n/2, one.year = one.year)
+  Data.mod = Data.mod[,c(1,10,11)]
+  fit.wls = lm(signal~right, data = Data.mod, weights=(sigma.0))
+  wls.test = lmtest::coeftest(fit.wls,df=(n-3)) [, ] %>% as.data.frame()
+  a = GLS(0,0, var0, Data.mod)
+  testr[i] = a$t.table$`t value`[1]
+  testw[i] = wls.test$`t value`[2]
+  print(i)
+}
+
+X= as.matrix(Data.mod[,c(2,3)])
+solve(t(X) %*% solve(diag(sigma.0)) %*% X)
+
+table(abs(testr)<1.962)
+
+table(abs(testw)<1.96)
+sd(testr)
 
