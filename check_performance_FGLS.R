@@ -234,7 +234,7 @@ nb.sim = 1000
 n = 100
 
 periodic = cos(2*pi*(c(1:n)/(n/2)) )
-sigma.0 = (1 - periodic*0.8)
+sigma.0 = (0.7 - periodic*0.5)
 sigma.0 = rep(1,n)
 var0 = sigma.0^2
 
