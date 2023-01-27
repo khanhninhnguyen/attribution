@@ -110,11 +110,11 @@ nb.sim=1000
 hetero = 1
 autocor = 1
 y.axis = "FPR"
-# x.axis = "rho"
-x.axis = "sig"
+x.axis = "rho"
+# x.axis = "sig"
 noise.name = ifelse(autocor==0, "white", "ar1")
 
-Res = get(load(file = paste0(path_results,"attribution/N1000n/",hetero,"auto",autocor, x.axis, y.axis,noise.name,"R.Data")))
+Res = get(load(file = paste0(path_results,"attribution/N1000n/",hetero,"auto",autocor, x.axis, y.axis,noise.name,"1R.Data")))
 
 rate.ext <- function(Res, list.sample, off.set){
   tot.tpr = data.frame(matrix(NA, ncol = 4, nrow = length(list.sample)))
@@ -157,7 +157,7 @@ rate.ext <- function(Res, list.sample, off.set){
   
 }
 
-list.sample = list.param.sig
+list.sample = list.param.ar
 rate.ext(Res, list.sample = list.sample, off.set = 0)
 
 FPR = rate.ext(Res, list.sample = list.sample, off.set = 0)/nb.sim
@@ -199,7 +199,7 @@ p2 <- eval(parse(
         axis.title = element_text(size = 6), legend.key.size = unit(0.2, unit1), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0,unit2 ), plot.margin = rep(unit(0,unit3),4))")))
 
-ggsave(paste0(path_results,"attribution/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,".jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,"1.jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
 # plot TPR
@@ -218,7 +218,7 @@ p2 <- eval(parse(
         axis.title = element_text(size = 6), legend.key.size = unit(0.2, unit1), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0,unit2 ), plot.margin = rep(unit(0,unit3),4))")))
 
-ggsave(paste0(path_results,"attribution/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,".jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/h",hetero,"auto",autocor, x.axis.name, y.axis.name,noise.name,"1.jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
 

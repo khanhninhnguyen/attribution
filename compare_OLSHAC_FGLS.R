@@ -4,9 +4,9 @@ source(paste0(path_code_att,"FGLS.R"))
 # source(paste0(path_code_att,"newUsed_functions.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
-one.year = 200
+# one.year = 200
 nb.sim = 1000
-n = 400
+# n = 800
 list.param.ar = seq(0, 0.9, 0.15)
 list.ma = rep(0, length(list.param.ar))
 list.param.sig = seq(0, 0.8, 0.2)
@@ -39,7 +39,7 @@ mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.pa
   return(list(hetero = hetero, burn.in = burn.in, sigma.t = sigma.t, ar = ar))
 }
 simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, list.ma, 
-                             list.param.ar, list.param.sig, noise.model,noise.name){
+                             list.param.ar, list.param.sig, noise.model,noise.name,n){
   # generate params
   y.axis = ifelse(off.set !=0, "TPR", "FPR")
   thres =  ifelse(off.set !=0, 0.95, 0.05)
@@ -125,7 +125,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   }
   
   Res = list(p = Res.fin, total = total, time= time.c)
-  save(Res, file = paste0(path_results,"attribution/",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,"1R.Data"))
+  save(Res, file = paste0(path_results,"attribution/",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,n,"1R.Data"))
   
   res = (nb.sim- Res.fin)/nb.sim
   name.x = x.axis
@@ -151,7 +151,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   theme(axis.text = element_text(size = 5), legend.text=element_text(size=4.5),
         axis.title = element_text(size = 5), legend.title=element_blank())")))
   
-  ggsave(paste0(path_results,"attribution/test_sim_h",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,"1.jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+  ggsave(paste0(path_results,"attribution/test_sim_h",heteroscedast,"auto",autocor, x.axis, y.axis,noise.name,n,"1.jpg" ), plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
   
   return(Res)
   
@@ -186,9 +186,28 @@ noise.list = c(1,0,1)
 model.name = "arma1"
 
 
-# from the FPR to TPR 
+# test the length of series ------------------------------------
+
+case = data.frame(h = rep(1,4),
+                  a = rep(1,4), 
+                  n = c(200,400,600,800),
+                  x.axis = rep("rho",4))
 
 
+off.set = 0
+heteroscedast = 0
+autocor = 1 
+
+for (j in c(3:4)) {
+  x.axis = as.character(case$x.axis[j])
+  noise.list = c(1,0,0)
+  model.name = "ar1"
+  n1 = case$n[j]
+  one.year = n1/2
+  a = simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim=nb.sim, list.param.ar, list.param.sig,list.ma = list.ma,
+                       noise.model=noise.list, noise.name = model.name, n=n1)
+  print(j)
+}
 
 
 
