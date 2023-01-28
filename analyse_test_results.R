@@ -171,7 +171,7 @@ gB$widths <- gA$widths
 grid.newpage()
 p = (grid.arrange(gA, gB,nrow = 1))
 
-ggsave(paste0(path_results,"attribution/pop_significance_level.jpg" ), plot = p, width = 14.4, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/pop_significance_level1.jpg" ), plot = p, width = 14.4, height = 5, units = "cm", dpi = 1200)
 
 
 
@@ -239,7 +239,7 @@ write.table(format(all.arima, digits=2), file = paste0(path_results, "attributio
 
 
 # update the length in the table --------------------
-data.vai = data.frame(matrix(NA, ncol =7, nrow = nrow(reduced.list)))
+data.vai = data.frame(matrix(NA, ncol =8, nrow = nrow(reduced.list)))
 for (i in c(1:nrow(reduced.list))) {
   name.i = reduced.list$station[i]
   dat.i = get(load(file = paste0(path_results,"attribution/FGLS-full/", name.i, "fgls.RData")))
@@ -251,9 +251,11 @@ for (i in c(1:nrow(reduced.list))) {
   l4 = length(na.omit(a[c(3651:4651),"gps.gps"]))
   n = length(dat.i$gps.gps$fit)
   duration = length(na.omit(dat.i$gps.gps$var))
-  data.vai[i,] = c(n, duration, nrow(b),l1, l2, l3, l4)
+  data.vai[i,] = c(n, duration, nrow(b),l1, l2, l3, l4, name.i)
 }
-colnames(data.vai) = c("n","duration","duration.raw", "l1", "l2","l3","l4")
+colnames(data.vai) = c("n","duration","duration.raw", "l1", "l2","l3","l4", "name")
+data.vai[,c(1:7)] <- as.data.frame(sapply(data.vai[,c(1:7)], as.numeric)) #<- sapply is here
+
 data.vai = cbind(data.vai, reduced.list[,c(4,5)])
 data.vai$treat = 2
 data.vai$treat[which(data.vai$n == (data.vai$l3+data.vai$l4))]=3
@@ -276,6 +278,7 @@ for (j in c(1:nrow(data.vai))) {
 }
 reduced.list = cbind(reduced.list, n12)
 
+save(reduced.list, file = paste0(path_results, "attribution/lengthlist.RData"))
 # Output significant level -------------
 reduced.list$t = NA
 reduced.list$t[which(reduced.list$station %in% list.GE ==TRUE)] = t.value.GE

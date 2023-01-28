@@ -12,6 +12,7 @@ full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4
 ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc >200 )
 
 reduced.list = full.list[ind.sel,]
+reduced.list = reduced.list[-8,]
 rownames(reduced.list) = NULL
 
 order.arma.l1 = lapply(list.test, function(x) {
@@ -28,7 +29,7 @@ for (i in c(list.select)) {
   df = dat[[reduced.list$station[i]]]
   fit.i = list()
   name.i = reduced.list$station[i]
-  list.6 = c(1:6)
+  list.6 = c(2:6)
   for (j in list.6) {
     name.series = list.test[j]
     df.test = remove_na_2sides(df, name.series)
@@ -48,7 +49,7 @@ for (i in c(list.select)) {
     cor.st = cor.struct.hac(noise.model)
     
     # ols
-    Data.mod = construct.design(data.df = df.test, name.series = name.series, break.ind = ind.brp)
+    Data.mod = construct.design(data.df = df.test, name.series = name.series, break.ind = ind.brp, one.year = 365)
     # list.para <- colnames(Data.mod)[2:(dim(Data.mod)[2]-1)]
     # mod.X <-  list.para %>% stringr::str_c(collapse = "+")
     # mod.expression <- c("signal","~",mod.X) %>% stringr::str_c(collapse = "")
@@ -57,7 +58,7 @@ for (i in c(list.select)) {
     # # HAC
     # vcov.para=sandwich::kernHAC(ols.fit, approx = c( cor.st ), prewhite = TRUE, kernel = "Quadratic Spectral", adjust = TRUE, sandwich = TRUE)
     # fit.hac=lmtest::coeftest(ols.fit,df=(ols.fit$df.residual),vcov.=vcov.para)[, ] %>% as.data.frame()
-    fit.fgls = FGLS1(design.m = Data.mod, tol=0.01, day.list = df.test$date, noise.model = noise.model)
+    fit.fgls = FGLS1(design.m = Data.mod, tol=0.01, day.list = df.test$date, noise.model = noise.model, length.wind0 = 60)
     # fit.fgls1 = FGLS2(design.m = Data.mod, tol=0.0001, day.list = df.test$date, noise.model = noise.model)
     print(noise.model)
     fit.i[[name.series]] = fit.fgls
