@@ -264,3 +264,62 @@ table(abs(testr)<1.962)
 table(abs(testw)<1.96)
 sd(testr)
 
+
+
+# power of test  ----------------------------------------------------------
+
+
+
+compute_power <- function(Res, name.test, k, off.set, df1){
+  nb.sim = length(Res$total[[1]])
+  beta =  sapply(c(1:nb.sim), function(x) Res$total[[k]][[x]][[name.test]]$t.table$Estimate[1])
+  sd.beta = sapply(c(1:nb.sim), function(x) Res$total[[k]][[x]][[name.test]]$t.table$`Std. Error`[1])
+  out = rep(NA, length(off.set))
+  cv = qt(c(.975), df=df1) 
+  for (i in c(1:length(off.set))) {
+    t.values = (beta + off.set[i])/sd.beta
+    out[i] = length(which(abs(t.values)>cv))
+  }
+  return(out)
+}
+
+
+n = c(200,400,600,800)
+list.offset =  seq(0, 1, 0.02)
+tpr = data.frame(matrix(NA, ncol = 4, nrow = length(list.offset)))
+h = 0
+nb.sim=100
+for (i in c(1:4)) {
+  n1 = n[i]
+  b = get(load(
+    file = paste0(path_results,"attribution/",hetero=h,"auto",autocor=1, x.axis="rho", y.axis = "FPR",
+                  noise.name = "ar1",n=n1,"1R.Data")))
+  tpri = compute_power(Res = b, name.test = "fgls", k = 1, off.set = list.offset, df1 = n-3)
+  tpr[,i] = tpri 
+}
+
+colnames(tpr) = paste0("N=",n)
+tpr$jump = list.offset 
+
+dat.tpr = reshape2::melt(tpr, id ="jump")
+
+unit1 = "cm"
+unit2 = "pt"
+unit3 = "null"
+
+thres = 0.95
+p2 <- ggplot(dat.tpr, aes(x = jump,y = value/nb.sim, col = variable))+
+  geom_line(lwd = 0.3) +theme_bw() +
+  ylab("Power") + 
+  xlab("Jump") + geom_hline(yintercept =0.95, lwd = 0.2)+
+  scale_y_continuous(breaks=seq(0, 1, 0.15), limits =c(0,1))+
+  # scale_x_continuous(breaks)+
+  theme(axis.text.x = element_text(size = 6), axis.text.y = element_text(size = 6),legend.text=element_text(size=4),
+        axis.title = element_text(size = 6), legend.key.size = unit(0.2, unit1), plot.tag = element_text(size = 6),
+        legend.title=element_blank(), legend.box.spacing = unit(0,unit2 ), plot.margin = rep(unit(0,unit3),4))
+
+ggsave(paste0(path_results,"attribution/power/h",h,"auto",autocor=1, "jump", "power",".jpg" ), 
+       plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
+
+
+

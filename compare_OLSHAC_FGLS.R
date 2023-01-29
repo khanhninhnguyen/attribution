@@ -40,7 +40,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
     sample = list.param.sig
     individual = 5
   }
-  gen.test = mod.sim(heteroscedast = heteroscedast, autocorr = autocor, var.inno = 1, list.param.ar = list.param.ar, 
+  gen.test = mod.sim(heteroscedast = heteroscedast, autocorr = autocor, var.inno = 0.5, list.param.ar = list.param.ar, 
                      list.param.sig = list.param.sig, x.axis = x.axis, individual = individual, n = n, T1 = n/2)
   burn.in = gen.test$burn.in
   hetero = gen.test$hetero
@@ -335,7 +335,7 @@ model.name = "arma1"
 a = simu_performance(off.set=0, heteroscedast = 1, autocor = 0, x.axis = "sig", nb.sim=nb.sim, list.param.ar, list.param.sig,list.ma = list.ma,
                      noise.model=c(0,0,0), noise.name = "white", length.wind = 60, n =400)
 # test the length of series ------------------------------------
-nb.sim = 10
+nb.sim = 100
 # n = 
 list.param.ar = seq(0,0.6,0.3)
 list.ma = rep(0, length(list.param.ar))
@@ -351,6 +351,7 @@ case = data.frame(h = rep(c(0,1),4),
 off.set = 0
 noise.list = c(1,0,0)
 model.name = "ar1"
+list.s = seq(1,8,2)
 for (j in c(1:nrow(case))) {
   n1 = case$n[j]
   one.year = n1/2

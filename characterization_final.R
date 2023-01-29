@@ -866,7 +866,7 @@ write.table(a, file = paste0(path_results,"attribution/sd_table.txt"), sep = "\t
 # percentage pf range 
 
 for (i in c(1:6)) {
-  print(mean(range.res[,i]/mean.res[,i], na.rm=TRUE ))
+  print(sd(range.res[,i]/mean.res[,i], na.rm=TRUE ))
 }
 
 
