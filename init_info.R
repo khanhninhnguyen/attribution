@@ -17,7 +17,9 @@ library("lmtest")
 library("lubridate")
 library(usethis)
 library("RColorBrewer")
-
+library(gtable)    
+library(grid)
+library(gridExtra) 
 # main paths  --------------------------------------------------------------
 path_main="/home/knguyen/Documents/PhD/"
 # setwd(path_main)

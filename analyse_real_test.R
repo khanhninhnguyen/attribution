@@ -1,3 +1,4 @@
+source(paste0(path_code_att,"FGLS.R"))
 
 tot = get(load(file = paste0(path_results,"attribution/stats_test_real_data.RData")))
 t.table = cbind(reduced.list[,c(1:3)], tot[,c(7:12, 21,22,20)])
