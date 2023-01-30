@@ -217,5 +217,7 @@ abline(v = brp)
 lines(datai$date,datai$fit)
 
 # plot(final.t$n1+final.t$n2, final.t$tEEp)
+write.table(format(final.t, digits =4), file = paste0(path_results,"attribution/FinalTable.txt"), quote = FALSE, row.names = FALSE, sep = "\t")
+write.table(format(res, digits =4), file = paste0(path_results,"attribution/last_decision.txt"), quote = FALSE, row.names = FALSE, sep = "\t")
 
-
+a = left_join(final.t, res, by = c("main","brp"))

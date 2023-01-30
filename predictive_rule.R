@@ -497,8 +497,8 @@ save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.Listn.RData"))
 
 
 
-FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b,".rds"))
-importance <-caret::varImp(FinalPred,scale=FALSE)
+FinalPred <- readRDS(paste0(path_results,"attribution/","modrf_b",2,".rds"))
+importance <- randomForest::importance(FinalPred$finalModel,type=1)
 plot(importance)
 
 

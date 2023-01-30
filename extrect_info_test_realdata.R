@@ -107,4 +107,16 @@ save(Total.res, file = paste0(path_results,"stats_test_real_data.RData"))
 # b = which(a$l2<1000 & a$de>100) 
 # save(b, file = paste0(path_results, "attribution/add.list.RData"))
 
+# variance 
+variance = data.frame(matrix(NA, ncol = 5, nrow = nrow(reduced.list)))
+for (i in c(1:nrow(reduced.list))) {
+  name.i = reduced.list$station[i]
+  dat.i = get(load(file = paste0(path_results,"attribution/FGLS-full/", name.i, "fgls.RData")))
+  p.values = sapply(c(2:6), function(x) mean(sqrt(dat.i[[list.test[x]]]$var),na.rm =TRUE))
+  variance[i,] = p.values
+}
+
+
+
+
 

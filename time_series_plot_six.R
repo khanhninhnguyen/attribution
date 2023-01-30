@@ -47,7 +47,7 @@ p1 <- ggplot(data = datai, aes(x = date, y = gps.era)) +
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5), plot.subtitle = element_text(size = 5),
-        legend.title=element_blank(), legend.position = "none", plot.margin = margin(t = 0, b = 0, r = 4, l = 4))
+        legend.title=element_blank(), legend.position = "none", plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
 max.y <- ggplot_build(p1)$layout$panel_params[[1]]$y.range[2]
 list.meta = meta.g$known
 if(nrow(meta.g)>1){
@@ -88,8 +88,8 @@ p2 <- ggplot(data = datai, aes(x = date, y = gps1.era1)) +
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5), plot.subtitle = element_text(size = 5),
-        legend.title=element_blank(), legend.position = "none", plot.margin = margin(t = 0, b = 0, r = 4, l = 4))
-# four others 
+        legend.title=element_blank(), legend.position = "none", plot.margin = unit(c(0, 0, 0, 0.5), "cm"))
+# four others
 
 name.s = "gps.gps"
 datai = remove_na_2sides(data.i, name.s)
@@ -117,7 +117,7 @@ p3 <- ggplot(data = datai, aes(x = date, y = gps.gps)) +
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5), plot.subtitle = element_text(size = 5),
-        legend.title=element_blank(), legend.position = "none", plot.margin = margin(t = 0, b = 0, r = 4, l = 4))
+        legend.title=element_blank(), legend.position = "none", plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
 max.y <- ggplot_build(p3)$layout$panel_params[[1]]$y.range[2]
 list.meta = meta.g$known
 if(nrow(meta.g)>1){
@@ -147,7 +147,7 @@ p4 <- ggplot(data = datai, aes(x = date, y = gps.era1)) +
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5),plot.subtitle = element_text(size = 5),
-        legend.title=element_blank(), legend.position = "none",plot.margin = margin(t = 0, b = 0, r = 4, l = 4))
+        legend.title=element_blank(), legend.position = "none",plot.margin = unit(c(0, 0, 0, 0.5), "cm"))
 max.y <- ggplot_build(p4)$layout$panel_params[[1]]$y.range[2]
 list.meta = meta.g$known
 if(nrow(meta.g)>1){
@@ -176,7 +176,7 @@ p5 <- ggplot(data = datai, aes(x = date, y = era.era)) +
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5),plot.subtitle= element_text(size = 5),
-        legend.title=element_blank(), legend.position = "none", plot.margin = margin(t = 0, b = 0, r = 4, l = 4))
+        legend.title=element_blank(), legend.position = "none", plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
 
 name.s = "gps1.era"
 datai = remove_na_2sides(data.i, name.s)
@@ -198,26 +198,31 @@ p6 <- ggplot(data = datai, aes(x = date, y = gps1.era)) +
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5),plot.subtitle = element_text(size = 5),
-        legend.title=element_blank(), legend.position = "bottom", plot.margin = margin(t = 0, b = 0, r = 4, l = 4))
+        legend.title=element_blank(), legend.position = "bottom", plot.margin = unit(c(0, 0, 0, 0.5), "cm"))
 
+yearser = function(sd, ed){
+   paste0(substr(seq(sd, ed, "years"), 1, 4)[-1], "-01-01")
+}
+
+list.seq = mapply(function(x, y) yearser(x, y), begin.date, end.date)
 
 p1<- p1+ scale_x_date(limits = as.Date(c(begin.date, end.date)), 
-                    breaks = function(x) seq.Date(from = begin.date,  to = end.date, by = "1 year"),
+                    breaks = function(x) as.Date(list.seq),
                     date_labels = "%Y" )
 p2<- p2+ scale_x_date(limits = as.Date(c(begin.date, end.date)), 
-                    breaks = function(x) seq.Date(from = begin.date,  to = end.date, by = "1 year"),
+                    breaks = function(x) as.Date(list.seq),
                     date_labels = "%Y" )
 p3<- p3+ scale_x_date(limits = as.Date(c(begin.date, end.date)), 
-                    breaks = function(x) seq.Date(from = begin.date,  to = end.date, by = "1 year"),
+                    breaks = function(x) as.Date(list.seq),
                     date_labels = "%Y" )
 p4<- p4+ scale_x_date(limits = as.Date(c(begin.date, end.date)), 
-                    breaks = function(x) seq.Date(from = begin.date,  to = end.date, by = "1 year"),
+                    breaks = function(x) as.Date(list.seq),
                     date_labels = "%Y" )
 p5<- p5+ scale_x_date(limits = as.Date(c(begin.date, end.date)), 
-                    breaks = function(x) seq.Date(from = begin.date,  to = end.date, by = "1 year"),
+                    breaks = function(x) as.Date(list.seq),
                     date_labels = "%Y" )
 p6<- p6+ scale_x_date(limits = as.Date(c(begin.date, end.date)), 
-                    breaks = function(x) seq.Date(from = begin.date,  to = end.date, by = "1 year"),
+                    breaks = function(x) as.Date(list.seq),
                     date_labels = "%Y" )
 GE <- ggplotGrob(p1)
 G.E. <- ggplotGrob(p2)
