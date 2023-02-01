@@ -84,16 +84,16 @@ data.plot$config = as.factor(data.plot$config)
 p <- ggplot(data.plot, aes(fill=config, y=c, x=g)) + 
   geom_bar(position="stack", stat="identity")+theme_bw()+
   geom_text(aes(label = config),
-            colour = "black",  size=2,
+            colour = "black",  size=1.8,
             position = position_stack(vjust = 0.5)) +
-  labs(x = NULL, y ="Count", x = "Group") + 
+  labs(y ="Count", x = "Group",  fill='Configuration') + 
   theme(axis.text.x = element_text(size = 6), axis.text.y = element_text(size = 6),legend.text=element_text(size=4),
-        axis.title = element_text(size = 6), legend.key.size = unit(0.3, "cm"), 
-        plot.tag = element_text(size = 6),
-        legend.title=element_blank(), legend.position = "none", plot.margin = rep(unit(0,"null"),4))
+        axis.title = element_text(size = 6), legend.key.size = unit(0.2, "cm"), 
+        plot.tag = element_text(size = 6),legend.title=element_text(size=5),legend.box.spacing = unit(0, "pt"),
+        plot.margin = rep(unit(0,"null"),4))
 ggsave(paste0(path_results,"attribution/config_dist.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
 
-# data 
+# data -------------------------------
 win.thres = 10
 dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
 shorten = final.t[,c(1:12, 18:20)]
@@ -221,3 +221,36 @@ write.table(format(final.t, digits =4), file = paste0(path_results,"attribution/
 write.table(format(res, digits =4), file = paste0(path_results,"attribution/last_decision.txt"), quote = FALSE, row.names = FALSE, sep = "\t")
 
 a = left_join(final.t, res, by = c("main","brp"))
+
+
+# investigate the distance 
+
+list.s = res[which(res$pred %in% c(8,22)),]
+list.s.all = inner_join(list.s, final.t, by = c("main","brp"))
+list.s.all$r = d
+a = aggregate(r~main+brp+pred.y, list.s.all, min)
+a$case = paste0(a$main,".",a$brp)
+a$pred.y = as.factor(a$pred.y)
+
+ggplot(a, aes(x = pred.y, y = distance))+ theme_bw()+ geom_point()
+
+a = list.s1$X1
+for (i in c(2:(length(a)))){
+  if(is.na(a[i])==TRUE){
+    a[i] = a[i-1]
+    }
+}
+d = list.s1$X2/a
+
+a = aggregate(distance~main+brp+pred.y, final.t, min)
+
+in.t = cbind( final.t[,c(1:3, 12,19)], tot[,c(4,27:28)])
+a = na.omit(in.t[,c(1:2,6:7)])
+colnames(a)[3:4] = c("j.g","var.g")
+inves.t1 = left_join(in.t, a, by = c("main","brp"))
+inves.t1$r = inves.t1$X2/inves.t1$var.g
+inves.t1$pred.y = as.factor(inves.t1$pred.y)
+
+inves.t1$rati = inves.t1$j.g/inves.t1$r
+ggplot(inves.t1, aes(x = pred.y, y =rati))+geom_boxplot()
+

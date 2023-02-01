@@ -108,12 +108,16 @@ save(Total.res, file = paste0(path_results,"stats_test_real_data.RData"))
 # save(b, file = paste0(path_results, "attribution/add.list.RData"))
 
 # variance 
-variance = data.frame(matrix(NA, ncol = 5, nrow = nrow(reduced.list)))
+variance = data.frame(matrix(NA, ncol = 6, nrow = nrow(reduced.list)))
 for (i in c(1:nrow(reduced.list))) {
   name.i = reduced.list$station[i]
   dat.i = get(load(file = paste0(path_results,"attribution/FGLS-full/", name.i, "fgls.RData")))
   p.values = sapply(c(2:6), function(x) mean(sqrt(dat.i[[list.test[x]]]$var),na.rm =TRUE))
-  variance[i,] = p.values
+  if(name.i %in% list.GE ==TRUE){
+    dat.i1 = get(load(file = paste0(path_results,"attribution/FGLS-GE/", name.i, "fgls.RData")))
+    variance[i,1] = mean(sqrt(dat.i1$gps.era$var),na.rm =TRUE)
+  }
+  variance[i,(2:6)] = p.values
 }
 
 

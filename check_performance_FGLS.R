@@ -287,14 +287,14 @@ compute_power <- function(Res, name.test, k, off.set, df1){
 n = c(200,400,600,800)
 list.offset =  seq(0, 1, 0.02)
 tpr = data.frame(matrix(NA, ncol = 4, nrow = length(list.offset)))
-h = 0
-nb.sim=100
+h = 1
+nb.sim=1000
 for (i in c(1:4)) {
   n1 = n[i]
   b = get(load(
-    file = paste0(path_results,"attribution/",hetero=h,"auto",autocor=1, x.axis="rho", y.axis = "FPR",
+    file = paste0(path_results,"attribution/power/",hetero=h,"auto",autocor=1, x.axis="rho", y.axis = "FPR",
                   noise.name = "ar1",n=n1,"1R.Data")))
-  tpri = compute_power(Res = b, name.test = "fgls", k = 1, off.set = list.offset, df1 = n-3)
+  tpri = compute_power(Res = b, name.test = "fgls", k = 2, off.set = list.offset, df1 = n-3)
   tpr[,i] = tpri 
 }
 
@@ -309,15 +309,15 @@ unit3 = "null"
 
 thres = 0.95
 p2 <- ggplot(dat.tpr, aes(x = jump,y = value/nb.sim, col = variable))+
-  geom_line(lwd = 0.3) +theme_bw() +
-  ylab("Power") + 
+  geom_line(lwd = 0.2) +theme_bw() +
+  ylab("True Positive Rate") + 
   xlab("Jump") + geom_hline(yintercept =0.95, lwd = 0.2)+
-  scale_y_continuous(breaks=seq(0, 1, 0.15), limits =c(0,1))+
+  scale_y_continuous(breaks=seq(0, 1, 0.1), limits =c(0,1))+
   # scale_x_continuous(breaks)+
   theme(axis.text.x = element_text(size = 6), axis.text.y = element_text(size = 6),legend.text=element_text(size=4),
         axis.title = element_text(size = 6), legend.key.size = unit(0.2, unit1), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0,unit2 ), plot.margin = rep(unit(0,unit3),4))
-
+p2
 ggsave(paste0(path_results,"attribution/power/h",h,"auto",autocor=1, "jump", "power",".jpg" ), 
        plot = p2, width = 8, height = 5, units = "cm", dpi = 1200)
 

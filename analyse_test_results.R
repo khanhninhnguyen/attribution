@@ -112,6 +112,8 @@ contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Tota
 table(unlist(contra))
 
 # plot distribution FOR PAPER ----------------------------
+text1 = "Distance < 50 km"
+text2 = "Distance > 50 km"
 colnames(Total.coded) = list.name.test[2:6]
 data1 = Total.coded[which(reduced.list$distances<50),]
 # data1 = Total.coded
@@ -131,12 +133,12 @@ unicode_minus = function(x) sub('^-', '\U2212', format(x))
 p1 <- ggplot(data.plot, aes(fill=value, y=c, x=variable)) + 
   geom_bar(position="stack", stat="identity")+theme_bw()+
   geom_text(aes(label = c),
-            colour = "black",  size=2,
+            colour = "black",  size=1.8,
             position = position_stack(vjust = 0.5)) +
-  labs(x = NULL, y ="Count", tag = "(a)") + 
-  theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+  labs(x = NULL, y ="Count", tag = "(a)", subtitle = text1) + 
+  theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
-        plot.tag = element_text(size = 6),
+        plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
 
 data1 = Total.coded[which(reduced.list$distances>50),]
@@ -154,12 +156,12 @@ data.plot$variable = factor(data.plot$variable,  levels = reoder.list.name1)
 p2 <- ggplot(data.plot, aes(fill=value, y=c, x=variable)) + 
   geom_bar(position="stack", stat="identity")+theme_bw()+
   geom_text(aes(label = c),
-            colour = "black",  size=2,
+            colour = "black",  size=1.8,
             position = position_stack(vjust = 0.5)) +
-  labs(x = NULL, y ="Count", tag = "(b)") + 
-  theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+  labs(x = NULL, y ="Count", tag = "(b)", subtitle = text2) + 
+  theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
-        plot.tag = element_text(size = 6),
+        plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
 
 gA <- ggplotGrob(p1)
@@ -286,6 +288,4 @@ Out.res = cbind(reduced.list[,c(1:3,19)], Total.res[,c(6:10)], reduced.list[,c(1
 
 colnames(Out.res)[c(4,10,11)] = c(paste0("t", list.name.test[1]), "n1", "n2")
 write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data1.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
-
-
 

@@ -9,8 +9,8 @@ valid1 = get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",crite
 valid2 = get(load(file = paste0(path_results,"validation/",nb_test.near,"-",criterion,"metacompa",screen.value="",".RData")))
   
 all.case = paste0(final.t$main,".",as.character(final.t$brp), ".", final.t$nearby)
-name.i = "fair.2017-10-04.eil4"
-name.i1 = "fair.2017-10-04.clgo"
+name.i =  "fair.2017-10-04.clgo"
+name.i1 =  "fair.2017-10-04.clgo"
 ind.case = which(all.case %in% name.i  == TRUE)
 brp = as.Date(substr(name.i, 6, 15))
 station.name = substr(name.i, 1, 4)
@@ -33,27 +33,32 @@ datai$fit = station1[[name.s]]$t.table$Estimate[10]
 datai$fit[(brp.ind+1):nrow(datai)] = station1[[name.s]]$t.table$Estimate[10] + station1[[name.s]]$t.table$Estimate[9]
 text1 = paste0("Jump = ", round(station1[[name.s]]$t.table$Estimate[9], digits = 2), 
                ", t = ", round(station1[[name.s]]$t.table$`t value`[9], digits = 2), 
-               ", SD = ", round(mean(sqrt(station1[[name.s]]$var)) , digits = 2), 
-               ", ARMA(0.79, -0.43)",
+               ", SD = ", round(mean(sqrt(station1[[name.s]]$var), na.rm = TRUE) , digits = 2), 
+               ", AR: 0.79, MA: 0.43",
                ", n1 = ", n1, ", n2 = ", n2)
 
 # plot metadata 
-meta.g = valid1[which(valid1$name == station.name),] 
+meta.g = valid1[which(valid1$name == station.name),]
 meta.g = meta.g[which(meta.g$known>begin.date & meta.g$known<end.date),]
-p1 <- ggplot(data = datai, aes(x = date, y = gps.era)) +
-  theme_bw() + geom_line(col = "gray", lwd = 0.3)+  scale_y_continuous(breaks = seq(-3,3,1), limits = c(-3,3))+
-  geom_vline(xintercept = brp, lwd = 0.2)+ labs(subtitle = text1)+
-  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G-E") + xlab("")+
+list.meta = meta.g$known
+if(nrow(meta.g)>0){
+  datai$meta = NA
+  datai$meta[which( datai$date %in% list.meta == TRUE)] = 4
+}
+
+p1 <- ggplot(data = datai, aes(x = date)) +
+  theme_bw() + geom_line(aes(y = gps.era), col = "gray", lwd = 0.3)+ 
+  scale_y_continuous(breaks = seq(-7,5,1), limits = c(-4,4))+
+  geom_vline(xintercept = brp, lwd = 0.2)+ 
+  labs(subtitle = text1)+
+  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G \u2013 E") + xlab("")+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5), plot.subtitle = element_text(size = 5),
         legend.title=element_blank(), legend.position = "none", plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
-max.y <- ggplot_build(p1)$layout$panel_params[[1]]$y.range[2]
-list.meta = meta.g$known
-if(nrow(meta.g)>1){
-  list.brp.screened.y <- rep(max.y, nrow(meta.g))
-  p1 <- p1 + annotate("point", x = list.meta, y = list.brp.screened.y , colour = "blue", size = 1, alpha=1,shape = 2)
-  # p1<-p1+ geom_vline(xintercept = t[locat.known.old], size = 0.6, lty = 2, colour = "red")
+
+if(nrow(meta.g)>0){
+  p1<-p1+ geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
 }
 # GPS'-ERA' 
 
@@ -77,14 +82,14 @@ datai$fit = station[[name.s]]$t.table$Estimate[10]
 datai$fit[(brp.ind+1):nrow(datai)] = station[[name.s]]$t.table$Estimate[10] + station[[name.s]]$t.table$Estimate[9]
 text1 = paste0("jump = ", round(station[[name.s]]$t.table$Estimate[9], digits = 2), 
                ", t = ", round(station[[name.s]]$t.table$`t value`[9], digits = 2), 
-               ", SD = ", round(mean(sqrt(station[[name.s]]$var)) , digits = 2), 
-               ", AR(0.42)",
+               ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
+               ", AR : 0.84, MA: -0.58",
                ", n1 = ", n1, ", n2 = ", n2)
 
 p2 <- ggplot(data = datai, aes(x = date, y = gps1.era1)) +
   theme_bw() + geom_line(col = "gray", lwd = 0.3)+
   geom_vline(xintercept = brp, lwd = 0.2)+ labs(subtitle = text1)+
-  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G'-E'") +xlab("")+  scale_y_continuous(breaks = seq(-3,3,1), limits = c(-3,3))+
+  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G' \u2013 E'") +xlab("")+  scale_y_continuous(breaks = seq(-7,5,1), limits = c(-4,4))+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5), plot.subtitle = element_text(size = 5),
@@ -105,27 +110,32 @@ datai$fit = station[[name.s]]$t.table$Estimate[10]
 datai$fit[(brp.ind+1):nrow(datai)] = station[[name.s]]$t.table$Estimate[10] + station[[name.s]]$t.table$Estimate[9]
 text1 = paste0("Jump = ", round(station[[name.s]]$t.table$Estimate[9], digits = 2), 
                ", t = ", round(station[[name.s]]$t.table$`t value`[9], digits = 2), 
-               ", SD = ", round(mean(sqrt(station[[name.s]]$var)) , digits = 2), 
-               ", AR(0.48)",
+               ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
+               ", AR: 0.61",
                ", n1 = ", final.t$n1[ind.case], ", n2 = ", final.t$n2[ind.case])
+
+meta.g = valid1[which(valid1$name == station.name),]
+meta.g = meta.g[which(meta.g$known>begin.date & meta.g$known<end.date),]
+list.meta = meta.g$known
+if(nrow(meta.g)>0){
+  datai$meta = NA
+  datai$meta[which( datai$date %in% list.meta == TRUE)] = 4
+}
 
 p3 <- ggplot(data = datai, aes(x = date, y = gps.gps)) +
   theme_bw() + geom_line(col = "gray", lwd = 0.3)+
   geom_vline(xintercept = brp, lwd = 0.2)+ labs(subtitle = text1)+
-  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G-G'") +xlab("")+
-  scale_y_continuous(breaks = seq(-3,3,1), limits = c(-3,3))+
+  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G \u2013 G'") +xlab("")+
+  scale_y_continuous(breaks = seq(-7,5,1), limits = c(-4,4))+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5), plot.subtitle = element_text(size = 5),
         legend.title=element_blank(), legend.position = "none", plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
-max.y <- ggplot_build(p3)$layout$panel_params[[1]]$y.range[2]
-list.meta = meta.g$known
-if(nrow(meta.g)>1){
-  list.brp.screened.y <- rep(max.y, nrow(meta.g))
-  p3 <- p3 + annotate("point", x = list.meta, y = list.brp.screened.y , colour = "blue", size = 1, alpha=1,shape = 2)
-  # p1<-p1+ geom_vline(xintercept = t[locat.known.old], size = 0.6, lty = 2, colour = "red")
-}
 
+list.meta = meta.g$known
+if(nrow(meta.g)>0){
+  p3 <- p3 + geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
+}
 
 name.s = "gps.era1"
 datai = remove_na_2sides(data.i, name.s)
@@ -135,25 +145,31 @@ datai$fit = station[[name.s]]$t.table$Estimate[10]
 datai$fit[(brp.ind+1):nrow(datai)] = station[[name.s]]$t.table$Estimate[10] + station[[name.s]]$t.table$Estimate[9]
 text1 = paste0("Jump = ", round(station[[name.s]]$t.table$Estimate[9], digits = 2), 
                ", t = ", round(station[[name.s]]$t.table$`t value`[9], digits = 2), 
-               ", SD = ", round(mean(sqrt(station[[name.s]]$var)) , digits = 2), 
-               ", AR(0.42)",
+               ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
+               ", AR: 0.45", 
                ", n1 = ", final.t$n1[ind.case], ", n2 = ", final.t$n2[ind.case])
+
+meta.g = valid1[which(valid1$name == station.name),]
+meta.g = meta.g[which(meta.g$known>begin.date & meta.g$known<end.date),]
+list.meta = meta.g$known
+if(nrow(meta.g)>0){
+  datai$meta = NA
+  datai$meta[which( datai$date %in% list.meta == TRUE)] = 4
+}
 
 p4 <- ggplot(data = datai, aes(x = date, y = gps.era1)) +
   theme_bw() + geom_line(col = "gray", lwd = 0.3)+
   geom_vline(xintercept = brp, lwd = 0.2)+ labs(subtitle = text1)+
-  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G-E'") +xlab("")+
-  scale_y_continuous(breaks = seq(-3,3,1), limits = c(-3,3))+
+  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G \u2013 E'") +xlab("")+
+  scale_y_continuous(breaks = seq(-7,5,1), limits = c(-4,4))+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5),plot.subtitle = element_text(size = 5),
         legend.title=element_blank(), legend.position = "none",plot.margin = unit(c(0, 0, 0, 0.5), "cm"))
 max.y <- ggplot_build(p4)$layout$panel_params[[1]]$y.range[2]
 list.meta = meta.g$known
-if(nrow(meta.g)>1){
-  list.brp.screened.y <- rep(max.y, nrow(meta.g))
-  p4 <- p4 + annotate("point", x = list.meta, y = list.brp.screened.y , colour = "blue", size = 1, alpha=1,shape = 2)
-  # p1<-p1+ geom_vline(xintercept = t[locat.known.old], size = 0.6, lty = 2, colour = "red")
+if(nrow(meta.g)>0){
+  p4 <- p4 + geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
 }
 
 name.s = "era.era"
@@ -164,15 +180,15 @@ datai$fit = station[[name.s]]$t.table$Estimate[10]
 datai$fit[(brp.ind+1):nrow(datai)] = station[[name.s]]$t.table$Estimate[10] + station[[name.s]]$t.table$Estimate[9]
 text1 = paste0("Jump = ", round(station[[name.s]]$t.table$Estimate[9], digits = 2), 
                ", t = ", round(station[[name.s]]$t.table$`t value`[9], digits = 2), 
-               ", SD = ", round(mean(sqrt(station[[name.s]]$var)) , digits = 2), 
-               ", AR(0.30)",
+               ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
+               ", AR: 0.31",
                ", n1 = ", final.t$n1[ind.case], ", n2 = ", final.t$n2[ind.case])
 
 p5 <- ggplot(data = datai, aes(x = date, y = era.era)) +
   theme_bw() + geom_line(col = "gray", lwd = 0.3)+
   geom_vline(xintercept = brp, lwd = 0.2)+ labs(subtitle = text1)+
-  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("E-E'") +xlab("")+
-  scale_y_continuous(breaks = seq(-3,3,1), limits = c(-3,3))+
+  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("E \u2013 E'") +xlab("")+
+  scale_y_continuous(breaks = seq(-7,5,1), limits = c(-4,4))+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5),plot.subtitle= element_text(size = 5),
@@ -186,15 +202,15 @@ datai$fit = station[[name.s]]$t.table$Estimate[10]
 datai$fit[(brp.ind+1):nrow(datai)] = station[[name.s]]$t.table$Estimate[10] + station[[name.s]]$t.table$Estimate[9]
 text1 = paste0("Jump = ", round(station[[name.s]]$t.table$Estimate[9], digits = 2), 
                ", t = ", round(station[[name.s]]$t.table$`t value`[9], digits = 2), 
-               ", SD = ", round(mean(sqrt(station[[name.s]]$var)) , digits = 2), 
-               ", AR(0.40)",
+               ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
+               ", AR: 0.48",
                ", n1 = ", final.t$n1[ind.case], ", n2 = ", final.t$n2[ind.case])
 
 p6 <- ggplot(data = datai, aes(x = date, y = gps1.era)) +
   theme_bw() + geom_line(col = "gray", lwd = 0.3)+
   geom_vline(xintercept = brp, lwd = 0.2)+ labs(subtitle = text1)+
-  scale_y_continuous(breaks = seq(-3,3,1), limits = c(-3,3))+
-  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G'-E") +xlab("")+
+  scale_y_continuous(breaks = seq(-7,5,1), limits = c(-4,4))+
+  geom_line(aes(y = fit), col = "red", lwd = 0.3)+ ylab("G' \u2013 E") +xlab("")+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 5),plot.subtitle = element_text(size = 5),

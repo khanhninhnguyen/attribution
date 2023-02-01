@@ -655,6 +655,10 @@ order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma
 coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
 
 list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
+
+text1 = "Distance < 50 km"
+text2 = "Distance > 50 km"
+
 # plot1-----
 length.data =nrow(reduced.list)
 six.model = data.frame(matrix(NA, ncol = 6, nrow = length.data))
@@ -683,14 +687,14 @@ res.plot$mod = factor(res.plot$mod,
 p1 <- ggplot(res.plot, aes(fill=mod, y=pct, x=series, label = value)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
   xlab("") + ylab("Percentage")+
-  labs(tag = "(a)") + 
+  labs(tag = "(a)", subtitle = text1) +
   geom_text(position = position_dodge(width = .5),    # move to center of bars
             vjust = -0.5,    # nudge above top of bar
             size = 1)+
   ylim(c(0,100))+
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), 
-        plot.tag = element_text(size = 6),
+        plot.tag = element_text(size = 6) , plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
 # plot2-----
 
@@ -722,14 +726,15 @@ res.plot$mod = factor(res.plot$mod,
 p2 <- ggplot(res.plot, aes(fill=mod, y=pct, x=series, label = value)) + 
   geom_bar(position="dodge", stat="identity", width = 0.5)+theme_bw()+ 
   xlab("") + ylab("Percentage")+
-  labs(tag = "(b)") + 
+  labs(tag = "(b)", subtitle = text2) + 
   geom_text(position = position_dodge(width = .5),    # move to center of bars
             vjust = -0.5,    # nudge above top of bar
             size = 1)+
   ylim(c(0,100))+
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), plot.tag = element_text(size = 6),
-        legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
+        legend.title=element_blank(), plot.subtitle = element_text(size = 6), legend.box.spacing = unit(0, "pt"), 
+        plot.margin = rep(unit(0,"null"),4))
 
 # plot3 -----
 length.data =nrow(reduced.list)
@@ -746,6 +751,7 @@ model.list <- c()
 test.list  <- c()
 values <- c()
 list.param = c("Phi", "theta")
+
 list.name.station = c()
 
 for (testi in c(1:6)) {
@@ -777,7 +783,7 @@ p3 <- ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param))
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))+
-  scale_color_manual(values = c("green", "deepskyblue4"), labels = expression(phi, theta))+
+  scale_color_manual(values = c("green", "deepskyblue4"), labels = expression(Phi, theta))+
   scale_fill_manual(values = c("#D6604D", "#FDDBC7", "#92C5DE"))
 
 # plot4 ---------
@@ -795,7 +801,7 @@ p4 <- ggplot(data = dat.p, aes( x = name, y = value, fill = model ,col = param))
   theme(axis.text.x = element_text(size = 4.5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.2, "cm"), plot.tag = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))+
-  scale_color_manual(values = c("green", "deepskyblue4"), labels = expression(phi, theta))+
+  scale_color_manual(values = c("green", "deepskyblue4"), labels = expression(Phi, theta))+
   scale_fill_manual(values = c("#D6604D", "#FDDBC7", "#92C5DE"))
 
 # grid of 4 ------
