@@ -128,7 +128,7 @@ for (i in  1:length(List.names.final)){
 R <- 100
 Nbconfig <- nrow(Z.trunc.final)
 NbSim <- R*Nbconfig #in order to have at least 5 samples for each configurations. 
-B <- 20
+B <- 30
 NbSimLearn <- NbSim*0.8
 NbSimTest <- NbSim*0.2
 
@@ -344,7 +344,7 @@ for (b in 1:B){
 }
 colnames(error.test.4.methods) <- c("lda","cart","knn","rf")
 
-B=20
+B=30
 error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
 
 for (b in 1:B){
