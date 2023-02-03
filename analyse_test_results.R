@@ -43,6 +43,9 @@ check_contradict <- function(y, table.selected){
 # synthesis result --------------------------------------------------------
 # significant level
 win.thres = 10
+dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres, "years_", nearby_ver,"screened.RData")))
+source(paste0(path_code_att,"FGLS.R"))
+
 full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
 full.list$station = paste0(full.list$main,".",as.character(full.list$brp), ".", full.list$nearby)
 full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]))
@@ -56,7 +59,7 @@ rownames(reduced.list) = NULL
 
 # reduced.list$chose[c(65,140,144,204,300,337,378,381,383,384)]=1
 
-# check the significance of GPS-ERA
+# check the significance of GPS-ERA------------
 a = aggregate(nbc~main+brp, reduced.list, which.max)
 # colnames(a)[3] = "ind"
 # d = left_join(reduced.list, a, by = c("main", "brp"))
@@ -249,8 +252,8 @@ for (i in c(1:nrow(reduced.list))) {
   b = remove_na_2sides(a, "gps.gps")
   l1 = length(na.omit(a[c(1:3650),"gps.gps"]))
   l2 = length(na.omit(a[c(3651:7300),"gps.gps"]))
-  l3 = length(na.omit(a[c(2650:3650),"gps.gps"]))
-  l4 = length(na.omit(a[c(3651:4651),"gps.gps"]))
+  l3 = length(na.omit(a[c(2651:3650),"gps.gps"]))
+  l4 = length(na.omit(a[c(3651:4649),"gps.gps"]))
   n = length(dat.i$gps.gps$fit)
   duration = length(na.omit(dat.i$gps.gps$var))
   data.vai[i,] = c(n, duration, nrow(b),l1, l2, l3, l4, name.i)
