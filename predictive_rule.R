@@ -96,6 +96,8 @@ Z.trunc.final.code[Z.trunc.final==0]=1
 head(Z.trunc.final.code)
 config.list <- 1:38
 config.list.final <- config.list[-c(12,28)]
+saveRDS(Z.trunc.final.code , file = paste0(file_path_Results,"List_config.rds"))
+
 
 name.results <- paste0(path_restest,"FGLS_on_real_data_t.txt")
 Data.Res.Test <- read.table(name.results,header = TRUE, stringsAsFactors = FALSE)
@@ -128,7 +130,7 @@ for (i in  1:length(List.names.final)){
 R <- 100
 Nbconfig <- nrow(Z.trunc.final)
 NbSim <- R*Nbconfig #in order to have at least 5 samples for each configurations. 
-B <- 30
+B <- 20
 NbSimLearn <- NbSim*0.8
 NbSimTest <- NbSim*0.2
 
@@ -344,7 +346,7 @@ for (b in 1:B){
 }
 colnames(error.test.4.methods) <- c("lda","cart","knn","rf")
 
-B=30
+B=20
 error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
 
 for (b in 1:B){
