@@ -4,6 +4,9 @@ prob.t = get(load(file = paste0(path_results, "attribution/Post.Prob.List.RData"
 prob.tn = get(load(file = paste0(path_results, "attribution/Post.Prob.Listn.RData")))
 tot = get(load(file = paste0(path_results,"attribution/stats_test_real_data.RData")))
 
+
+# learning  ---------------------------------------------------------------
+
 # plot t-values of each configuration 
 config1 = final.t[which(final.t$pred.y==1),]
 dat.p = config1[,c(5:9)]
@@ -174,4 +177,19 @@ ggplot(final.t, aes( y = pred.y))+ theme_bw()+
   geom_text(aes( label = scales::percent(..prop..),
                  x = ..prop..), stat= "count", hjust = -5.5) 
 
+
+# PLOT SUSPICIOUS CASES ---------------------------------------------------
+source(paste0(path_code_att,"plot_sic_diff_series.R"))
+
+# sort out cases in the table and low probability
+list.on.table = final.t[which(is.na(final.t$Z.truth)==TRUE),]
+list.high.prob = c(3,5,7,29,31,33)
+list.low.prob = list.on.table[which(list.on.table$pred.y %in% list.high.prob == TRUE),]
+
+all.case.p = paste0(list.low.prob$main,".",as.character(list.low.prob$brp), ".", list.low.prob$nearby)
+for (i in c(1:length(all.case.p))) {
+  plot_six(all.case.p[i])
+}
+
+list.low.prob$case = all.case.p
 
