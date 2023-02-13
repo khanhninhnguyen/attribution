@@ -13,7 +13,6 @@ check_contradict <- function(y, table.selected){
 }
 
 
-
 # list of station ---------------------------------------------------------
 
 win.thres = 10

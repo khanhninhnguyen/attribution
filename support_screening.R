@@ -192,21 +192,25 @@ scr.O <- function(x, method, estimator, fix.thres){
     detect.val = abs(x[candidate])
     removed <- candidate[order(detect.val, decreasing = TRUE)]
     detect.val <- abs(x[removed])
-    limit = floor(max(detect.val)*10)/10
-    last.rm <- c()
-    thres <- floor(min(abs(c(up,down)))*10)/10
-    for (i in seq(limit,thres,-0.1)) {
-      detect = which(detect.val > i)
-      E = n*2*pnorm(-i, mean = mean0, sd = sdt)
-      npj = myround(length(detect)-E)
-      if(npj >0){
-        detect.rm = detect[1:npj]
-        last.rm <- c(last.rm, removed[detect.rm])
-        removed <- removed[-detect.rm]
-        detect.val <- detect.val[-detect.rm]
+    limit = floor(max(detect.val[is.finite(detect.val)], na.rm = TRUE)*10)/10
+    if(limit>100){
+      candidate.out <- c()
+    }else{
+      last.rm <- c()
+      thres <- floor(min(abs(c(up,down)))*10)/10
+      for (i in seq(limit,thres,-0.1)) {
+        detect = which(detect.val > i)
+        E = n*2*pnorm(-i, mean = mean0, sd = sdt)
+        npj = myround(length(detect)-E)
+        if(npj >0){
+          detect.rm = detect[1:npj]
+          last.rm <- c(last.rm, removed[detect.rm])
+          removed <- removed[-detect.rm]
+          detect.val <- detect.val[-detect.rm]
+        }
       }
+      candidate.out = unique(last.rm)
     }
-    candidate.out = unique(last.rm)
   }else{ candidate.out <- c()}
   if( length(candidate.out) >0 ){ 
     x.out <- x

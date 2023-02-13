@@ -71,6 +71,7 @@ screening.data.gps = 2
 vertical.correction = 1
 screen_value = 1
 screening1 = 1
+window.thres <- 10
 
 validation.file.ref = paste0(path.validation,nb_test = nb_test.ref,"-",screen_value,
                              criterion,tolerance_noise, tolerance_valid,".txt")
