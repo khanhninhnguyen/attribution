@@ -1,10 +1,10 @@
 # function to plot time series 
 source(paste0(path_code_att,"FGLS.R"))
 
-dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
-final.t = get(load(file = paste0(path_results, "attribution/Final.Table.RData")))
+dat = get(load( file = paste0(path_results,"attribution0/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
+final.t = get(load(file = paste0(path_results, "attribution0/Final.Table.RData")))
 rownames(final.t) = NULL
-lengthlist = get(load(file = paste0(path_results, "attribution/lengthlist.RData")))
+lengthlist = get(load(file = paste0(path_results, "attribution0/lengthlist.RData")))
 final.t$n1 = lengthlist$X1
 final.t$n2 = lengthlist$X2
 valid1 = get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
@@ -31,7 +31,7 @@ plot_six <- function(name.case){
   brp.ind = which(datai$date == brp)
   
   # read result FGLS for G-E
-  station1 = get(load(file = paste0(path_results,"attribution/FGLS-GE/",name.GE, "fgls.RData")))
+  station1 = get(load(file = paste0(path_results,"attribution0/FGLS-GE/",name.GE, "fgls.RData")))
   n1GE = length(na.omit(datai[(1:brp.ind),name.s]))
   n2GE = length(na.omit(datai[-(1:brp.ind),name.s]))
   
@@ -99,7 +99,7 @@ plot_six <- function(name.case){
   n1 = final.t$n1[ind.case]
   n2 = final.t$n2[ind.case]
   
-  station = get(load(file = paste0(path_results,"attribution/FGLS-full/",name.GG, "fgls.RData")))
+  station = get(load(file = paste0(path_results,"attribution0/FGLS-full/",name.GG, "fgls.RData")))
   
   name.s = "gps1.era1"
   datai = remove_na_2sides(data.i, name.s)
@@ -373,7 +373,7 @@ plot_six <- function(name.case){
   grid.newpage()
   p = (grid.arrange(GE,  EE., GG.,  G.E.,  GE., G.E, nrow = 3))
   
-  ggsave(paste0(path_results,"attribution/six_diff/", name.case,"config",final.t$pred.y[ind.case], ".jpg" ), plot = p, width = 15.5, height = 11.5, units = "cm", dpi = 1200)
+  ggsave(paste0(path_results,"attribution0/six_diff/", name.case,"config",final.t$pred.y[ind.case], ".jpg" ), plot = p, width = 15.5, height = 11.5, units = "cm", dpi = 1200)
   
 }
 # plot_six("zimm.2016-03-08.mron")

@@ -1,37 +1,32 @@
 # study the contradiction
 #  create the truncated table  ------
-G = c(1,0,-1)
-E = c(1,0,-1)
-G. = c(1,0,-1)
-E. =c(1,0,-1)
-a = expand.grid(G, E, G., E.)
-colnames(a) = c("E.", "G.", "E", "G")
-a = a[,c("G", "E", "G.", "E.")]
-Truth = a[-which(a$G==1 & a$E==1 | a$G==0 & a$E==0 | a$G==-1 & a$E==-1),]
+G=c(rep(1,9), rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9))
+E=c(rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9),rep(1,9))
+a=c(rep(0,3),rep(1,3),rep(-1,3))
+Gp=rep(a,6)
+Ep=rep(c(0,1,-1),18)
+Y=data.frame(G=G,E=E,Gp=Gp,Ep=Ep)
 
-logic.table = data.frame(gps.era = Truth$G- Truth$E, 
-                         gps.gps = Truth$G- Truth$G.,
-                         gps.era1 = Truth$G- Truth$E.,
-                         era.era = Truth$E- Truth$E.,
-                         gps1.era1 = Truth$G.- Truth$E.,
-                         gps1.era = Truth$G.- Truth$E)
-truncate.table = logic.table
-truncate.table.m = sapply(c(1:6), function(x) {
-  a = truncate.table[,x]
-  a[which(a==2)]=1
-  a[which(a==-2)]=-1
-  return(a)
-})
-truncate.table.mo = unique(truncate.table.m)
-truncate.table.5 = as.data.frame(unique(truncate.table.mo[,-1]))
-colnames(truncate.table.5) = colnames(logic.table)[2:6]
-save(truncate.table.5, file = paste0(path_results, "attribution/truncated.table.RData"))
+Z=data.frame(GE=Y$G-Y$E,GGp=Y$G-Y$Gp,GEp=Y$G-Y$Ep,EEp=Y$E-Y$Ep,GpEp=Y$Gp-Y$Ep,GpE=Y$Gp-Y$E)
+knitr::kable(head(Z))
+List.names.tot <- colnames(Z)
+
+Z.trunc <- Z 
+Z.trunc[Z.trunc==-2]=-1
+Z.trunc[Z.trunc==2]=1
+# knitr::kable(head(Z.trunc))
+
+keep.config <- c(1:3,6:15,17,19:24,26,28:30,33:40,43,46:49,52)
+Y <- Y[keep.config,]
+Z <- Z[keep.config,]
+Z.trunc <- Z.trunc[keep.config,]
+save(Z.trunc, file = paste0(path_results, "attribution0/truncated.table.RData"))
 
 # check the contradiction function ---------------
 check_contradict <- function(y, table.selected){
   names(y) = NULL
   colnames(table.selected) = NULL
-  res = sapply(c(1:36), function(x) identical(unlist(table.selected[x,]), y))
+  res = sapply(c(1:nrow(table.selected)), function(x) identical(unlist(table.selected[x,]), y))
   ind.o = which(res==TRUE)
   out = ifelse(length(ind.o)>0, ind.o, 0)
   return(out)
@@ -39,46 +34,71 @@ check_contradict <- function(y, table.selected){
 
 # convert to coded table 
 # read test result 
-Total.res = get(load(file = paste0(path_results,"attribution0/stats_test_real_data.RData")))
+Total.res = get(load(paste0(path_results,"attribution0/stats_test_real_data.RData")))
 # result for all G-E
-list.name = substr(Total.res$station, 1, 15)
-Total.res$brp = list.name
-for (i in c(1:length(unique(list.name)))) {
-  ind.i = which(Total.res$brp == unique(list.name)[i])
-  t.i = Total.res$`tG-E`[ind.i]
-  Total.res$`tG-E`[ind.i]= rep(t.i, length(ind.i))
-}
-
-
 
 convert_coded <- function(x, significance.level, length.x){
   sapply(c(1:length(x)), function(i) ifelse( (2*pnorm(-abs(as.numeric(x[i])))) < significance.level, 1*sign(x[i]), 0)) 
 }
 
-
-
 #check contradiction for different level of significance 
 trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table.RData")))
-contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded[x,]), trunc.table))
-table(unlist(contra))
 
 sig.list = seq(0.00, 0.1,0.002)[-1]
 nb.contradicted = rep(NA, length(sig.list))
+tot.res = data.frame(matrix(NA, ncol = length(sig.list), nrow = 494))
 for (j in 1:length(sig.list)) {
-  Total.coded = data.frame(matrix(NA, ncol = 5, nrow = nrow(Total.res)))
+  Total.coded = data.frame(matrix(NA, ncol = 6, nrow = nrow(Total.res)))
   for (i in c(1:nrow(Total.res))) {
-    case.i = Total.res[i, c(paste0("t", list.name.test[2:6]))]
+    case.i = Total.res[i, c(paste0("t", list.name.test[1:6]))]
     Total.coded[i,] = convert_coded(case.i, significance.level = sig.list[j])
   }
   contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded[x,]), trunc.table))
+  tot.res[,j] = contra
   nb.contradicted[j] = length(which(contra == 0))
   a = data.frame(table(contra))
+  a$per = paste0(a$contra, "-", round((a$Freq*100/494), digits = 1), "%")
   png(file = paste0(path_results,"attribution/pie", sig.list[j],".png"))
-  pie(a$Freq,a$contra)
+  pie(a$Freq,a$per)
   dev.off()
 }
 
 
-plot(sig.list, nb.contradicted)
+plot(sig.list, nb.contradicted, xlab = "Significance level", ylab = "No. contradicted cases")
+
+# plot the evolution of configurations 
+list.config.test = unique(tot.res$X50)[-c(7, 22:24)]
+count.all = data.frame(t(sapply(c(1:length(list.config.test)), function(x) sapply(c(1:50), function(y) length(which(tot.res[,y] == list.config.test[x]))))))
+colnames(count.all)= sig.list*100
+count.all$config = paste0("config.", list.config.test)
+
+dat.p = reshape2::melt(count.all, id = "config")
+
+ggplot(dat.p, aes( x = variable, y = value, col = config))+ theme_bw()+ geom_point(size=0.7)+
+  xlab("Significance level (%)") + scale_x_discrete(breaks = seq(0, 10, 1))+
+  ylab("Count")
+
+# investigate cases, where results are changing to another configuration 
+ind.inv = which(tot.res$X1 ==1 & tot.res$X25 != 1 & tot.res$X25 != 0)
+
+jump.inv = Total.res[ind.inv,c(paste0("jump", list.name.test))]
+
+dat.p = reshape2::melt(jump.inv)
+ggplot(dat.p, aes(x = variable,y = value))+ theme_bw()+ geom_boxplot(size=0.7)+
+  xlab("series") + 
+  ylab("jump")
+
+t.inv = Total.res[ind.inv,c(paste0("t", list.name.test))]
+
+dat.p = reshape2::melt(t.inv)
+ggplot(dat.p, aes(x = variable,y = value))+ theme_bw()+ 
+  geom_boxplot(size=0.7)+ geom_hline(yintercept = 1.96)
+  xlab("series") + 
+  ylab("jump")
+
+
+
+
+
 
 

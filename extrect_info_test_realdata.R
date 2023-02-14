@@ -16,7 +16,7 @@ check_contradict <- function(y, table.selected){
 # list of station ---------------------------------------------------------
 
 win.thres = 10
-full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
+full.list = get(load( file = paste0(path_results, "attribution0/list.segments.selected", win.thres,".RData")))
 full.list$station = paste0(full.list$main,".",as.character(full.list$brp), ".", full.list$nearby)
 full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]))
 # Reduced list  
@@ -30,28 +30,25 @@ rownames(reduced.list) = NULL
 
 
 # statistics of G-E -------------------------------------------------------
-
-a1 = list.files(path = paste0(path_results, "attribution/FGLS-GE/"))
-list.GE = data.frame(station = as.character(substr(a1, 1, 20)))
-ind.GE = which(list.GE$station %in% reduced.list$station == TRUE)
-list.GE = list.GE[ind.GE,]
-
-t.value.GE = sapply(c(1:length(list.GE)), function(x){
-  station = get(load(file = paste0(path_results,"attribution/FGLS-GE/", list.GE[x], "fgls.RData")))
-  station$gps.era$t.table$`t value`[9]
-} )
-
-jump.GE = sapply(c(1:length(list.GE)), function(x){
-  station = get(load(file = paste0(path_results,"attribution/FGLS-GE/", list.GE[x], "fgls.RData")))
-  station$gps.era$t.table$Estimate[9]
-} )
+list.GE.need = as.character(substr(reduced.list$station, 1, 15))
+list.all.GE = as.character(substr(list.files(path = paste0(path_results, "attribution0/FGLS-GE/")), 1, 20)) 
+res.GE = as.data.frame(matrix(NA, ncol = 2, nrow = length(list.GE.need)))
+for (i in c(1:length(list.GE.need))) {
+  case.i = list.GE.need[i]
+  ind.list = stringr::str_detect(list.all.GE, case.i)
+  ind = which(ind.list==TRUE)[1]
+  station = get(load(file = paste0(path_results,"attribution0/FGLS-GE/", list.all.GE[ind], "fgls.RData")))
+  t = station$gps.era$t.table$`t value`[9]
+  jump = station$gps.era$t.table$Estimate[9]
+  res.GE[i,] = c(jump, t)
+}
 
 # statistics of 5 others --------------------------------------------------
 
 Total.res = data.frame(matrix(NA, ncol = 15, nrow = nrow(reduced.list)))
 for (i in c(1:nrow(reduced.list))) {
   name.i = reduced.list$station[i]
-  dat.i = get(load(file = paste0(path_results,"attribution/FGLS-full/", name.i, "fgls.RData")))
+  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-full/", name.i, "fgls.RData")))
   jump.est = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$Estimate[9])
   t.values = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$`t value`[9])
   p.values = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$`Pr(>|t|)`[9])
@@ -61,12 +58,12 @@ for (i in c(1:nrow(reduced.list))) {
 colnames(Total.res) = c(paste0("jump", list.name.test[2:6]), paste0("t", list.name.test[2:6]), paste0("p", list.name.test[2:6]))
 
 # add the G_E
-Total.res[,c(paste0("jump", list.name.test[1]), paste0("t", list.name.test[1]))] = NA
-ind.GE1 = which(reduced.list$station %in% list.GE == TRUE)
-
-Total.res$`jumpG-E`[ind.GE1] = jump.GE
-Total.res$`tG-E`[ind.GE1] = t.value.GE
-
+# ind.GE1 = which(reduced.list$station %in% list.GE == TRUE)
+# 
+# Total.res$`jumpG-E`[ind.GE1] = jump.GE
+# Total.res$`tG-E`[ind.GE1] = t.value.GE
+# change to have all replicated values in stead of 1 value for the longest 
+Total.res[,c( paste0("jump", list.name.test[1]), paste0("t", list.name.test[1]))] = res.GE
 Total.res = Total.res[,c(paste0("jump", list.name.test[1:6]), paste0("t", list.name.test[1:6]))]
 # add the significance code -----------------------------------------------
 
@@ -80,8 +77,8 @@ Total.res = cbind(Total.res, Total.coded)
 
 # check contracdiction
 
-trunc.table = get(load(file = paste0(path_results, "attribution/truncated.table.RData")))
-contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded[x,c(2:6)]), trunc.table)
+trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table.RData")))
+contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded[x,c(1:6)]), trunc.table)
 )
 
 Total.res$config = contra
@@ -89,7 +86,7 @@ Total.res$config = contra
 Total.res$distance = reduced.list$distances
 # length 
 
-last.result = read.table(file = paste0(path_results,"attribution/FGLS_on_real_data_t.txt"),
+last.result = read.table(file = paste0(path_results,"attribution0/FGLS_on_real_data_t.txt"),
                          header = TRUE, 
                          stringsAsFactors = FALSE)
 
@@ -98,17 +95,17 @@ Total.res$station = reduced.list$station
 
 # Add length of series 
 
-lengthlist = get(load(file = paste0(path_results, "attribution/lengthlist.RData")))
+lengthlist = get(load(file = paste0(path_results, "attribution0/lengthlist.RData")))
 Total.res$n1 = lengthlist$X1
 Total.res$n2 = lengthlist$X2
 
-save(Total.res, file = paste0(path_results,"stats_test_real_data.RData"))
+save(Total.res, file = paste0(path_results,"attribution0/stats_test_real_data.RData"))
 
 # To send 
 
 Total.res <- Total.res %>% dplyr::select(-c(config, station))
 Total.res = cbind(reduced.list[,c(1:3)], Total.res)
-write.table(Total.res, file = paste0(path_results,"stats_test_real_data.txt"), quote = FALSE, row.names = FALSE, sep = "\t")
+write.table(Total.res, file = paste0(path_results,"attribution0/stats_test_real_data.txt"), quote = FALSE, row.names = FALSE, sep = "\t")
 
 # 
 # b = which(a$l2<1000 & a$de>100) 
@@ -122,7 +119,7 @@ var.res = data.frame(matrix(NA, ncol = 10, nrow = nrow(reduced.list)))
 # for the 5 series
 for (i in c(1:nrow(reduced.list))) {
   name.i = reduced.list$station[i]
-  dat.i = get(load(file = paste0(path_results,"attribution/FGLS-full/", name.i, "fgls.RData")))
+  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-full/", name.i, "fgls.RData")))
   arma.coefs = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$coef.arma)
   
   var.inf = sapply(c(2:6), function(x){
@@ -140,7 +137,7 @@ arima.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
 var.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
 for (i in c(1:length(list.GE))) {
   name.i = list.GE[i]
-  dat.i = get(load(file = paste0(path_results,"attribution/FGLS-GE/", name.i, "fgls.RData")))
+  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-GE/", name.i, "fgls.RData")))
   arma.coefs = dat.i$gps.era$coef.arma
   
   var.inf = sapply(c(1), function(x){
@@ -164,8 +161,8 @@ all.var = cbind(var.res.1.m, var.res)
 colnames(all.var) = c(paste0(c("mean.","range"), rep(list.name.test,each=2)))
 colnames(all.arima) = c(paste0(c("phi.","theta"), rep(list.name.test,each=2)))
 
-write.table(format(all.var, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data_var.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
-write.table(format(all.arima, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data_autocorrelation.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+write.table(format(all.var, digits=2), file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+write.table(format(all.arima, digits=2), file = paste0(path_results, "attribution0/FGLS_on_real_data_autocorrelation.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
 
 
 
