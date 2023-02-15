@@ -58,7 +58,9 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
       sigma.sim = gen.test$sigma.t[,l]
     }
     ar = gen.test$ar[l]
+    print(ar)
     ma = list.ma[l]
+    print(ma)
     for (i in c(1:nb.sim)) {
       set.seed(i)
       if(length(sigma.sim)==1){
@@ -311,9 +313,11 @@ case = data.frame(h = rep(c(0,1,1,1),2),
                   a = rep(c(1,0,1,1),2), 
                   offset = rep(c(0, 0.3), each = 4), 
                   x.axis = rep(c("rho", "sig"),4))
-
-
-for (j in c(3:4)) {
+nb.sim=10
+list.param.sig = seq(0,0.8,0.2)
+list.ma = seq(0,0.6,0.3)
+list.param.ar = rep(0, length(list.ma))
+for (j in c(1:2)) {
     off.set = case$offset[j]
     heteroscedast = case$h[j]
     autocor = case$a[j]
@@ -322,11 +326,11 @@ for (j in c(3:4)) {
       noise.list = c(0,0,0)
       model.name = "white"
     }else{
-      noise.list = c(1,0,0)
-      model.name = "ar1"
+      noise.list = c(0,0,1)
+      model.name = "ma1"
     }
     a = simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim=nb.sim, list.param.ar, list.param.sig,list.ma = list.ma,
-                         noise.model=noise.list, noise.name = model.name)
+                         noise.model=noise.list, noise.name = model.name, n = 400, length.wind = 60)
     print(j)
 }
 noise.list = c(1,0,1)
