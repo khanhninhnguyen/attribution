@@ -143,7 +143,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   }
   
   
-  Boot <- function(type.dataset,Z.trunc.code,NbSim){
+  Boot <- function(type.dataset,Z.trunc.code,NbSim, seed){
     config=c()
     Data.res <- c()
     Nbconfig <- nrow(Z.trunc.code)
@@ -160,6 +160,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
         Pop <- c()
         code.names.series <- config.code[which(colnames(Z.trunc.code) %in% .x)]
         eval(parse(text=paste0("Pop=Pop.",.x,".",type.dataset,"[[",code.names.series,"]]")))
+        set.seed(seed[c])
         res.t=sample(Pop,Nb.config.c , replace = TRUE)
         return(res.t)
       }) %>% bind_cols() %>% as.data.frame()
@@ -292,9 +293,12 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   
   for (b in 1:B){
     
+    set.seed(b)
+    seed.learn = sample(c(1:10000), 36, replace = FALSE)
+    set.seed(b+20)
+    seed.test = sample(c(1:10000), 36, replace = FALSE)
     ######
     # Vfold 
-    set.seed(b)
     existing.pop.Learn <- 0
     existing.pop.Test <- 0
     
@@ -335,8 +339,8 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     
     DataLearn <- c()
     DataTest <- c()
-    DataLearn <- Boot("Learn",Z.trunc.final.code,NbSimLearn)
-    DataTest <- Boot("Test",Z.trunc.final.code,NbSimTest)
+    DataLearn <- Boot("Learn",Z.trunc.final.code,NbSimLearn,seed.learn)
+    DataTest <- Boot("Test",Z.trunc.final.code,NbSimTest, seed.test)
     saveRDS(DataLearn, file = paste0(file_path_Results,"DataLearn_",b,significance.level, offset, GE, number.pop,".rds"))
     saveRDS(DataTest, file = paste0(file_path_Results,"DataTest_",b,significance.level, offset, GE, number.pop,".rds"))
     
@@ -361,7 +365,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   print(apply(error.test.4.methods,2,sd))
   print(apply(error.test.4.methods,2,which.min))
   
-  b = apply(error.test.4.methods,2,which.min)
+  b = apply(error.test.4.methods,2,which.min)[4]
   FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b,significance.level, offset, GE, number.pop,".rds"))
   Thresh <- significance.level
   p.values.i=c()

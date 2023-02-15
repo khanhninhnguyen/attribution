@@ -557,3 +557,21 @@ b2 = na.omit(b2)
 
 
 d =  get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+
+var.list = c(1:5)
+res.tot = rep(NA, 5)
+for (j in c(1:5)) {
+  res.j = rep(NA, 1000)
+  for(i in c(1:1000)){
+    set.seed(i)
+    x1 = rnorm(300, 0,var.list[j])
+    set.seed(i+1000)
+    x2 = rnorm(300, 0,var.list[j])
+    res.i = t.test(x1, x2)
+    res.j[i] = res.i$p.value
+  }
+  res.tot[j] = length(which(res.j<0.05))
+}
+
+
+

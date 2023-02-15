@@ -38,7 +38,7 @@ Total.res = get(load(paste0(path_results,"attribution0/stats_test_real_data.RDat
 # result for all G-E
 
 convert_coded <- function(x, significance.level, length.x){
-  sapply(c(1:length(x)), function(i) ifelse( (2*pnorm(-abs(as.numeric(x[i])))) < significance.level, 1*sign(x[i]), 0)) 
+  sapply(c(1:length(x)), function(i) ifelse( (2*pnorm(-abs(as.numeric(x[i])))) < significance.level[i], 1*sign(x[i]), 0)) 
 }
 
 #check contradiction for different level of significance 
@@ -50,15 +50,20 @@ tot.res = data.frame(matrix(NA, ncol = length(sig.list), nrow = 494))
 for (j in 1:length(sig.list)) {
   Total.coded = data.frame(matrix(NA, ncol = 6, nrow = nrow(Total.res)))
   for (i in c(1:nrow(Total.res))) {
+    if(Total.res$distance[i] <25){
+      sig.level = rep(0.002, 6)
+    }else{
+      sig.level =  c(0.002, 0.05, 0.05, 0.05, 0.05, 0.002, 0.05)
+    }
     case.i = Total.res[i, c(paste0("t", list.name.test[1:6]))]
-    Total.coded[i,] = convert_coded(case.i, significance.level = sig.list[j])
+    Total.coded[i,] = convert_coded(case.i, significance.level =sig.level)
   }
   contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded[x,]), trunc.table))
   tot.res[,j] = contra
   nb.contradicted[j] = length(which(contra == 0))
   a = data.frame(table(contra))
   a$per = paste0(a$contra, "-", round((a$Freq*100/494), digits = 1), "%")
-  png(file = paste0(path_results,"attribution/pie", sig.list[j],".png"))
+  png(file = paste0(path_results,"attribution/pie3",".png"))
   pie(a$Freq,a$per)
   dev.off()
 }

@@ -28,6 +28,6 @@ screening(path_code_att, path_results, window.thres, nearby_ver)
 
 # predictive rule ---------------------------------------------------------
 source(paste0(path_code_att,"predictive_rule.R"))
-predictive_rule(path_results, significance.level = 0.05, offset = 0, GE = 0, number.pop =3, R=10)
+predictive_rule(path_results, significance.level = 0.01, offset = 0, GE = 0, number.pop =3, R=100)
 
 
