@@ -84,6 +84,8 @@ contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Tota
 Total.res$config = contra
 # combine all results
 Total.res$distance = reduced.list$distances
+Total.res$ver.distance = reduced.list$ver.dist
+
 # length 
 
 last.result = read.table(file = paste0(path_results,"attribution0/FGLS_on_real_data_t.txt"),

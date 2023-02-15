@@ -291,12 +291,13 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   
   error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
   
+  set.seed(1)
+  
   for (b in 1:B){
     
-    set.seed(b)
-    seed.learn = sample(c(1:10000), 36, replace = FALSE)
-    set.seed(b+20)
-    seed.test = sample(c(1:10000), 36, replace = FALSE)
+    # seed.learn = sample(c(1:10000), 36, replace = FALSE)
+    # set.seed(b+20)
+    # seed.test = sample(c(1:10000), 36, replace = FALSE)
     ######
     # Vfold 
     existing.pop.Learn <- 0
