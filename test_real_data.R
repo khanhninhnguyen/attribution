@@ -1,11 +1,11 @@
 # this function used for the test of the real data
 win.thres = 10
-dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres, "years_", nearby_ver,"screened.RData")))
+dat = get(load( file = paste0(path_results,"attribution0/data.all_", win.thres, "years_", nearby_ver,"screened.RData")))
 source(paste0(path_code_att,"FGLS.R"))
-order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
-coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
 # reduced list of cases 
-full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData")))
+full.list = get(load( file = paste0(path_results, "attribution0/list.segments.selected", win.thres,".RData")))
 full.list$station = paste0(full.list$main,".",as.character(full.list$brp), ".", full.list$nearby)
 full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]))
 full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4:5)]))
@@ -20,16 +20,16 @@ order.arma.l1 = lapply(list.test, function(x) {
   return(a[ind.sel,])})
 # run the FGLS 
 all.res = list()
-a1 = list.files(path = paste0(path_results, "attribution/FGLS-GE/"))
-list.old = as.character(substr(a1, 1, 20))
-a2 =  as.character(substr(reduced.list$station, 1, 20))
-list.select = which(a2 %in% list.old == FALSE)
+# a1 = list.files(path = paste0(path_results, "attribution0/FGLS-GE/"))
+# list.old = as.character(substr(a1, 1, 20))
+# a2 =  as.character(substr(reduced.list$station, 1, 20))
+# list.select = which(a2 %in% list.old == FALSE)
 
 for (i in c(list.select)) {
   df = dat[[reduced.list$station[i]]]
   fit.i = list()
   name.i = reduced.list$station[i]
-  list.6 = c(2:6)
+  list.6 = c(1:6)
   for (j in list.6) {
     name.series = list.test[j]
     df.test = remove_na_2sides(df, name.series)
@@ -63,7 +63,7 @@ for (i in c(list.select)) {
     print(noise.model)
     fit.i[[name.series]] = fit.fgls
   }
-  save(fit.i, file = paste0(path_results,"attribution/FGLS/", name.i, "fgls.RData"))
+  save(fit.i, file = paste0(path_results,"attribution0/FGLS/", name.i, "fgls.RData"))
   all.res[[i]] = fit.i
   
   print(i)

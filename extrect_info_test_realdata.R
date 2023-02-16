@@ -116,11 +116,12 @@ write.table(Total.res, file = paste0(path_results,"attribution0/stats_test_real_
 # Additional information: variance and ARMA(1,1) model --------------------
 
 # arima model and variance 
-arima.res = data.frame(matrix(NA, ncol = 10, nrow = nrow(reduced.list)))
-var.res = data.frame(matrix(NA, ncol = 10, nrow = nrow(reduced.list)))
+arima.res = data.frame(matrix(NA, ncol = 12, nrow = nrow(reduced.list)))
+var.res = data.frame(matrix(NA, ncol = 12, nrow = nrow(reduced.list)))
 # for the 5 series
 for (i in c(1:nrow(reduced.list))) {
   name.i = reduced.list$station[i]
+  # 5 tests
   dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-full/", name.i, "fgls.RData")))
   arma.coefs = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$coef.arma)
   
@@ -130,41 +131,46 @@ for (i in c(1:nrow(reduced.list))) {
     range. = mean(sapply(c(1:ye), function(x) (max(y[(365*x):(365*(x-1))],na.rm=TRUE) - min(y[(365*x):(365*(x-1))],na.rm=TRUE))/2 ))
     return(list(mean(y, na.rm =TRUE), range.))
   }) 
-  
-  arima.res[i,] = unlist(arma.coefs )
-  var.res[i,] = unlist(var.inf)
-}
-# for G-E
-arima.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
-var.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
-for (i in c(1:length(list.GE))) {
-  name.i = list.GE[i]
-  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-GE/", name.i, "fgls.RData")))
-  arma.coefs = dat.i$gps.era$coef.arma
-  
-  var.inf = sapply(c(1), function(x){
-    y = na.omit(dat.i$gps.era$var)
+  # G-E 
+  ind.list = stringr::str_detect(list.all.GE, list.GE.need[i])
+  ind = which(ind.list==TRUE)[1]
+  station = get(load(file = paste0(path_results,"attribution0/FGLS-GE/", list.all.GE[ind], "fgls.RData")))
+  var.GE = sapply(c(1), function(x){
+    y = na.omit(station[[list.test[x]]]$var)
     ye = round(length(y)/365)
     range. = mean(sapply(c(1:ye), function(x) (max(y[(365*x):(365*(x-1))],na.rm=TRUE) - min(y[(365*x):(365*(x-1))],na.rm=TRUE))/2 ))
     return(list(mean(y, na.rm =TRUE), range.))
   }) 
-  
-  arima.res.1[i,] = unlist(arma.coefs )
-  var.res.1[i,] = unlist(var.inf)
+  arima.res[i,] = unlist(cbind(station$gps.era$coef.arma, arma.coefs))
+  var.res[i,] = unlist(cbind(var.GE, var.inf))
 }
-arima.res.1.m =  data.frame(matrix(NA, ncol = 2, nrow = nrow(reduced.list)))
-arima.res.1.m[which(reduced.list$station %in% list.GE == TRUE),] =  arima.res.1
-all.arima = cbind(arima.res.1.m, arima.res)
+# for G-E
+# arima.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
+# var.res.1 = data.frame(matrix(NA, ncol = 2, nrow = length(list.GE)))
+# for (i in c(1:length(list.GE))) {
+#   name.i = list.GE[i]
+#   dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-GE/", name.i, "fgls.RData")))
+#   arma.coefs = dat.i$gps.era$coef.arma
+#   
+#   var.inf = sapply(c(1), function(x){
+#     y = na.omit(dat.i$gps.era$var)
+#     ye = round(length(y)/365)
+#     range. = mean(sapply(c(1:ye), function(x) (max(y[(365*x):(365*(x-1))],na.rm=TRUE) - min(y[(365*x):(365*(x-1))],na.rm=TRUE))/2 ))
+#     return(list(mean(y, na.rm =TRUE), range.))
+#   }) 
+#   
+#   arima.res.1[i,] = unlist(arma.coefs )
+#   var.res.1[i,] = unlist(var.inf)
+# }
+# 
+# arima.res.1.m =  data.frame(matrix(NA, ncol = 2, nrow = nrow(reduced.list)))
+# arima.res.1.m[which(reduced.list$station %in% list.GE == TRUE),] =  arima.res.1
 
-var.res.1.m =  data.frame(matrix(NA, ncol = 2, nrow = nrow(reduced.list)))
-var.res.1.m[which(reduced.list$station %in% list.GE == TRUE),] =  var.res.1
-all.var = cbind(var.res.1.m, var.res)
+colnames(var.res) = c(paste0(c("mean.","range"), rep(list.name.test,each=2)))
+colnames(arima.res) = c(paste0(c("phi.","theta"), rep(list.name.test,each=2)))
 
-colnames(all.var) = c(paste0(c("mean.","range"), rep(list.name.test,each=2)))
-colnames(all.arima) = c(paste0(c("phi.","theta"), rep(list.name.test,each=2)))
-
-write.table(format(all.var, digits=2), file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
-write.table(format(all.arima, digits=2), file = paste0(path_results, "attribution0/FGLS_on_real_data_autocorrelation.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+write.table(format(var.res, digits=2), file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
+write.table(format(arima.res, digits=2), file = paste0(path_results, "attribution0/FGLS_on_real_data_autocorrelation.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
 
 
 

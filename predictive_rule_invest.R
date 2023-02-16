@@ -195,4 +195,4 @@ for (i in c(1:length(all.case.p))) {
 }
 
 list.low.prob$case = all.case.p
-all.case.p = "wes2.2006-05-27.npri"
+all.case.p = "auck.2016-07-22.wark"
