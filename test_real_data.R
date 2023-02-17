@@ -24,7 +24,9 @@ all.res = list()
 # a2 =  as.character(substr(reduced.list$station, 1, 20))
 # list.select = which(a2 %in% list.old == FALSE)
 
-for (i in c(list.select)) {
+list.ind = c(1:494)
+ind.sel1 = list.ind[which(list.ind %in% ind.sel == FALSE)]
+for (i in c(ind.sel1)) {
   df = dat[[reduced.list$station[i]]]
   fit.i = list()
   name.i = reduced.list$station[i]

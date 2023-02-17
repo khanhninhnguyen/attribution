@@ -1,4 +1,6 @@
-# extract infor from the test on the real data 
+
+# OLD DATA SET ------------------------------------------------------------
+## FUNCTION:extract infor from the test on the real data IN THE OLD DATA SET -----------------
 
 convert_coded <- function(x){
   sapply(c(1:length(x)), function(i) ifelse(abs(x[i])>1.96, 1*sign(x[i]), 0)) 
@@ -13,7 +15,7 @@ check_contradict <- function(y, table.selected){
 }
 
 
-# list of station ---------------------------------------------------------
+## list of station ---------------------------------------------------------
 
 win.thres = 10
 full.list = get(load( file = paste0(path_results, "attribution0/list.segments.selected", win.thres,".RData")))
@@ -29,7 +31,7 @@ rownames(reduced.list) = NULL
 
 
 
-# statistics of G-E -------------------------------------------------------
+## statistics of G-E -------------------------------------------------------
 list.GE.need = as.character(substr(reduced.list$station, 1, 15))
 list.all.GE = as.character(substr(list.files(path = paste0(path_results, "attribution0/FGLS-GE/")), 1, 20)) 
 res.GE = as.data.frame(matrix(NA, ncol = 2, nrow = length(list.GE.need)))
@@ -43,7 +45,7 @@ for (i in c(1:length(list.GE.need))) {
   res.GE[i,] = c(jump, t)
 }
 
-# statistics of 5 others --------------------------------------------------
+## statistics of 5 others --------------------------------------------------
 
 Total.res = data.frame(matrix(NA, ncol = 15, nrow = nrow(reduced.list)))
 for (i in c(1:nrow(reduced.list))) {
@@ -65,7 +67,7 @@ colnames(Total.res) = c(paste0("jump", list.name.test[2:6]), paste0("t", list.na
 # change to have all replicated values in stead of 1 value for the longest 
 Total.res[,c( paste0("jump", list.name.test[1]), paste0("t", list.name.test[1]))] = res.GE
 Total.res = Total.res[,c(paste0("jump", list.name.test[1:6]), paste0("t", list.name.test[1:6]))]
-# add the significance code -----------------------------------------------
+## add the significance code -----------------------------------------------
 
 Total.coded = data.frame(matrix(NA, ncol = 6, nrow = nrow(Total.res)))
 for (i in c(1:nrow(Total.res))) {
@@ -113,7 +115,7 @@ write.table(Total.res, file = paste0(path_results,"attribution0/stats_test_real_
 # b = which(a$l2<1000 & a$de>100) 
 # save(b, file = paste0(path_results, "attribution/add.list.RData"))
 
-# Additional information: variance and ARMA(1,1) model --------------------
+## Additional information: variance and ARMA(1,1) model --------------------
 
 # arima model and variance 
 arima.res = data.frame(matrix(NA, ncol = 12, nrow = nrow(reduced.list)))
@@ -173,5 +175,36 @@ write.table(format(var.res, digits=2), file = paste0(path_results, "attribution0
 write.table(format(arima.res, digits=2), file = paste0(path_results, "attribution0/FGLS_on_real_data_autocorrelation.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
 
 
+
+
+
+
+
+# NEW DATA SET  -----------------------------------------------------------
+
+list.all.file = list.files(path = paste0(path_results, "attribution0/FGLS/"))
+list.all.file.name = substr(list.all.file, 1, 20)
+win.thres = 10
+full.list = get(load( file = paste0(path_results, "attribution0/list.segments.selected", win.thres,".RData")))
+full.list$station = paste0(full.list$main,".",as.character(full.list$brp), ".", full.list$nearby)
+full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]))
+# Reduced list  
+full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4:5)]))
+ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>200)
+# ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>270)
+reduced.list = full.list[ind.sel,]
+reduced.list = reduced.list[-8,]
+rownames(reduced.list) = NULL
+
+# Statistics of all 6 -----------------------------------------------------
+Total.res = data.frame(matrix(NA, ncol = 15, nrow = nrow(reduced.list)))
+for (i in c(1:nrow(reduced.list))) {
+  name.i = reduced.list$station[i]
+  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-full/", name.i, "fgls.RData")))
+  jump.est = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$Estimate[9])
+  t.values = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$`t value`[9])
+  p.values = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$`Pr(>|t|)`[9])
+  Total.res[i,] = c(jump.est, t.values, p.values)
+}
 
 
