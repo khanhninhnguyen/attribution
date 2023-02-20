@@ -1,6 +1,4 @@
-
-# OLD DATA SET ------------------------------------------------------------
-## FUNCTION:extract infor from the test on the real data IN THE OLD DATA SET -----------------
+# FUNCTION:extract infor from the test on the real data IN THE OLD DATA SET -----------------
 
 convert_coded <- function(x){
   sapply(c(1:length(x)), function(i) ifelse(abs(x[i])>1.96, 1*sign(x[i]), 0)) 
@@ -14,7 +12,7 @@ check_contradict <- function(y, table.selected){
   return(out)
 }
 
-
+# OLD DATA SET ------------------------------------------------------------
 ## list of station ---------------------------------------------------------
 
 win.thres = 10

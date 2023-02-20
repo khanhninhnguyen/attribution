@@ -376,6 +376,142 @@ plot_six <- function(name.case){
   ggsave(paste0(path_results,"attribution0/six_diff/", name.case,"config",final.t$pred.y[ind.case], ".jpg" ), plot = p, width = 15.5, height = 11.5, units = "cm", dpi = 1200)
   
 }
+
+plot_FGLS_details <- function(name.case, name.series, lab.y){
+  
+  # name of main and 5 others
+  brp =  as.Date(substr(name.case, 6, 15),format="%Y-%m-%d")
+  station.name = substr(name.case, 1, 4)
+  station.nearby =  substr(name.case, 17, 20)
+  ind.case = which(all.case %in% name.case == TRUE)
+  
+  # plot for G-E------------------------
+  station = get(load(file = paste0(path_results,"attribution0/FGLS/",name.case, "fgls.RData")))
+  datai = station[[name.series]]$design.matrix
+  brp.ind = which(datai$date == brp)
+  
+  # read result FGLS for G-E
+  n1GE = length(na.omit(datai[(1:brp.ind),"signal"]))
+  n2GE = length(na.omit(datai[-(1:brp.ind),"signal"]))
+  
+  begin.date = datai$date[1]
+  end.date = datai$date[length(datai$date)]
+  
+  # # add the fit and Fourier series
+  # datai$fit = station[[name.series]]$t.table$Estimate[10]
+  # datai$fit[(brp.ind+1):nrow(datai)] = station[[name.series]]$t.table$Estimate[10] + station[[name.series]]$t.table$Estimate[9]
+  # datai$fourier = as.matrix(datai[,c(2:9)]) %*% as.matrix(station[[name.series]]$t.table$Estimate[1:8])
+  
+  datai$fit = NA
+  datai$fit[which(is.na(datai$signal) == FALSE)] = station[[name.series]]$fit
+  # add infor of test 
+  text1 = paste0(toupper(name.case), ", Jump = ", round(station[[name.series]]$t.table$Estimate[9], digits = 2), 
+                 ", t = ", round(station[[name.series]]$t.table$`t value`[9], digits = 2), 
+                 ", SD = ", round(mean(sqrt(station[[name.series]]$var), na.rm = TRUE) , digits = 2), 
+                 ", AR: ", round(station[[name.series]]$coef.arma$phi, digits = 2), ", MA: ", round(station[[name.series]]$coef.arma$theta, digits = 2),
+                 ", n1 = ", n1GE, ", n2 = ", n2GE)
+  
+  set.margin = list(lower = floor(min(datai$signal, na.rm = TRUE)),
+                    upper = ceiling(max(datai$signal, na.rm = TRUE)))
+  # datai$fourier = datai$fourier - abs(min(datai$signal, na.rm = TRUE)) -1
+  # plot metadata 
+  meta.g = valid1[which(valid1$name == station.name),]
+  meta.g = meta.g[which(meta.g$known>begin.date & meta.g$known<end.date),]
+  list.meta = meta.g$known
+  if(nrow(meta.g)>0){
+    datai$meta = NA
+    datai$meta[which( datai$date %in% list.meta == TRUE)] = set.margin$upper
+  }
+  
+  p <- ggplot(data = datai, aes(x = date)) +
+    theme_bw() + 
+    geom_line(aes(y = signal), col = "gray", lwd = 0.3)+ 
+    geom_vline(xintercept = brp, lwd = 0.2)+ 
+    labs(subtitle = text1)+
+    geom_line(aes(y = fit), col = "red", lwd = 0.3)+
+    # geom_line(aes(y = fourier), col = "blue", lwd = 0.3)+
+    ylab(lab.y) + xlab("")+
+    theme(axis.text.x = element_text(size = 5), 
+          axis.text.y = element_text(size = 5),
+          legend.text=element_text(size=4),
+          axis.title = element_text(size = 5), 
+          legend.key.size = unit(0.3, "cm"), 
+          plot.tag = element_text(size = 5), 
+          plot.subtitle = element_text(size = 5),
+          legend.title=element_blank(), 
+          legend.position = "none")
+  
+  
+  
+  if(nrow(meta.g)>0){
+    p <- p +
+      geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
+  }
+  
+  # plot the residual 
+  datai$sd = sqrt(station[[name.series]]$var) - abs(min(datai$residual, na.rm = TRUE)) -1 
+  set.margin1 = list(lower = floor(min(datai$sd, na.rm = TRUE)),
+                    upper = ceiling(max(datai$residual, na.rm = TRUE)))
+  p1 <- ggplot(data = datai, aes(x = date)) +
+    theme_bw() + 
+    geom_line(aes(y = residual), col = "gray", lwd = 0.3)+ 
+    geom_line(aes(y = sd), col = "red", lwd = 0.3)+ 
+    geom_vline(xintercept = brp, lwd = 0.2)+ 
+    ylab("Residual") + xlab("")+
+    scale_y_continuous(breaks = seq(set.margin1$lower, set.margin1$upper,1),
+                       limits = c(set.margin1$lower, set.margin1$upper))+
+    theme(axis.text.x = element_text(size = 5), 
+          axis.text.y = element_text(size = 5),
+          legend.text=element_text(size=4),
+          axis.title = element_text(size = 5), 
+          legend.key.size = unit(0.3, "cm"), 
+          plot.tag = element_text(size = 5), 
+          plot.subtitle = element_text(size = 5),
+          legend.title=element_blank(), 
+          legend.position = "none",plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
+  
+  # plot the normalized residual 
+  order.aima = c(ifelse(station$gps.era$coef.arma$phi !=0, 1,0), 0, ifelse(station$gps.era$coef.arma$theta !=0, 1,0))
+  names(order.aima) = NULL
+  arima.fit = arima(datai$norm.res,order = order.aima)
+  port.test = Box.test(arima.fit$residuals)
+  p2 <- ggplot(data = datai, aes(x = date)) +
+    theme_bw() + 
+    geom_line(aes(y = norm.res), col = "gray", lwd = 0.3)+ 
+    geom_vline(xintercept = brp, lwd = 0.2)+ 
+    ylab("Normalized Residual") + xlab("")+
+    labs(subtitle = paste("mean = ", round(mean(datai$norm.res, na.rm = TRUE), digits = 2), 
+                          " sd = ", round(sd(datai$norm.res, na.rm = TRUE), digits = 2), 
+                          " p.portmanteau =", round(port.test$p.value, digits = 2))) +
+    theme(axis.text.x = element_text(size = 5), 
+          axis.text.y = element_text(size = 5),
+          legend.text=element_text(size=4),
+          axis.title = element_text(size = 5), 
+          legend.key.size = unit(0.3, "cm"), 
+          plot.tag = element_text(size = 5), 
+          plot.subtitle = element_text(size = 5),
+          legend.title=element_blank(), 
+          legend.position = "none",plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
+  grid.newpage()
+  G <- ggplotGrob(p)
+  G1 <- ggplotGrob(p1)
+  G2 <- ggplotGrob(p2)
+  G$widths <- G2$widths
+  G1$widths <- G2$widths
+  p.all = (grid.arrange(p, p1, p2, nrow = 3))
+  
+  ggsave(paste0(path_results,"attribution0/six_diff/", name.case,"config",final.t$pred.y[ind.case], name.series,".jpg" ), plot = p.all, width = 8.8, height = 10, units = "cm", dpi = 1200)
+  
+}
+
+plot_six_details <- function(name.case){
+  for (name.s in c(1:6)) {
+    name.series = list.test[name.s]
+    lab.y = list.name.test[name.s]
+    plot_FGLS_details(name.case, name.series, lab.y)
+  }
+}
+
 plot_six_residual <- function(name.case){
   
   # name of main and 5 others
@@ -738,3 +874,6 @@ plot_six_residual <- function(name.case){
   ggsave(paste0(path_results,"attribution0/six_diff/", name.case,"config",final.t$pred.y[ind.case], ".jpg" ), plot = p, width = 15.5, height = 11.5, units = "cm", dpi = 1200)
   
 }
+# 
+# plot_FGLS_details(name.case = "pots.2016-06-05.d020", name.series = "gps.era", lab.y = "G-E")
+plot_six_details(name.case = "mate.2018-04-17.mni2")

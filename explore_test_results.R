@@ -8,14 +8,16 @@ all.arima = read.csv(file = paste0(path_results, "attribution0/FGLS_on_real_data
 # catch the problematic cases  --------------------------------------------
 
 ## case of G-G' = 0 --------------------------------------------------------
-data.GG = Total.res[which(Total.res$`G-G'`==0),]
+data.GG = Total.res[which(abs(Total.res$`tG-G'`)>1.96 & abs(Total.res$`tG-G'`)<3.1 & Total.res$distance <50),]
 all.case.p = data.GG$station
 for (i in c(1:length(all.case.p))) {
   plot_six(all.case.p[i])
 }
 ### variance plot 
-dat.p = data.frame(mean.msd = (all.var$`mean.G-G'`)/(all.var$`mean.G-E`), sig = as.factor(Total.res$`G-G'`))
-ggplot(data = dat.p, aes(x = sig, y = mean.msd))+theme_bw()+
+dat.p = data.frame(mean.msd = (all.var$`mean.G-G'`)/(all.var$`mean.G-E`),
+                   sig = as.factor(Total.res$`G-G'`),
+                   distance = Total.res$distance)
+ggplot(data = dat.p, aes(x = sig, y = distance))+theme_bw()+
   geom_boxplot()
 ### length plot  
 dat.p = data.frame(n = Total.res$n1+ Total.res$n2, sig = as.factor(Total.res$`G-G'`))
