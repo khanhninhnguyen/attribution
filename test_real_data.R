@@ -10,7 +10,7 @@ full.list$station = paste0(full.list$main,".",as.character(full.list$brp), ".", 
 full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]))
 full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4:5)]))
 ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc >200 )
-ind.sel = ind.sel[ind.sel!=8]
+ind.sel = ind.sel[-8]
 reduced.list = full.list[ind.sel,]
 rownames(reduced.list) = NULL
 

@@ -180,7 +180,7 @@ write.table(format(arima.res, digits=2), file = paste0(path_results, "attributio
 
 
 
-# NEW DATA SET  -----------------------------------------------------------
+### NEW DATA SET  -----------------------------------------------------------
 
 list.all.file = list.files(path = paste0(path_results, "attribution0/FGLS/"))
 list.all.file.name = substr(list.all.file, 1, 20)
@@ -191,20 +191,46 @@ full.list$nbc = sapply(c(1:nrow(full.list)), function(x) min(full.list[x,c(4:5)]
 # Reduced list  
 full.list$nbc.max = sapply(c(1:nrow(full.list)), function(x) max(full.list[x,c(4:5)]))
 ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>200)
-# ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$nbc>270)
 reduced.list = full.list[ind.sel,]
 reduced.list = reduced.list[-8,]
 rownames(reduced.list) = NULL
 
-# Statistics of all 6 -----------------------------------------------------
-Total.res = data.frame(matrix(NA, ncol = 15, nrow = nrow(reduced.list)))
+### Statistics of all 6 -----------------------------------------------------
+Total.res = data.frame(matrix(NA, ncol = 18, nrow = nrow(reduced.list)))
 for (i in c(1:nrow(reduced.list))) {
   name.i = reduced.list$station[i]
-  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS-full/", name.i, "fgls.RData")))
-  jump.est = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$Estimate[9])
-  t.values = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$`t value`[9])
-  p.values = sapply(c(2:6), function(x) dat.i[[list.test[x]]]$t.table$`Pr(>|t|)`[9])
+  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS/", name.i, "fgls.RData")))
+  jump.est = sapply(c(1:6), function(x) dat.i[[list.test[x]]]$t.table$Estimate[9])
+  t.values = sapply(c(1:6), function(x) dat.i[[list.test[x]]]$t.table$`t value`[9])
+  p.values = sapply(c(1:6), function(x) dat.i[[list.test[x]]]$t.table$`Pr(>|t|)`[9])
   Total.res[i,] = c(jump.est, t.values, p.values)
 }
+colnames(Total.res) = c(paste0("jump", list.name.test[1:6]), paste0("t", list.name.test[1:6]), paste0("p", list.name.test[1:6]))
+
+# add the significance code  ----------------------------------------------
+
+Total.coded = data.frame(matrix(NA, ncol = 6, nrow = nrow(Total.res)))
+for (i in c(1:nrow(Total.res))) {
+  case.i = Total.res[i, c(paste0("t", list.name.test[1:6]))]
+  Total.coded[i,] = convert_coded(case.i)
+}
+colnames(Total.coded) = list.name.test
+Total.res = cbind(Total.res, Total.coded)
+
+# check contracdiction
+
+trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table.RData")))
+contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded[x,c(1:6)]), trunc.table)
+)
+
+Total.res$config = contra
+Total.res1 = get(load(paste0(path_results,"attribution0/stats_test_real_data.RData")))
+
+sapply(c(1:6), function(x) table(Total.res1[,(12+x)] - Total.coded[,x]))
+
+# compare the ne and old:
+compa = cbind(Total.res1[,(13:18)], Total.coded, reduced.list$station)
+
+
 
 

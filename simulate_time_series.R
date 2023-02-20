@@ -87,7 +87,9 @@ simulate.general1 <- function(N, arma.model, burn.in = 0,
   beta = arma.model[2]
   if(alpha!=0 | beta!=0){
     coef = (1+2*alpha*beta+beta**2)/(1-alpha**2)
+    print(coef)
     sigma = sqrt((sigma**2)/coef)
+    print(sigma)
     x.ini = arima.sim(model = list(ar = alpha, ma = beta), n = N, n.start = burn.in, sd = 1)
    
   }else{

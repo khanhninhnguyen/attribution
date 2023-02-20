@@ -164,29 +164,29 @@ check_sig <- function(p.val, alpha){
   return(c(ar.or, 0, ma.or))
 }
 
-fit.arima <- function(signal.test){
-  fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
-                               max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
-  
-  pq <- forecast::arimaorder(fit.b)
-  # order.init[k, c((testi*3-2): (testi*3))] <- pq
-  options(warn = 2)
-  
-  refit0 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
-  pq = refit0$pq
-  
-  if( any(pq > 1)){
-    fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
-                                  max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
-    pq = forecast::arimaorder(fit.b)
-  }
-  test.pq = pq
-  refit1 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
-  
-  pq = refit1$pq
-  if(identical(as.numeric(test.pq),pq) == FALSE){print(c(test.pq,pq))}
-  return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
-}
+# fit.arima <- function(signal.test){
+#   fit.b = forecast::auto.arima(signal.test , d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+#                                max.p = 2, max.q = 2, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+#   
+#   pq <- forecast::arimaorder(fit.b)
+#   # order.init[k, c((testi*3-2): (testi*3))] <- pq
+#   options(warn = 2)
+#   
+#   refit0 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
+#   pq = refit0$pq
+#   
+#   if( any(pq > 1)){
+#     fit.b = forecast::auto.arima( signal.test, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+#                                   max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
+#     pq = forecast::arimaorder(fit.b)
+#   }
+#   test.pq = pq
+#   refit1 = last_signif(signal = signal.test, pq, alpha = significant.level, fit.b = fit.b)
+#   
+#   pq = refit1$pq
+#   if(identical(as.numeric(test.pq),pq) == FALSE){print(c(test.pq,pq))}
+#   return(list(pq = pq, coef = refit1$pandcoef$coef, p = refit1$pandcoef$p.value))
+# }
 
 model.iden <- function(order){
   model = c()
