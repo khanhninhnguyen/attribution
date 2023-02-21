@@ -31,7 +31,7 @@ for (i in c(1:length(length.list))) {a
   colnames(TPR) = c("ar", "ma", "arma")
   tot.res[i,c(2:4)] = c(length(which(TPR$ar == "AR(1)")), 
                   length(which(TPR$ma == "MA(1)")),
-                  length(which(TPR$arma == "ARMA(1)")))
+                  length(which(TPR$arma == "ARMA(1,1)")))
 }
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_length.RData"))

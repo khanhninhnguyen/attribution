@@ -214,7 +214,7 @@ for (i in c(1:nrow(Total.res))) {
 }
 colnames(Total.coded) = list.name.test
 Total.res = cbind(Total.res, Total.coded)
-
+Total.res$station = reduced.list$station
 # check contracdiction
 
 trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table.RData")))

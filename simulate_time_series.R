@@ -87,9 +87,7 @@ simulate.general1 <- function(N, arma.model, burn.in = 0,
   beta = arma.model[2]
   if(alpha!=0 | beta!=0){
     coef = (1+2*alpha*beta+beta**2)/(1-alpha**2)
-    print(coef)
     sigma = sqrt((sigma**2)/coef)
-    print(sigma)
     x.ini = arima.sim(model = list(ar = alpha, ma = beta), n = N, n.start = burn.in, sd = 1)
    
   }else{
@@ -100,14 +98,3 @@ simulate.general1 <- function(N, arma.model, burn.in = 0,
   return(sim.series)
 }
 
-
-a = simulate.general(burn.in = 1000,
-                     arma.model = c(0.5,0),
-                     hetero = 1,
-                     monthly.var = 0,
-                     sigma = c(rep(c(1,3), each =100)),
-                     N = 200,
-                     gaps = 0,
-                     outlier = 0,
-                     prob.outliers = 0,
-                     size.outliers = 0)

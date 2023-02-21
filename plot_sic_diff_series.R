@@ -876,4 +876,3 @@ plot_six_residual <- function(name.case){
 }
 # 
 # plot_FGLS_details(name.case = "pots.2016-06-05.d020", name.series = "gps.era", lab.y = "G-E")
-plot_six_details(name.case = "mate.2018-04-17.mni2")
