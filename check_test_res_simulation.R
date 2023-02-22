@@ -14,7 +14,7 @@ ma = fgls.res$gps.gps$coef.arma$theta
 n = length(sigma.sim)
 set.seed(1)
 design.m = fgls.res1$gps.gps$design.matrix
-Data.mod = design.m[,c(1,10,11)]
+Data.mod = design.m[,c(1:11)]
 noise.model = c(ifelse(ar!=0, 1, 0), 0, ifelse(ma!=0, 1, 0))
 names(noise.model) =NULL
 ind.na = which(is.na(Data.mod$signal)==TRUE)
@@ -25,7 +25,9 @@ for (i in c(1:nb.sim)) {
   y.arma[ind.na] = NA
   Data.mod$signal = y.arma
   fit.fgls = FGLS1(design.m = Data.mod, tol=0.01, day.list = design.m$date, noise.model = noise.model, length.wind0 = 60)
-  TPR[i] = fit.fgls$t.table$`t value`[1]
+  TPR[i] = fit.fgls$t.table$`t value`[9]
   print(i)
 }
 table(abs(TPR)<1.96)
+save(TPR, file = paste0(path_results, "attribution0/TPR.RData"))
+

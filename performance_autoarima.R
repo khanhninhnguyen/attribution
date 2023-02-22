@@ -15,7 +15,7 @@ hetero = 0
 sigma.sim = 1
 ## As a function of length -------------------------------------------------
 set.seed(1)
-for (i in c(1:length(length.list))) {a
+for (i in c(1:length(length.list))) {
   n = length.list[i]
   TPR = data.frame(matrix(NA, ncol = 3, nrow = nb.sim)) 
   for (j in c(1:nb.sim)) {
@@ -35,9 +35,11 @@ for (i in c(1:length(length.list))) {a
 }
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_length.RData"))
-a = get(load( file = paste0(path_results, "attribution0/performance_autoarima_length.rds")))
+a = get(load( file = paste0(path_results, "attribution0/performance_autoarima_length.RData")))
 
-
+dat.p = reshape2::melt(a, id="n")
+ggplot(data = dat.p, aes(x = n, y = value/nb.sim, col = variable))+theme_bw()+
+  geom_point()+geom_hline(yintercept = 0.95)
 
 
 

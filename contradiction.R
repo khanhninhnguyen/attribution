@@ -83,7 +83,7 @@ ggplot(dat.p, aes( x = variable, y = value, col = config))+ theme_bw()+ geom_poi
   xlab("Significance level (%)") + scale_x_discrete(breaks = seq(0, 10, 1))+
   ylab("Count")
 
-# investigate cases, where results are changing to another configuration 
+# investigate cases, where results are changing to another configuration -----------
 ind.inv = which(tot.res$X1 ==1 & tot.res$X25 != 1 & tot.res$X25 != 0)
 
 jump.inv = Total.res[ind.inv,c(paste0("jump", list.name.test))]
@@ -106,4 +106,50 @@ ggplot(dat.p, aes(x = variable,y = value))+ theme_bw()+
 
 
 
+
+
+  
+
+# barplot of distribution of configurations at different significant level --------
+
+trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table.RData")))
+
+sig.list = c(0.05, 0.01, 0.002, 4e-05)
+nb.contradicted = rep(NA, length(sig.list))
+tot.res = data.frame(matrix(NA, ncol = length(sig.list), nrow = 494))
+for (j in 1:length(sig.list)) {
+  Total.coded = data.frame(matrix(NA, ncol = 6, nrow = nrow(Total.res)))
+  for (i in c(1:nrow(Total.res))) {
+    sig.level = rep(sig.list[j], 6)
+    # if(Total.res$distance[i] <25){
+    #   sig.level = rep(sig.list, 6)
+    # }else{
+    #   sig.level =  c(0.002, 0.05, 0.05, 0.05, 0.05, 0.002, 0.05)
+    # }
+    case.i = Total.res[i, c(paste0("t", list.name.test[1:6]))]
+    Total.coded[i,] = convert_coded(case.i, significance.level =sig.level)
+  }
+  contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded[x,]), trunc.table))
+  tot.res[,j] = contra
+  nb.contradicted[j] = length(which(contra == 0))
+  a = data.frame(table(contra))
+  b = data.frame(contra = factor(0:38), Freq =0)
+  data.p = left_join(b, a, by ="contra")
+  data.p$Freq.y[which(is.na(data.p$Freq.y)==TRUE)] = 0
+  p = ggplot(data.frame(data.p),aes(x = contra, Freq.y*100/494))+
+    geom_bar(stat="identity", width = 0.7)+ 
+    theme_bw()+ 
+    ylab("Percentage (%)")+
+    xlab("Configuration")+
+    theme(axis.text.x = element_text(size = 5), 
+          axis.text.y = element_text(size = 5),
+          legend.text=element_text(size=4),
+          axis.title = element_text(size = 5), 
+          legend.key.size = unit(0.3, "cm"), 
+          plot.tag = element_text(size = 5), 
+          plot.subtitle = element_text(size = 5))
+  
+  ggsave(paste0(path_results,"attribution0/config.table", sig.list[j], ".jpg" ), plot = p, width = 12, height = 4, units = "cm", dpi = 300)
+  
+}
 

@@ -25,7 +25,7 @@ ggplot(data = dat.p, aes(x = sig, y = n))+theme_bw()+
   geom_boxplot()
 
 ## case of E-E' != 0 --------------------------------------------------------
-data.EE = Total.res[which(Total.res$`E-E'`!=0),]
+data.EE = Total.res[which(abs(Total.res$`tE-E'`)>3),]
 all.case.p = data.EE$station
 for (i in c(1:length(all.case.p))) {
   plot_six(all.case.p[i])
