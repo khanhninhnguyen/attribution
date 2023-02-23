@@ -96,3 +96,45 @@ min_max_norm <- function(x) {
 }
 
 #apply Min-Max normalization to first four columns in iris dataset
+
+
+# cases of configuration 35 
+
+data.35 = Total.res[which(Total.res$config==35),]
+all.case.p = data.35$station
+for (i in c(1:length(all.case.p))) {
+  plot_six(all.case.p[i])
+  # plot_six_details(all.case.p[i])
+}
+
+a = read.table(file = paste0(path_results, "validation/34-1BM_BJ1062.txt"), header = TRUE, stringsAsFactors = FALSE)
+# a = a[which(a$valid==0),]
+list.detection =  as.Date(a$detected,format="%Y-%m-%d")
+month.year = as.Date(list.detection, d,format="%Y-%m")
+data.p = data.frame(date = list.detection, month.year = month.year, 
+                    month = month(as.POSIXlt(list.detection, format = "%Y-%m-%d")),
+                    year = year(as.POSIXlt(list.detection, format = "%Y-%m-%d")))
+
+p = data.p %>%
+  ggplot(aes(x = month)) + theme_bw()+
+  geom_histogram(bins = 12,  binwidth = 0.5) +
+  scale_x_continuous(breaks = seq(1,12,1), limits = c(0,13))+
+  theme(axis.text.x = element_text(size = 5), 
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), 
+        legend.key.size = unit(0.3, "cm"), 
+        plot.tag = element_text(size = 5), 
+        plot.subtitle = element_text(size = 5),
+        legend.title=element_blank(), 
+        legend.position = "none")+
+  facet_wrap(~ year, ncol = 4)
+  
+ggsave(paste0(path_results,"attribution0/dist.detection.jpg" ), plot = p, width = 20, height = 15, units = "cm", dpi = 1200)
+
+
+
+a = get(load(file = paste0(path_results, "attribution/check_homo/six_diff_series_rm_crenel_restricted_closed_brp_10year_NGL.RData")))
+plot(a$`kour.2018-01-05.koug`$era.era)
+
+

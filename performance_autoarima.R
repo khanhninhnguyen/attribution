@@ -5,7 +5,7 @@ source(paste0(path_code_att,"support_characterization.R"))
 
 # As a function of length -------------------------------------------------
 length.list = seq(200, 2000, 200)
-nb.sim = 1000
+nb.sim = 10
 tot.res = data.frame(n = length.list, 
                      TPR.ar = rep(NA, length(length.list)),
                      TPR.ma = rep(NA, length(length.list)),
@@ -42,5 +42,61 @@ ggplot(data = dat.p, aes(x = n, y = value/nb.sim, col = variable))+theme_bw()+
   geom_point()+geom_hline(yintercept = 0.95)
 
 
+# coefficient dependence --------------------------------------------------
+coef.list = seq(0, 0.8, 0.1)
+set.seed(1)
+TPR.ar <- rep(NA, nb.sim)
+tot.res <- list()
+for (i in c(1:length(coef.list))) {
+  n = 1000
+  TPR = data.frame(matrix(NA, ncol = 3, nrow = nb.sim)) 
+  for (j in c(1:nb.sim)) {
+    y.ar = simulate.general1(N = n, arma.model = c(ar=coef.list[i],ma=0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    # fit 
+    fit.ar = fit.arima(y.ar)
+    TPR.ar[j] = model.iden(fit.ar$pq)
+  }
+  tot.res[[i]] = TPR.ar
+}
 
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_ar.RData"))
+
+
+# coefficient dependence --------------------------------------------------
+coef.list = seq(0, 0.8, 0.1)
+set.seed(1)
+TPR.ma <- rep(NA, nb.sim)
+tot.res <- list()
+for (i in c(1:length(coef.list))) {
+  n = 1000
+  TPR = data.frame(matrix(NA, ncol = 3, nrow = nb.sim)) 
+  for (j in c(1:nb.sim)) {
+    y.ma = simulate.general1(N = n, arma.model = c(ar=0,ma=coef.list[i]), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    # fit 
+    fit.ma = fit.arima(y.ma)
+    TPR.ma[j] = model.iden(fit.ma$pq)
+  }
+  tot.res[[i]] = TPR.ma
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_ma.RData"))
+
+# coefficient dependence --------------------------------------------------
+coef.list = seq(0, 0.8, 0.1)
+set.seed(1)
+TPR.ar <- rep(NA, nb.sim)
+tot.res <- list()
+for (i in c(1:length(coef.list))) {
+  n = 1000
+  TPR = data.frame(matrix(NA, ncol = 3, nrow = nb.sim)) 
+  for (j in c(1:nb.sim)) {
+    y.ar = simulate.general1(N = n, arma.model = c(ar=coef.list[i],ma=0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    # fit 
+    fit.ar = fit.arima(y.ar)
+    TPR.ar[j] = model.iden(fit.ar$pq)
+  }
+  tot.res[[i]] = TPR.ar
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_ar.RData"))
 

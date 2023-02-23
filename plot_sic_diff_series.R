@@ -1,6 +1,7 @@
 # function to plot time series 
 source(paste0(path_code_att,"FGLS.R"))
 
+Total.res = get(load(paste0(path_results,"attribution0/stats_test_real_data.RData")))
 dat = get(load( file = paste0(path_results,"attribution0/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
 final.t = get(load(file = paste0(path_results, "attribution0/Final.Table.RData")))
 rownames(final.t) = NULL
@@ -206,8 +207,8 @@ plot_six <- function(name.case){
                  ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
                  ", AR: ", round(station[[name.s]]$coef.arma$phi, digits = 2), 
                  ", MA: ", round(station[[name.s]]$coef.arma$theta, digits = 2),
-                 ", n1 = ", final.t$n1[ind.case], ", n2 = ", final.t$n2[ind.case],
-                 ", dist = ", round(final.t$distance[ind.case]) ,"(km)")
+                 ", h.dist = ", round(final.t$distance[ind.case]) ,"(km)",
+                 ", v.dist = ", round(Total.res$ver.distance[ind.case]) ,"(m)")
   
   if(nrow(meta.g)>0){
     datai$meta = NA
@@ -474,6 +475,7 @@ plot_FGLS_details <- function(name.case, name.series, lab.y){
   } else{
     meta.data = data.frame()
   }
+  print(nrow(meta.data))
   if (nrow(meta.data)>0){
     meta.g = meta1[which(meta1$name == station.name),]
     meta.g = meta.g[which(meta.g$ymd>begin.date & meta.g$ymd<end.date),]
@@ -503,9 +505,11 @@ plot_FGLS_details <- function(name.case, name.series, lab.y){
   
   
   
-  if(nrow(meta.g)>0){
-    p <- p +
-      geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
+  if(nrow(meta.data)>0){
+    if(nrow(meta.g)>0){
+      p <- p +
+        geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
+    }
   }
   
   # plot the residual 

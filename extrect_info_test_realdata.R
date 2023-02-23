@@ -6,7 +6,7 @@ convert_coded <- function(x){
 check_contradict <- function(y, table.selected){
   names(y) = NULL
   colnames(table.selected) = NULL
-  res = sapply(c(1:36), function(x) identical(unlist(table.selected[x,]), y))
+  res = sapply(c(1:38), function(x) identical(unlist(table.selected[x,]), y))
   ind.o = which(res==TRUE)
   out = ifelse(length(ind.o)>0, ind.o, 0)
   return(out)
