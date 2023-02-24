@@ -153,3 +153,12 @@ for (j in 1:length(sig.list)) {
   
 }
 
+
+# p-values adjusment due to the dependence of 6 tests 
+Keep.pval = Total.res[]
+pvalA <- purrr::map(1:dim(Keep.pval)[1],~p.adjust(Keep.pval[.x,], method = "fdr")) %>% Reduce(c,.) %>% matrix(ncol=6,nrow=dim(Keep.pval)[1],byrow=TRUE)
+colnames(pvalA) <- List.names.tot
+signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Keep.tval)) %>% as.data.frame()
+
+
+

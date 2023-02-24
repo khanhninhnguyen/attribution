@@ -105,9 +105,9 @@ save(Total.res, file = paste0(path_results,"attribution0/stats_test_real_data.RD
 
 # To send 
 
-Total.res <- Total.res %>% dplyr::select(-c(config, station))
-Total.res = cbind(reduced.list[,c(1:3)], Total.res)
-write.table(Total.res, file = paste0(path_results,"attribution0/stats_test_real_data.txt"), quote = FALSE, row.names = FALSE, sep = "\t")
+# Total.res <- Total.res %>% dplyr::select(-c(config, station))
+# Total.res = cbind(reduced.list[,c(1:3)], Total.res)
+# write.table(Total.res, file = paste0(path_results,"attribution0/stats_test_real_data.txt"), quote = FALSE, row.names = FALSE, sep = "\t")
 
 # 
 # b = which(a$l2<1000 & a$de>100) 

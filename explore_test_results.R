@@ -8,9 +8,10 @@ all.arima = read.csv(file = paste0(path_results, "attribution0/FGLS_on_real_data
 # catch the problematic cases  --------------------------------------------
 
 ## case of G-G' = 0 --------------------------------------------------------
-data.GG = Total.res[which(abs(Total.res$`tG-G'`)>1.96 & abs(Total.res$`tG-G'`)<3.1 & Total.res$distance <50),]
+# data.GG = Total.res[which(abs(Total.res$`tG-G'`)>1.96 & abs(Total.res$`tG-G'`)<3.1 & Total.res$distance <25),]
+data.GG = Total.res[which(abs(Total.res$`tG-G'`)<1.96 ),]
 all.case.p = data.GG$station
-for (i in c(1:length(all.case.p))) {
+for (i in c(127:134)) {
   plot_six(all.case.p[i])
 }
 ### variance plot 
@@ -136,5 +137,5 @@ ggsave(paste0(path_results,"attribution0/dist.detection.jpg" ), plot = p, width 
 
 a = get(load(file = paste0(path_results, "attribution/check_homo/six_diff_series_rm_crenel_restricted_closed_brp_10year_NGL.RData")))
 plot(a$`kour.2018-01-05.koug`$era.era)
-
+plot_six("vill.2001-03-26.madr")
 

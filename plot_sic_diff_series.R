@@ -40,6 +40,8 @@ sliding.median <- function(Y, name.var, length.wind){
   # return(l)
 }
 
+colours.meta = c("A" = "#000000", "AD" = "#E69F00", "D" = "#56B4E9", "E" = "#009E73",
+                  "L" = "#F0E442", "P" = "#0072B2", "PP" = "#D55E00", "R" = "#CC79A7", "RA" = "#CC6666", "RAD" = "#9999CC", "U" = "#66CC99")
 plot_six <- function(name.case){
   
   # name of main and 5 others
@@ -92,6 +94,8 @@ plot_six <- function(name.case){
   if(nrow(meta.g)>0){
     datai$meta = NA
     datai$meta[which( datai$date %in% list.meta == TRUE)] = set.margin$upper
+    datai$type = NA
+    datai$type[which( datai$date %in% list.meta == TRUE)] = meta.g$type
   }
   
   pGE <- ggplot(data = datai, aes(x = date)) +
@@ -111,12 +115,14 @@ plot_six <- function(name.case){
           plot.tag = element_text(size = 5), 
           plot.subtitle = element_text(size = 5),
           legend.title=element_blank(), 
-          legend.position = "none", 
+          legend.direction="horizontal", legend.position = c(0.1,0.1),
+          legend.background=element_blank(), 
           plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
   
   if(nrow(meta.g)>0){
     pGE <- pGE +
-      geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
+      geom_point(aes(y = meta, col = type),shape = 2, size = 0.5)+
+      scale_colour_manual( values = colours.meta, na.translate = FALSE )
   }
  
   print("G-E")
@@ -154,6 +160,8 @@ plot_six <- function(name.case){
   if(nrow(meta.g1)>0){
     datai$meta1 = NA
     datai$meta1[which( datai$date %in% list.meta1 == TRUE)] = set.margin$upper
+    datai$type1 = NA
+    datai$type1[which( datai$date %in% list.meta1 == TRUE)] = meta.g1$type
   }
   # mark if there is any break in the nearby
   nearby.brp = valid2[which(valid2$name == station.nearby),]
@@ -180,12 +188,14 @@ plot_six <- function(name.case){
           plot.tag = element_text(size = 5), 
           plot.subtitle = element_text(size = 5),
           legend.title=element_blank(), 
-          legend.position = "none", 
+          legend.direction="horizontal", legend.position = c(0.1,0.1),
+          legend.background=element_blank(), 
           plot.margin = unit(c(0, 0, 0, 0.5), "cm"))
   # meta for nearby
   if(nrow(meta.g1)>0){
     pG1E1 <- pG1E1 +
-      geom_point(aes(y = meta1), colour="green",shape = 3, size = 0.5)
+      geom_point(aes(y = meta1, col = type1),shape = 3, size = 0.5)+
+      scale_colour_manual( values = colours.meta, na.translate = FALSE )
   }
   if(nrow(nearby.brp)>0){
     pG1E1 <- pG1E1 +
@@ -213,10 +223,14 @@ plot_six <- function(name.case){
   if(nrow(meta.g)>0){
     datai$meta = NA
     datai$meta[which( datai$date %in% list.meta == TRUE)] = set.margin$upper
+    datai$type = NA
+    datai$type[which( datai$date %in% list.meta == TRUE)] = meta.g$type
   }
   if(nrow(meta.g1)>0){
     datai$meta1 = NA
-    datai$meta1[which( datai$date %in% list.meta1 == TRUE)] = set.margin$upper
+    datai$meta1[which( datai$date %in% list.meta1 == TRUE)] = set.margin$lower
+    datai$type1 = NA
+    datai$type1[which( datai$date %in% list.meta1 == TRUE)] = meta.g1$type
   }
   if(nrow(nearby.brp)>0){
     datai$detected = NA
@@ -240,14 +254,17 @@ plot_six <- function(name.case){
           plot.tag = element_text(size = 5),
           plot.subtitle = element_text(size = 5),
           legend.title=element_blank(),
-          legend.position = "none", 
+          legend.direction="horizontal", legend.position = c(0.1,0.1),
+          legend.background=element_blank(), 
           plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
   
   if(nrow(meta.g)>0){
-    pGG <- pGG + geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
+    pGG <- pGG + geom_point(aes(y = meta, col = type),shape = 2, size = 0.5)+
+      scale_colour_manual( values = colours.meta, na.translate = FALSE )
   }
   if(nrow(meta.g1)>0){
-    pGG <- pGG + geom_point(aes(y = meta1), colour="green",shape = 3, size = 0.5)
+    pGG <- pGG + geom_point(aes(y = meta1, col = type1),shape = 3, size = 0.5)+      
+      scale_colour_manual( values = colours.meta, na.translate = FALSE )
   }
   if(nrow(nearby.brp)>0){
     pG1E1 <- pG1E1 +
@@ -287,7 +304,8 @@ plot_six <- function(name.case){
           plot.tag = element_text(size = 5),
           plot.subtitle = element_text(size = 5),
           legend.title=element_blank(),
-          legend.position = "none", 
+          legend.direction="horizontal", legend.position = c(0.1,0.1),
+          legend.background=element_blank(), 
           plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
   
   # PLOT G-E'
@@ -304,12 +322,13 @@ plot_six <- function(name.case){
                  ", t = ", round(station[[name.s]]$t.table$`t value`[9], digits = 2), 
                  ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
                  ", AR: ", round(station[[name.s]]$coef.arma$phi, digits = 2), 
-                 ", MA: ", round(station[[name.s]]$coef.arma$theta, digits = 2),
-                 ", n1 = ", final.t$n1[ind.case], ", n2 = ", final.t$n2[ind.case])
+                 ", MA: ", round(station[[name.s]]$coef.arma$theta, digits = 2))
   
   if(nrow(meta.g)>0){
     datai$meta = NA
     datai$meta[which( datai$date %in% list.meta == TRUE)] = set.margin$upper
+    datai$type = NA
+    datai$type[which( datai$date %in% list.meta == TRUE)] = meta.g$type
   }
   pGE1 <- ggplot(data = datai, aes(x = date, y = gps.era1)) +
     theme_bw() + 
@@ -328,11 +347,13 @@ plot_six <- function(name.case){
           plot.tag = element_text(size = 5),
           plot.subtitle = element_text(size = 5),
           legend.title=element_blank(),
-          legend.position = "none", 
+          legend.direction="horizontal", legend.position = c(0.1,0.1),
+          legend.background=element_blank(), 
           plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
   
   if(nrow(meta.g)>0){
-    pGE1 <- pGE1 + geom_point(aes(y = meta), colour="blue",shape = 2, size = 0.5)
+    pGE1 <- pGE1 + geom_point(aes(y = meta, col = type),shape = 2, size = 0.5)+
+      scale_colour_manual( values = colours.meta, na.translate = FALSE )
   }
  
   # PLOT G'-E
@@ -355,6 +376,8 @@ plot_six <- function(name.case){
   if(nrow(meta.g1)>0){
     datai$meta1 = NA
     datai$meta1[which( datai$date %in% list.meta1 == TRUE)] = set.margin$upper
+    datai$type1 = NA
+    datai$type1[which( datai$date %in% list.meta1 == TRUE)] = meta.g1$type
   }
   if(nrow(nearby.brp)>0){
     datai$detected = NA
@@ -378,11 +401,13 @@ plot_six <- function(name.case){
           plot.tag = element_text(size = 5),
           plot.subtitle = element_text(size = 5),
           legend.title=element_blank(),
-          legend.position = "none", 
+          legend.direction="horizontal", legend.position = c(0.1,0.1),
+          legend.background=element_blank(), 
           plot.margin = unit(c(0, 0.5, 0, 0), "cm"))
   
   if(nrow(meta.g1)>0){
-    pG1E <- pG1E + geom_point(aes(y = meta1), colour="green",shape = 3, size = 0.5)
+    pG1E <- pG1E + geom_point(aes(y = meta1, col = type1),shape = 3, size = 0.5)+
+      scale_colour_manual( values = colours.meta, na.translate = FALSE )
   }
   if(nrow(nearby.brp)>0){
     pG1E1 <- pG1E1 +

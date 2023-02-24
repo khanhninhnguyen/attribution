@@ -5,7 +5,7 @@ source(paste0(path_code_att,"support_characterization.R"))
 
 # As a function of length -------------------------------------------------
 length.list = seq(200, 2000, 200)
-nb.sim = 10
+nb.sim = 10000
 tot.res = data.frame(n = length.list, 
                      TPR.ar = rep(NA, length(length.list)),
                      TPR.ma = rep(NA, length(length.list)),
