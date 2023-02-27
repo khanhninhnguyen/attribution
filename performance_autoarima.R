@@ -36,10 +36,23 @@ for (i in c(1:length(length.list))) {
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_length.RData"))
 a = get(load( file = paste0(path_results, "attribution0/performance_autoarima_length.RData")))
+colnames(a) = c("N", "AR(1)", "MAR(1)", "ARMA(1,1)")
+dat.p = reshape2::melt(a, id="N")
+p = ggplot(data = dat.p, aes(x = N, y = value/nb.sim, col = variable))+
+  theme_bw()+
+  geom_point(size = 0.3)+
+  geom_hline(yintercept = 0.95, lwd = 0.3)+
+  ylab("TPR")+
+  theme(axis.text.x = element_text(size = 5), 
+      axis.text.y = element_text(size = 5),
+      legend.text=element_text(size=4),
+      axis.title = element_text(size = 5), 
+      legend.key.size = unit(0.3, "cm"), 
+      plot.tag = element_text(size = 5), 
+      plot.subtitle = element_text(size = 5),
+      legend.title=element_blank())
 
-dat.p = reshape2::melt(a, id="n")
-ggplot(data = dat.p, aes(x = n, y = value/nb.sim, col = variable))+theme_bw()+
-  geom_point()+geom_hline(yintercept = 0.95)
+ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 
 # coefficient dependence AR(1) --------------------------------------------------

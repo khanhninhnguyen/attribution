@@ -48,9 +48,9 @@ plot_six <- function(name.case){
   name.GG =  name.case
   station.name = substr(name.GG, 1, 4)
   brp =  as.Date(substr(name.GG, 6, 15),format="%Y-%m-%d")
-  station.nearby =  substr(name.GG, 17, 20)
+  station.nearby =  substr(name.GG, 17, 20) 
   ind.case = which(all.case %in% name.GG == TRUE)
-  name.GE = all.case[which(final.t$main == station.name & final.t$brp == brp & is.na(final.t$tGE)==FALSE)]
+  name.GE = all.case[which(final.t$main == station.name & final.t$brp == brp & is.na(final.t$tGE)==FALSE)][1]
   
   # plot for G-E------------------------
   data.i = dat[[name.GG]]
@@ -76,7 +76,7 @@ plot_six <- function(name.case){
   
   begin.date = datai$date[1]
   end.date = datai$date[length(datai$date)]
-  
+
   set.margin = list(lower = floor(min(data.i[,c(1:6)], na.rm = TRUE)), 
                     upper = ceiling(max(data.i[,c(1:6)], na.rm = TRUE)))
   datai$fit = station1[[name.s]]$t.table$Estimate[10]
@@ -144,7 +144,7 @@ plot_six <- function(name.case){
     end.date = datai$date[length(datai$date)]
   }
   brp.ind = which(datai$date == brp)
-  
+
   datai$fit = station[[name.s]]$t.table$Estimate[10]
   datai$fit[(brp.ind+1):nrow(datai)] = station[[name.s]]$t.table$Estimate[10] + station[[name.s]]$t.table$Estimate[9]
   text1 = paste0(toupper(station.nearby), ", Jump = ", round(station[[name.s]]$t.table$Estimate[9], digits = 2), 
@@ -201,7 +201,7 @@ plot_six <- function(name.case){
     pG1E1 <- pG1E1 +
       geom_point(aes(y = detected), colour="black",shape = 7, size = 0.5)
   }
-  
+
   # PLOT G-G'
   
   name.s = "gps.gps"
@@ -209,6 +209,10 @@ plot_six <- function(name.case){
   brp.ind = which(datai$date == brp)
   datai = datai[c((brp.ind-n1+1):(brp.ind+n2)),]
   brp.ind = which(datai$date == brp)
+  # set the metadata wrt new limits
+  meta.g = meta1[which(meta1$name == station.name),]
+  meta.g = meta.g[which(meta.g$ymd > datai$date[1] & meta.g$ymd < datai$date[nrow(datai)]),]
+  list.meta = meta.g$ymd
   
   datai$fit = station[[name.s]]$t.table$Estimate[10]
   datai$fit[(brp.ind+1):nrow(datai)] = station[[name.s]]$t.table$Estimate[10] + station[[name.s]]$t.table$Estimate[9]
@@ -413,7 +417,7 @@ plot_six <- function(name.case){
     pG1E1 <- pG1E1 +
       geom_point(aes(y = detected), colour="black",shape = 7, size = 0.5)
   }
-  
+  #merge ----
   list.seq = mapply(function(x, y) yearser(x, y), begin.date, end.date)
   
   pGE <- pGE + scale_x_date(limits = as.Date(c(begin.date, end.date)), 

@@ -11,7 +11,7 @@ all.arima = read.csv(file = paste0(path_results, "attribution0/FGLS_on_real_data
 # data.GG = Total.res[which(abs(Total.res$`tG-G'`)>1.96 & abs(Total.res$`tG-G'`)<3.1 & Total.res$distance <25),]
 data.GG = Total.res[which(abs(Total.res$`tG-G'`)<1.96 ),]
 all.case.p = data.GG$station
-for (i in c(127:134)) {
+for (i in c(1:length(all.case.p))) {
   plot_six(all.case.p[i])
 }
 ### variance plot 
@@ -138,4 +138,37 @@ ggsave(paste0(path_results,"attribution0/dist.detection.jpg" ), plot = p, width 
 a = get(load(file = paste0(path_results, "attribution/check_homo/six_diff_series_rm_crenel_restricted_closed_brp_10year_NGL.RData")))
 plot(a$`kour.2018-01-05.koug`$era.era)
 plot_six("vill.2001-03-26.madr")
+
+
+
+# contradiction  --------------------------------------------------------
+contradicted = Total.res[which(Total.res$config==0),]
+contradicted.5 = contradicted[,c(14:18)]
+a = contradicted.5 %>% group_by_all() %>% summarise(COUNT = n())
+##  with distance  --------------------------------------------------------
+
+dat.p = Total.res[,c(19:21)]
+dat.p$contra = ifelse(dat.p$config!=0, 0, 1)
+contra.ratio = sapply(seq(0, 190, 10), function(x){
+  b = dat.p[which(dat.p$distance>0 & dat.p$distance<(x+10)),]
+  return( length(which(b$contra==1))/ nrow(b))
+})
+
+plot(seq(10, 200, 10), contra.ratio, xlab ="Distance (km)", ylab = "Rate of contradiction")
+dat.p$contra = as.factor(dat.p$contra)
+dat.p$n = Total.res$n1+Total.res$n2
+dat.p = dat.p[which(dat.p$config==0),]
+ggplot(dat.p, aes(x = distance, y = n, col = contra))+
+  theme_bw()+
+  geom_point()
+
+## case of contradiction --------------------------------------------------------
+data.EE = Total.res[which(Total.res$config==0 & Total.res$`G-G'`==0),]
+all.case.p = data.EE$station
+for (i in c(1:length(all.case.p))) {
+  plot_six(all.case.p[i])
+}
+b = inner_join(a[17,], Total.res, by = c( "G-G'" , "G-E'",  "E-E'" , "G'-E'", "G'-E" ))
+e = d[which(Total.res$station %in% b$station == TRUE)]
+
 

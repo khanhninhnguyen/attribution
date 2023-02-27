@@ -5,10 +5,12 @@ source(paste0(path_code_att,"FGLS.R"))
 
 # input: what do you want to test. Ex: TPR of test when data is AR(1) with different rho------------------
 one.year = 200
-nb.sim = 10
+nb.sim = 1000
 # n = 
+# list.ma = seq(0, 0.9, 0.15)
+
 list.param.ar = seq(0, 0.9, 0.15)
-list.ma = rep(0, length(list.param.ar))
+list.ma = 0.3 - list.param.ar
 list.param.sig = seq(0,0.8,0.2)
 
 # specify the condition
@@ -34,6 +36,11 @@ mod.sim <- function(heteroscedastic, autocorr, var.inno, list.param.sig, list.pa
       sigma.t = matrix( rep(sigma.0,  length(list.param.ar)) , ncol =  length(list.param.ar), byrow = FALSE )
       ar = list.param.ar
       ma = list.param.ma 
+    }else if(x.axis == "theta"){
+      sigma.0 = var.inno - periodic*list.param.sig[individual]
+      sigma.t = matrix( rep(sigma.0,  length(list.param.ma)) , ncol =  length(list.param.ma), byrow = FALSE )
+      ar = list.param.ar
+      ma = list.param.ma 
     } else if(x.axis == "sig"){
       sigma.t = sapply(c(1:length(list.param.sig)), function(x) var.inno - periodic*list.param.sig[x])
       ar = rep(list.param.ar[individual],length(list.param.sig))
@@ -50,11 +57,14 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   if(x.axis=="rho"){
     sample = list.param.ar
     individual = 5
+  } else if(x.axis=="theta"){
+    sample = list.ma
+    individual = 5
   }else{
     sample = list.param.sig
     individual = 5
   }
-  gen.test = mod.sim(heteroscedast = heteroscedast, autocorr = autocor, var.inno = 1, list.param.ar = list.param.ar, 
+  gen.test = mod.sim(heteroscedast = heteroscedast, autocorr = autocor, var.inno = 1, list.param.ar = list.param.ar, list.param.ma = list.ma, 
                      list.param.sig = list.param.sig, x.axis = x.axis, individual = individual, n = n, T1 = n/2)
   burn.in = gen.test$burn.in
   hetero = gen.test$hetero
@@ -72,7 +82,7 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
       sigma.sim = gen.test$sigma.t[,l]
     }
     ar = gen.test$ar[l]
-    ma = list.ma[l]
+    ma = gen.test$ma[l]
     for (i in c(1:nb.sim)) {
       set.seed(i)
       if(length(sigma.sim)==1){
@@ -136,6 +146,9 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
   if(x.axis == "rho"){
     param.test = list.param.ar
     x.axis1 = expression(Phi)
+  }else if(x.axis == "theta"){
+    param.test = list.ma
+    x.axis1 = expression(theta)
   }else{
     param.test = list.param.sig*100/0.5
     x.axis1 = "Range of variance(%) "
@@ -165,15 +178,14 @@ simu_performance <- function(off.set, heteroscedast, autocor, x.axis, nb.sim, li
  # a=simu_performance(off.set, heteroscedast, autocor, x.axis, nb.sim, list.param.ar, list.param.sig, noise.model=c(1,0,0))
 
 # test simulation FGLS-------------------------
-case = data.frame(h = rep(c(0,1,1,1),2),
+case = data.frame(h = rep(c(0,0,1,1),2),
                   a = rep(c(1,1,1,1),2), 
                   offset = rep(c(0, 0.3), each = 4), 
-                  x.axis = rep(c("rho", "sig"),4))
-nb.sim=10
+                  x.axis = rep(c("theta", "rho"),4))
+
 list.param.sig = seq(0,0.8,0.2)
-list.ma = seq(0,0.6,0.3)
 list.param.ar = rep(0, length(list.ma))
-for (j in c(1:2)) {
+for (j in c(1:nrow(case))) {
     off.set = case$offset[j]
     heteroscedast = case$h[j]
     autocor = case$a[j]
