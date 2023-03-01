@@ -222,8 +222,22 @@ contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Tota
 )
 
 Total.res$config = contra
+
+# add length of segment 
+Total.res$n1= NA
+Total.res$n2= NA
+
+for (i in c(1:nrow(reduced.list))) {
+  name.i = reduced.list$station[i]
+  brp.i = as.Date(substr(name.i, 6, 15), format = "%Y-%m-%d")
+  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS/", name.i, "fgls.RData")))
+  Total.res$n1[i] = length(na.omit(dat.i$gps.gps$design.matrix$signal[which(dat.i$gps.gps$design.matrix$date > brp.i)]))
+  Total.res$n2[i] = length(na.omit(dat.i$gps.gps$design.matrix$signal[which(dat.i$gps.gps$design.matrix$date < brp.i)]))
+}
+
 save(Total.res, file = paste0(path_results,"attribution0/stats_test_real_data_new.RData"))
 Total.res1 = get(load(paste0(path_results,"attribution0/stats_test_real_data.RData")))
+Total.res2 = get(load(paste0(path_results,"attribution0/stats_test_real_data_new.RData")))
 
 sapply(c(1:6), function(x) table(Total.res1[,(12+x)] - Total.coded[,x]))
 
