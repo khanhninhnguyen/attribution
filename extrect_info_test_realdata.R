@@ -222,13 +222,14 @@ contra = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Tota
 )
 
 Total.res$config = contra
+save(Total.res, file = paste0(path_results,"attribution0/stats_test_real_data_new.RData"))
 Total.res1 = get(load(paste0(path_results,"attribution0/stats_test_real_data.RData")))
 
 sapply(c(1:6), function(x) table(Total.res1[,(12+x)] - Total.coded[,x]))
 
-# compare the ne and old:
+# compare the new and old:
 compa = cbind(Total.res1[,(13:18)], Total.coded, reduced.list$station)
-
-
+colnames(compa) = c(paste0(colnames(compa)[1:6], ".old"), paste0(colnames(compa)[7:12], ".new"), "station")
+compa[which(compa$`G-G'.old` != compa$`G-G'.new`),]
 
 

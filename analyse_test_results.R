@@ -292,3 +292,6 @@ Out.res = cbind(reduced.list[,c(1:3,19)], Total.res[,c(6:10)], reduced.list[,c(1
 colnames(Out.res)[c(4,10,11)] = c(paste0("t", list.name.test[1]), "n1", "n2")
 write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/FGLS_on_real_data1.txt"), sep = '\t', quote = FALSE, row.names = FALSE)
 
+
+
+# check the length of data old and new 
