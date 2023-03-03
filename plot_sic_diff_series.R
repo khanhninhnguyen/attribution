@@ -326,7 +326,9 @@ plot_six <- function(name.case){
                  ", t = ", round(station[[name.s]]$t.table$`t value`[9], digits = 2), 
                  ", SD = ", round(mean(sqrt(station[[name.s]]$var), na.rm = TRUE) , digits = 2), 
                  ", AR: ", round(station[[name.s]]$coef.arma$phi, digits = 2), 
-                 ", MA: ", round(station[[name.s]]$coef.arma$theta, digits = 2))
+                 ", MA: ", round(station[[name.s]]$coef.arma$theta, digits = 2),
+                 ", Config:", final.t$Z.truth[ind.case],
+                 ", Predict: ", final.t$pred.y[ind.case])
   
   if(nrow(meta.g)>0){
     datai$meta = NA

@@ -11,7 +11,7 @@ all.arima = read.csv(file = paste0(path_results, "attribution0/FGLS_on_real_data
 # data.GG = Total.res[which(abs(Total.res$`tG-G'`)>1.96 & abs(Total.res$`tG-G'`)<3.1 & Total.res$distance <25),]
 data.GG = Total.res[which(abs(Total.res$`tG-G'`)<1.96 ),]
 all.case.p = data.GG$station
-for (i in c(1:length(all.case.p))) {
+for (i in c(481:length(all.case.p))) {
   plot_six(all.case.p[i])
 }
 ### variance plot 
