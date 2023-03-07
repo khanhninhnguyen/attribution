@@ -158,6 +158,16 @@ save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_co
 
 
 # plot --------------------------------------------------------------------
+## length
+all.length = get(load(file = paste0(path_results, "attribution0/performance_autoarima_length_all.RData")))
+#NEED TO BE CHECKED ONLY WHEN THEY IDENTIRY THE TRUE MODEL
+phi = sapply(c(1:length(all.length)), function(y) sapply(c(1:length(all.length[[y]])), function(x)all.length[[1]][[x]]$arma$coef[1])) 
+phi.rms = sapply(c(1:length(all.length)), function(x) sqrt( sum((phi[,x] - 0.3)^2)))
+tpr.ar1 = sapply(c(1:length(ar1)), function(x) which(ar1[[x]]=="AR(1)"))
+
+boxplot(phi)
+ar1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_length.RData")))
+
 ar1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ar_all.RData")))
 ma1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ma_all.RData")))
 arma11 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all.RData")))
@@ -165,4 +175,7 @@ arma11 = get(load( file = paste0(path_results, "attribution0/performance_autoari
 tpr.ar1 = sapply(c(1:length(ar1)), function(x) length(which(ar1[[x]]=="AR(1)")))[-1]/nb.sim
 tpr.ma1 = sapply(c(1:length(ma1)), function(x) length(which(ma1[[x]]=="MA(1)")))[-1]/nb.sim
 tpr.arma11 = sapply(c(1:length(arma11)), function(x) length(which(arma11[[x]]=="ARMA(1,1)")))[-1]/nb.sim
+
+ar1 = sapply(c(1:length(all.length[[2]])), function(x) model.iden(all.length[[2]][[x]]$arma$pq))
+ind.ar = which(ar1=="AR(1)")
 
