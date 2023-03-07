@@ -161,21 +161,150 @@ save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_co
 ## length
 all.length = get(load(file = paste0(path_results, "attribution0/performance_autoarima_length_all.RData")))
 #NEED TO BE CHECKED ONLY WHEN THEY IDENTIRY THE TRUE MODEL
-phi = sapply(c(1:length(all.length)), function(y) sapply(c(1:length(all.length[[y]])), function(x)all.length[[1]][[x]]$arma$coef[1])) 
-phi.rms = sapply(c(1:length(all.length)), function(x) sqrt( sum((phi[,x] - 0.3)^2)))
-tpr.ar1 = sapply(c(1:length(ar1)), function(x) which(ar1[[x]]=="AR(1)"))
 
-boxplot(phi)
-ar1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_length.RData")))
+all.ar1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ar_all.RData")))
+all.ma1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ma_all.RData")))
+all.arma11 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all.RData")))
 
-ar1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ar_all.RData")))
-ma1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ma_all.RData")))
-arma11 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all.RData")))
+extract_arima <- function(df.res, model, true.param, phi, length.c){
+  # choose model
+  if(model == "AR(1)"){name = "ar"}
+  if(model == "MA(1)"){name = "ma"}
+  if(model == "ARMA(1,1)"){name = "arma"}
+  
+  # choose param 
+  if(phi==1){
+    p = 1
+  }else{p=3}
+  # read all info
+  n.iter = length(df.res)
+  if(length(true.param)==1){ true.param = rep(true.param, n.iter)}
+  
+  if(length.c==1){
+    model.iden = sapply(c(1:n.iter), function(y) sapply(c(1:length(df.res[[y]])), function(x) model.iden(df.res[[y]][[x]][[name]]$pq))) 
+    phi = sapply(c(1:n.iter), function(y) sapply(c(1:length(df.res[[y]])), function(x) df.res[[y]][[x]][[name]]$coef[p])) 
+  }else{
+    model.iden = sapply(c(1:n.iter), function(y) sapply(c(1:length(df.res[[y]])), function(x) model.iden(df.res[[y]][[x]]$pq))) 
+    phi = sapply(c(1:n.iter), function(y) sapply(c(1:length(df.res[[y]])), function(x) df.res[[y]][[x]]$coef[p])) 
+  }
+ 
+  res = data.frame(matrix(NA, ncol = 2, nrow = n.iter))
+  ests = list()
+  for (i in c(1:n.iter)) {
+    ind.ar = which(model.iden[,i] == model)
+    if(length(ind.ar)==0){
+      rms = NA
+    }else{
+      rms = sqrt(sum((phi[ind.ar,i]-true.param[i])^2)/length(ind.ar))
+    }
+    res[i,] = c(length(ind.ar), rms)
+    ests[[i]] = phi[ind.ar,i]
+  }
+  colnames(res) = c("tpr", "rmsd")
+  return(list(tpr = res, est = ests))
+}
 
-tpr.ar1 = sapply(c(1:length(ar1)), function(x) length(which(ar1[[x]]=="AR(1)")))[-1]/nb.sim
-tpr.ma1 = sapply(c(1:length(ma1)), function(x) length(which(ma1[[x]]=="MA(1)")))[-1]/nb.sim
-tpr.arma11 = sapply(c(1:length(arma11)), function(x) length(which(arma11[[x]]=="ARMA(1,1)")))[-1]/nb.sim
+ar1 = extract_arima(all.length, model = "AR(1)", true.param = 0.3, phi = 1)
+ma1 = extract_arima(all.length, model = "MA(1)", true.param = 0.3, phi = 0)
+arma1 = extract_arima(all.length, model = "ARMA(1,1)", true.param = 0.7, phi = 1)
+arma1 = extract_arima(all.length, model = "ARMA(1,1)", true.param = 0.7, phi = 1)
 
-ar1 = sapply(c(1:length(all.length[[2]])), function(x) model.iden(all.length[[2]][[x]]$arma$pq))
-ind.ar = which(ar1=="AR(1)")
+# plot TPR
+
+TPR = data.frame(n = length.list, 
+                 ar = ar1$tpr$tpr, 
+                 ma1 = ma1$tpr$tpr, 
+                 arma1 = arma1$tpr$tpr)
+
+colnames(TPR) = c("N", "AR(1)", "MAR(1)", "ARMA(1,1)")
+dat.p = reshape2::melt(TPR, id="N")
+p = ggplot(data = dat.p, aes(x = N, y = value/nb.sim, col = variable))+
+  theme_bw()+
+  geom_point(size = 0.3)+
+  geom_hline(yintercept = 0.95, lwd = 0.3)+
+  ylab("TPR")+
+  scale_x_continuous(breaks = length.list, 
+                     limits = c(200, 2000))+
+  theme(axis.text.x = element_text(size = 5),
+      axis.text.y = element_text(size = 5),
+      legend.text=element_text(size=4),
+      axis.title = element_text(size = 5),
+      legend.key.size = unit(0.3, "cm"),
+      plot.tag = element_text(size = 5),
+      plot.subtitle = element_text(size = 5),
+      legend.title=element_blank())
+# 
+ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_length.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+# plot coefficients 
+
+## coefficicents 
+coeff = seq(0, 0.8, 0.1)
+ar1 = extract_arima(all.ar1, model = "AR(1)", true.param = coeff, phi = 1, length.c = 0)
+ma1 = extract_arima(all.ma1, model = "MA(1)", true.param = coeff, phi = 0, length.c = 0)
+arma1 = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 1, length.c = 0)
+arma1 = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 0, length.c = 0)
+
+TPR = data.frame(coef = coeff, 
+                 ar = ar1$tpr$tpr, 
+                 ma1 = ma1$tpr$tpr, 
+                 arma1 = arma1$tpr$tpr)
+TPR = TPR[-1,]
+colnames(TPR) = c("coef", "AR(1)", "MAR(1)", "ARMA(1,1)")
+dat.p = reshape2::melt(TPR, id="coef")
+p = ggplot(data = dat.p, aes(x = coef, y = value/nb.sim, col = variable))+
+  theme_bw()+
+  geom_point(size = 0.3)+
+  geom_hline(yintercept = 0.95, lwd = 0.3)+
+  ylab("TPR")+
+  scale_x_continuous(breaks = coeff[-1], 
+                     limits = c(0.1, 0.8))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        plot.subtitle = element_text(size = 5),
+        legend.title=element_blank())
+# 
+ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_coef.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+# plot a specific case 
+chosen = 2
+print(paste0("Coefficient is chosen:", coeff[chosen]))
+list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
+ar1.iden = sapply(c(1:length(all.ar1[[chosen]])), function(x) model.iden(all.ar1[[chosen]][[x]]$pq))
+ma1.iden = sapply(c(1:length(all.ma1[[chosen]])), function(x) model.iden(all.ma1[[chosen]][[x]]$pq))
+arma.iden = sapply(c(1:length(all.arma11[[chosen]])), function(x) model.iden(all.arma11[[chosen]][[x]]$pq))
+dat.all = data.frame(ar = ar1.iden, ma = ma1.iden, arma = arma.iden)
+count = sapply(c(1:3), function(y) sapply(list.model, function(x) length(which(dat.all[,y] == x))))
+dat.p = reshape2::melt(count)
+dat.p$Var2 = rep(list.model[-1], each = 4)
+colnames(dat.p) = c("predict", "truth", "value")
+dat.p$predict = as.factor(dat.p$predict)
+
+p = ggplot(data = dat.p, aes(x = truth, y = value/nb.sim, fill = predict))+
+  theme_bw()+
+  geom_bar(position="stack", stat="identity", width = 0.5)+
+  ylab("Percentage")+
+  labs(subtitle = paste0("coeff = ",  coeff[chosen], ", N = 1000"))+
+  scale_y_continuous(labels = scales::percent) +
+  # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
+  #           position = position_stack(vjust = 0.5), size = 1)+
+  ggrepel::geom_text_repel(aes(label = paste0(value*100/nb.sim,"%")), 
+            position = position_stack(vjust = 0.5), size = 1, direction = "y", 
+            box.padding = unit(0.01, "lines"))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        plot.subtitle = element_text(size = 5),
+        legend.title=element_blank())
+  
+ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_coef_specific", coeff[chosen], ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+
 
