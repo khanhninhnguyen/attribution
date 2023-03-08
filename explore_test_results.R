@@ -1,5 +1,7 @@
 # this program is to explore the test result 
 source(paste0(path_code_att,"plot_sic_diff_series.R"))
+source(paste0(path_code_att,"support_characterization.R"))
+source(paste0(path_code_att,"FGLS.R"))
 
 Total.res = get(load(paste0(path_results,"attribution0/stats_test_real_data.RData")))
 all.var = read.csv(file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), sep = "\t", stringsAsFactors = FALSE,check.names = FALSE)
@@ -176,7 +178,45 @@ e = d[which(Total.res$station %in% b$station == TRUE)]
 
 # see the relation bw length and model  -----------------------------------
 win.thres = 10 
-order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
-coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
-
+dat = get(load( file = paste0(path_results,"attribution0/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
+all.model = data.frame(matrix(NA, ncol = 6, nrow = nrow(all.arima)))
+model_from_val <- function(x){
+  if(x[1] != 0 & x[2] == 0){ y = "AR(1)"}
+  if(x[1] == 0 & x[2] != 0){ y = "MA(1)"}
+  if(x[1] == 0 & x[2] == 0){ y = "White"}
+  if(x[1] != 0 & x[2] != 0){ y = "ARMA(1,1)"}
+  return(y)
+}
 # check the length used for characterize the order 
+for (i in c(1:6)) {
+  ind = c(i*2-1, i*2)
+  for (j in c(1:nrow(all.arima))) {
+    all.model[j,i] =  model_from_val(as.numeric(all.arima[j,ind]))
+  }
+}
+
+length.all = data.frame(matrix(NA, ncol = 6, nrow = nrow(all.arima)))
+
+for (j in c(1:nrow(Total.res))) {
+  name.j = Total.res$station[j]
+  dat.j = dat[[name.j]]
+  l = sapply(c(1:6), function(x) length(na.omit(dat.j[,x])))
+  length.all[j,] = l
+}
+all.model$c = c(1:nrow(all.model))
+length.all$c = c(1:nrow(all.model))
+all.dat = cbind(reshape2::melt(all.model, id = "c"), reshape2::melt(length.all, id = "c"))[,c(3,6)]
+colnames(all.dat) = c("model", "length")
+
+dat = all.dat[!duplicated(all.dat),]
+a = dat[which(dat$length<1000),]
+
+p <- a %>%
+  ggplot( aes(x=length, fill=model)) + theme_bw()+
+  geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 50) +
+  scale_fill_manual(values=c("#69b3a2", "#404080", "#FFA07A", "#ADFF2F" )) +
+  labs(fill="")
+
+
+
+

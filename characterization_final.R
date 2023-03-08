@@ -81,7 +81,7 @@ dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 
 # save(full.list, file = paste0(path_results, "attribution/list.segments.selected", win.thres,".RData"))
 # LIST OF STATION   ------------------
 
-full.list = get(load( file = paste0(path_results, "attribution/list.segments.selected", win.thres = 10,".RData")))
+full.list = get(load( file = paste0(path_results, "attribution0/list.segments.selected", win.thres = 10,".RData")))
 reduced.list = full.list
 # reduced.list$chose[51] =1
 # reduced.list$l = sapply(c(1:nrow(reduced.list)), function(x) reduced.list[x, c(4,5)][reduced.list$chose[x]])
