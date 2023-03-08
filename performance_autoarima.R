@@ -158,10 +158,7 @@ save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_co
 
 
 # plot --------------------------------------------------------------------
-## length
 all.length = get(load(file = paste0(path_results, "attribution0/performance_autoarima_length_all.RData")))
-#NEED TO BE CHECKED ONLY WHEN THEY IDENTIRY THE TRUE MODEL
-
 all.ar1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ar_all.RData")))
 all.ma1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ma_all.RData")))
 all.arma11 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all.RData")))
@@ -187,7 +184,7 @@ extract_arima <- function(df.res, model, true.param, phi, length.c){
     model.iden = sapply(c(1:n.iter), function(y) sapply(c(1:length(df.res[[y]])), function(x) model.iden(df.res[[y]][[x]]$pq))) 
     phi = sapply(c(1:n.iter), function(y) sapply(c(1:length(df.res[[y]])), function(x) df.res[[y]][[x]]$coef[p])) 
   }
- 
+  
   res = data.frame(matrix(NA, ncol = 2, nrow = n.iter))
   ests = list()
   for (i in c(1:n.iter)) {
@@ -204,12 +201,15 @@ extract_arima <- function(df.res, model, true.param, phi, length.c){
   return(list(tpr = res, est = ests))
 }
 
-ar1 = extract_arima(all.length, model = "AR(1)", true.param = 0.3, phi = 1)
-ma1 = extract_arima(all.length, model = "MA(1)", true.param = 0.3, phi = 0)
-arma1 = extract_arima(all.length, model = "ARMA(1,1)", true.param = 0.7, phi = 1)
-arma1 = extract_arima(all.length, model = "ARMA(1,1)", true.param = 0.7, phi = 1)
+## length---------------
+#NEED TO BE CHECKED ONLY WHEN THEY IDENTIRY THE TRUE MODEL
 
-# plot TPR
+ar1 = extract_arima(all.length, model = "AR(1)", true.param = 0.3, phi = 1, length.c = 1)
+ma1 = extract_arima(all.length, model = "MA(1)", true.param = 0.3, phi = 0, length.c = 1)
+arma.phi = extract_arima(all.length, model = "ARMA(1,1)", true.param = 0.7, phi = 1, length.c = 1)
+arma.theta = extract_arima(all.length, model = "ARMA(1,1)", true.param = -0.4, phi = 0, length.c = 1)
+
+### plot TPR -----------
 
 TPR = data.frame(n = length.list, 
                  ar = ar1$tpr$tpr, 
@@ -236,15 +236,51 @@ p = ggplot(data = dat.p, aes(x = N, y = value/nb.sim, col = variable))+
 # 
 ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_length.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
-# plot coefficients 
+### plot coefficients ----------------
+dat.ar = as.data.frame(plyr::ldply(ar1$est, rbind))  %>% 
+  mutate(length = as.factor(length.list)) %>% 
+  reshape2::melt(id = "length")
+dat.ma = as.data.frame(plyr::ldply(ma1$est, rbind)) %>% 
+  mutate(length = as.factor(length.list)) %>% 
+  reshape2::melt(id = "length")
+dat.arma.phi = as.data.frame(plyr::ldply(arma.phi$est, rbind)) %>% 
+  mutate(length = as.factor(length.list)) %>% 
+  reshape2::melt(id = "length")
+dat.arma.theta = as.data.frame(plyr::ldply(arma.theta$est, rbind)) %>% 
+  mutate(length = as.factor(length.list)) %>% 
+  reshape2::melt(id = "length")
+dat.arma = rbind(dat.arma.phi, dat.arma.theta) %>% 
+  mutate(param = as.factor(rep(c("phi", "theta"), each = nrow(dat.arma.phi))))
+  
 
-## coefficicents 
+p1 = ggplot(data = dat.ar, aes(x = length, y = value))+ theme_bw()+
+  geom_boxplot(lwd = 0.3, outlier.size = 0.3)
+p2 = ggplot(data = dat.ma, aes(x = length, y = value))+ theme_bw()+
+  geom_boxplot(lwd = 0.3, outlier.size = 0.3)
+p3 = ggplot(data = dat.arma, aes(x = length, y = value, fill = param))+ theme_bw()+
+  geom_boxplot(lwd = 0.15, outlier.size = 0.15)
+
+p = p3 + ylab("Coefficients")+
+  geom_hline(yintercept = c(0.7,-0.4), lwd = 0.3, col = "gray")+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        plot.subtitle = element_text(size = 5),
+        legend.title=element_blank())
+
+ggsave(paste0(path_results,"attribution0/estimates_length_arma1.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+
+## coefficicents -----------------
 coeff = seq(0, 0.8, 0.1)
 ar1 = extract_arima(all.ar1, model = "AR(1)", true.param = coeff, phi = 1, length.c = 0)
 ma1 = extract_arima(all.ma1, model = "MA(1)", true.param = coeff, phi = 0, length.c = 0)
-arma1 = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 1, length.c = 0)
-arma1 = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 0, length.c = 0)
-
+arma.phi = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 1, length.c = 0)
+arma.theta = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 0, length.c = 0)
+### TPR------
 TPR = data.frame(coef = coeff, 
                  ar = ar1$tpr$tpr, 
                  ma1 = ma1$tpr$tpr, 
@@ -269,6 +305,48 @@ p = ggplot(data = dat.p, aes(x = coef, y = value/nb.sim, col = variable))+
         legend.title=element_blank())
 # 
 ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_coef.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+### estimates impact ----------
+
+dat.ar = as.data.frame(plyr::ldply(ar1$est, rbind))  %>% 
+  mutate(coef = as.factor(coeff)) %>% 
+  reshape2::melt(id = "coef")
+dat.ma = as.data.frame(plyr::ldply(ma1$est, rbind)) %>% 
+  mutate(coef = as.factor(coeff)) %>% 
+  reshape2::melt(id = "coef")
+dat.arma.phi = as.data.frame(plyr::ldply(arma.phi$est[4:9], rbind)) %>% 
+  mutate(coef = as.factor(coeff[4:9])) %>% 
+  reshape2::melt(id = "coef")
+dat.arma.theta = as.data.frame(plyr::ldply(arma.theta$est[4:9], rbind)) %>% 
+  mutate(coef = as.factor(coeff[4:9])) %>% 
+  reshape2::melt(id = "coef")
+dat.arma = rbind(dat.arma.phi, dat.arma.theta) %>% 
+  mutate(param = as.factor(rep(c("phi", "theta"), each = nrow(dat.arma.phi)))) %>% 
+  mutate(true = as.numeric(as.character(coef)))
+dat.arma$true[which(dat.arma$param!= "phi")] = 0.3-dat.arma$true[which(dat.arma$param!= "phi")]
+p1 = ggplot(data = dat.ar, aes(x = coef, y = value))+ theme_bw()+
+  geom_boxplot(lwd = 0.15, outlier.size = 0.15, width=0.5 )
+p2 = ggplot(data = dat.ma, aes(x = coef, y = value))+ theme_bw()+
+  geom_boxplot(lwd = 0.15, outlier.size = 0.15, width=0.5 )
+p3 = ggplot(data = dat.arma, aes(x = coef, fill = param))+ theme_bw()+
+  geom_boxplot(aes( y = value), lwd = 0.15, outlier.size = 0.15, width=0.5 )+
+  geom_point(aes( y = true, col = param), size = 0.15)
+
+p = p3 + ylab("Estimates")+
+  scale_y_continuous(breaks = seq(-0.8, 0.8, 0.2), limits = c(-0.8,0.8))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        plot.subtitle = element_text(size = 5),
+        legend.title=element_blank())
+
+ggsave(paste0(path_results,"attribution0/estimates_coef_arma1.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+
+
 
 # plot a specific case 
 chosen = 2
@@ -305,6 +383,4 @@ p = ggplot(data = dat.p, aes(x = truth, y = value/nb.sim, fill = predict))+
         legend.title=element_blank())
   
 ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_coef_specific", coeff[chosen], ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
-
-
 

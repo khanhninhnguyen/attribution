@@ -172,3 +172,11 @@ b = inner_join(a[17,], Total.res, by = c( "G-G'" , "G-E'",  "E-E'" , "G'-E'", "G
 e = d[which(Total.res$station %in% b$station == TRUE)]
 
 
+
+
+# see the relation bw length and model  -----------------------------------
+win.thres = 10 
+order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
+
+# check the length used for characterize the order 
