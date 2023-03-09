@@ -132,8 +132,8 @@ save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_co
 save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_coef_ma_all.RData"))
 
 # coefficient dependence ARMA(1,1) --------------------------------------------------
-coef.list.ar = seq(0, 0.8, 0.1)
-coef.list.ma = 0.3-coef.list.ar
+coef.list.ar = c(0.1, 0.2, 0.3)
+coef.list.ma = c(0.1, 0.2, 0.3)
 tot.fit = list()
 set.seed(1)
 TPR.ar <- rep(NA, nb.sim)
@@ -153,8 +153,8 @@ for (i in c(1:length(coef.list.ar))) {
   tot.fit[[i]] = fit.i
 }
 
-save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_arma.RData"))
-save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all.RData"))
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_arma1.RData"))
+save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all1.RData"))
 
 
 # plot --------------------------------------------------------------------

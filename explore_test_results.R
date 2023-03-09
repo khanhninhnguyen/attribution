@@ -208,15 +208,32 @@ length.all$c = c(1:nrow(all.model))
 all.dat = cbind(reshape2::melt(all.model, id = "c"), reshape2::melt(length.all, id = "c"))[,c(3,6)]
 colnames(all.dat) = c("model", "length")
 
-dat = all.dat[!duplicated(all.dat),]
+dat = all.dat1[!duplicated(all.dat1),]
 a = dat[which(dat$length<1000),]
+all.dat1 = cbind(all.dat, phi = reshape2::melt(all.arima[,seq(1,12,2)]), theta = reshape2::melt(all.arima[,seq(2,12,2)]))
 
-p <- a %>%
+all.dat1$model = as.factor(all.dat1$model)
+p <- d %>%
   ggplot( aes(x=length, fill=model)) + theme_bw()+
   geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 50) +
   scale_fill_manual(values=c("#69b3a2", "#404080", "#FFA07A", "#ADFF2F" )) +
+  scale_x_continuous(breaks = seq(0,7500,500), limits = c(0,7500))+
   labs(fill="")
+d = dat[which(dat$model == "ARMA(1,1)" & dat$phi.value>0.9),]
 
+p <- d %>%
+  ggplot( aes(x=model, y = phi.value)) + theme_bw()+
+  geom_boxplot()
 
+d = dat
+d$phi.value[which(d$model=="MA(1)")] = NA
+d$theta.value[which(d$model=="AR(1)")] = NA
+d$g = floor(d$length/500)*1000/2
+d = d[which(d$model!= "White"),c(1,4,6,7)]
+d = reshape2::melt(d, id = c("g", "model"))
+d$g = as.factor(d$g)
 
+d %>%
+  ggplot( aes(x=g, y = value, col = model, fill = variable)) + theme_bw()+
+  geom_boxplot()
 
