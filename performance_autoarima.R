@@ -5,8 +5,9 @@ source(paste0(path_code_att,"support_characterization.R"))
 
 # As a function of length -------------------------------------------------
 length.list = seq(200, 2000, 200)
-nb.sim = 10000
+nb.sim = 100
 tot.res = data.frame(n = length.list, 
+                     TPR.white = rep(NA, length(length.list)),
                      TPR.ar = rep(NA, length(length.list)),
                      TPR.ma = rep(NA, length(length.list)),
                      TPR.arma = rep(NA, length(length.list)))
@@ -18,21 +19,24 @@ set.seed(1)
 tot.fit = list()
 for (i in c(1:length(length.list))) {
   n = length.list[i]
-  TPR = data.frame(matrix(NA, ncol = 3, nrow = nb.sim)) 
+  TPR = data.frame(matrix(NA, ncol = 4, nrow = nb.sim)) 
   fit.i = list()
   for (j in c(1:nb.sim)) {
+    y.white = rnorm(n, mean = 0, sd = 1)
     y.ar = simulate.general1(N = n, arma.model = c(ar=0.3,ma=0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
-    y.ma = simulate.general1(N = n, arma.model = c(ar=0,ma=0.3), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
-    y.arma = simulate.general1(N = n, arma.model = c(ar=0.7,ma=-0.4), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    y.ma = simulate.general1(N = n, arma.model = c(ar=0,ma=0.2), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    y.arma = simulate.general1(N = n, arma.model = c(ar=0.6,ma=-0.3), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
     # fit
     fit.ar = fit.arima(y.ar)
     fit.ma = fit.arima(y.ma)
     fit.arma = fit.arima(y.arma)
-    TPR[j,] = c( model.iden(fit.ar$pq), model.iden(fit.ma$pq), model.iden(fit.arma$pq))
-    fit.i[[j]] = list( ar = fit.ar, ma = fit.ma, arma = fit.arma)
+    fit.white = fit.arima(y.white)
+    TPR[j,] = c( model.iden(fit.ar$pq), model.iden(fit.ma$pq), model.iden(fit.arma$pq), model.iden(fit.white$pq))
+    fit.i[[j]] = list( ar = fit.ar, ma = fit.ma, arma = fit.arma, white = fit.white)
   }
-  colnames(TPR) = c("ar", "ma", "arma")
-  tot.res[i,c(2:4)] = c(length(which(TPR$ar == "AR(1)")), 
+  colnames(TPR) = c("ar", "ma", "arma", "white")
+  tot.res[i,c(2:5)] = c(length(which(TPR$white == "White")), 
+                  length(which(TPR$ar == "AR(1)")), 
                   length(which(TPR$ma == "MA(1)")),
                   length(which(TPR$arma == "ARMA(1,1)")))
   tot.fit[[i]] = fit.i
@@ -40,6 +44,42 @@ for (i in c(1:length(length.list))) {
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_length.RData"))
 save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_length_all.RData"))
+
+
+## As a function of coefficients -------------------------------------------------
+coef.list = seq(0, 0.8, 0.1)
+set.seed(1)
+tot.fit = list()
+for (i in c(1:length(length.list))) {
+  phi = coef.list[i]
+  theta = 0.3 - phi
+  TPR = data.frame(matrix(NA, ncol = 4, nrow = nb.sim)) 
+  fit.i = list()
+  for (j in c(1:nb.sim)) {
+    y.white = rnorm(n, mean = 0, sd = 1)
+    y.ar = simulate.general1(N = n, arma.model = c(ar=phi, ma=0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    y.ma = simulate.general1(N = n, arma.model = c(ar=0, ma=phi), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    y.arma = simulate.general1(N = n, arma.model = c(ar=phi, ma=theta), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    y.arma1 = simulate.general1(N = n, arma.model = c(ar=phi, ma=(phi -0.1)), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+    # fit
+    fit.ar = fit.arima(y.ar)
+    fit.ma = fit.arima(y.ma)
+    fit.arma = fit.arima(y.arma)
+    fit.white = fit.arima(y.white)
+    TPR[j,] = c(model.iden(fit.ar$pq), model.iden(fit.ma$pq), model.iden(fit.arma$pq), model.iden(fit.white$pq))
+    fit.i[[j]] = list( ar = fit.ar, ma = fit.ma, arma = fit.arma, white = fit.white)
+  }
+  colnames(TPR) = c("ar", "ma", "arma", "white")
+  tot.res[i,c(2:5)] = c(length(which(TPR$white == "White")), 
+                        length(which(TPR$ar == "AR(1)")), 
+                        length(which(TPR$ma == "MA(1)")),
+                        length(which(TPR$arma == "ARMA(1,1)")))
+  tot.fit[[i]] = fit.i
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef.RData"))
+save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_coef_all.RData"))
+
 
 # a = get(load( file = paste0(path_results, "attribution0/performance_autoarima_length.RData")))
 # colnames(a) = c("N", "AR(1)", "MAR(1)", "ARMA(1,1)")
@@ -155,6 +195,7 @@ for (i in c(1:length(coef.list.ar))) {
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_arma1.RData"))
 save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all1.RData"))
+
 
 
 # plot --------------------------------------------------------------------
@@ -349,7 +390,7 @@ ggsave(paste0(path_results,"attribution0/estimates_coef_arma1.jpg" ), plot = p, 
 
 
 # plot a specific case 
-chosen = 2
+chosen = 4
 print(paste0("Coefficient is chosen:", coeff[chosen]))
 list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
 ar1.iden = sapply(c(1:length(all.ar1[[chosen]])), function(x) model.iden(all.ar1[[chosen]][[x]]$pq))
