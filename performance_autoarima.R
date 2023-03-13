@@ -333,11 +333,12 @@ ggsave(paste0(path_results,"attribution0/estimates_length_arma1.jpg" ), plot = p
 
 ## coefficicents -----------------
 coeff = seq(0, 0.8, 0.1)
+# only true model is used
 ar1 = extract_arima(all.ar1, model = "AR(1)", true.param = coeff, phi = 1, length.c = 0)
 ma1 = extract_arima(all.ma1, model = "MA(1)", true.param = coeff, phi = 0, length.c = 0)
 arma.phi = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 1, length.c = 0)
 arma.theta = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 0, length.c = 0)
-
+#estimate with the true model
 ar1 = extract_arima(all.coef, model = "AR(1)", true.param = coeff, phi = 1, length.c = 1)
 ma1 = extract_arima(all.coef, model = "MA(1)", true.param = coeff, phi = 0, length.c = 1)
 arma.phi = extract_arima(all.coef, model = "ARMA(1,1)", true.param = coeff, phi = 1, length.c = 1)
@@ -414,7 +415,7 @@ ggsave(paste0(path_results,"attribution0/estimates_coef_arma1.jpg" ), plot = p, 
 
 
 
-# plot a specific case 
+# plot a specific case -----------------
 chosen = 4
 print(paste0("Coefficient is chosen:", coeff[chosen]))
 list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
@@ -426,13 +427,16 @@ count = sapply(c(1:3), function(y) sapply(list.model, function(x) length(which(d
 dat.p = reshape2::melt(count)
 dat.p$Var2 = rep(list.model[-1], each = 4)
 colnames(dat.p) = c("predict", "truth", "value")
-dat.p$predict = as.factor(dat.p$predict)
+dat.p$predict = factor(dat.p$predict, levels = list.model)
+dat.p$truth = factor(dat.p$truth, levels = list.model[-1])
 
 p = ggplot(data = dat.p, aes(x = truth, y = value/nb.sim, fill = predict))+
   theme_bw()+
   geom_bar(position="stack", stat="identity", width = 0.5)+
   ylab("Percentage")+
-  labs(subtitle = paste0("coeff = ",  coeff[chosen], ", N = 1000"))+
+  labs(subtitle = paste0( "N = 1000, AR :", coeff[chosen],
+                          ", MA :", coeff[chosen],
+                          ", ARMA :", coeff[chosen], ", ", round(0.3-coeff[chosen], digits = 1)))+
   scale_y_continuous(labels = scales::percent) +
   # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
   #           position = position_stack(vjust = 0.5), size = 1)+
@@ -445,10 +449,49 @@ p = ggplot(data = dat.p, aes(x = truth, y = value/nb.sim, fill = predict))+
         axis.title = element_text(size = 5),
         legend.key.size = unit(0.3, "cm"),
         plot.tag = element_text(size = 5),
-        plot.subtitle = element_text(size = 5),
+        plot.subtitle = element_text(size = 4),
         legend.title=element_blank())
   
 ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_coef_specific", coeff[chosen], ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+# specific case for length 
+chosen = 9
+### plot --------
+print(paste0("Length is chosen:", length.list[chosen]))
+list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
+ar1.iden = sapply(c(1:length(all.length[[chosen]])), function(x) model.iden(all.length[[chosen]][[x]]$ar$pq))
+ma1.iden = sapply(c(1:length(all.length[[chosen]])), function(x) model.iden(all.length[[chosen]][[x]]$ma$pq))
+arma.iden = sapply(c(1:length(all.length[[chosen]])), function(x) model.iden(all.length[[chosen]][[x]]$arma$pq))
+white.iden = sapply(c(1:length(all.length[[chosen]])), function(x) model.iden(all.length[[chosen]][[x]]$white$pq))
+
+dat.all = data.frame(white = white.iden, ar = ar1.iden, ma = ma1.iden, arma = arma.iden)
+count = sapply(c(1:4), function(y) sapply(list.model, function(x) length(which(dat.all[,y] == x))))
+dat.p = reshape2::melt(count)
+colnames(dat.p) = c("predict", "truth", "value")
+dat.p$predict = factor(dat.p$predict, levels = list.model)
+dat.p$truth = factor(rep(list.model, each = 4), levels = list.model)
+
+p = ggplot(data = dat.p, aes(x = truth, y = value/nb.sim, fill = predict))+
+  theme_bw()+
+  geom_bar(position="stack", stat="identity", width = 0.5)+
+  ylab("Percentage")+
+  labs(subtitle = paste0( "N = ", length.list[chosen], ",   AR : 0.3", ",   MA : 0.2", ",   ARMA : 0.6,-0.3"))+
+  scale_y_continuous(labels = scales::percent) +
+  # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
+  #           position = position_stack(vjust = 0.5), size = 1)+
+  ggrepel::geom_text_repel(aes(label = paste0(value*100/nb.sim,"%")), 
+                           position = position_stack(vjust = 0.5), size = 1, direction = "y", 
+                           box.padding = unit(0.01, "lines"))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        plot.subtitle = element_text(size = 4),
+        legend.title=element_blank())
+
+ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_length_specific", length.list[chosen], ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 
 
@@ -494,7 +537,7 @@ save(sim.ma, file = paste0(path_results, "attribution0/performance_autoarima_coe
 sim.arma = sim_est(model.order = c(1,0,1), param = length.list, x.axis = "n", sigma.sim = 1, phi = 0.6, theta = -0.3, nb.sim = 10000)
 save(sim.arma, file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA_length.RData"))
 
-# with coefficient 
+## with coefficient 
 sim.ar = sim_est(model.order = c(1,0,0), param = coef.list, x.axis = "phi", sigma.sim = 1, phi = coef.list, theta = 0, nb.sim = 10000)
 save(sim.ar, file = paste0(path_results, "attribution0/performance_autoarima_coef_AR.RData"))
 sim.ma = sim_est(model.order = c(0,0,1), param = coef.list, x.axis = "theta", sigma.sim = 1, phi = 0, theta = coef.list, nb.sim = 10000)
@@ -502,9 +545,90 @@ save(sim.ma, file = paste0(path_results, "attribution0/performance_autoarima_coe
 sim.arma = sim_est(model.order = c(1,0,1), param = coef.list, x.axis = "", sigma.sim = 1, phi = coef.list, theta = (0.3-coef.list), nb.sim = 10000)
 save(sim.arma, file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA.RData"))
 
-dat.ar = as.data.frame(plyr::ldply(sim.ar, rbind))  %>% 
-  select("X1") %>% 
-  dplyr::rename( "phi" = "X1") %>% 
-  mutate(length =rep(as.factor(coef.list), nb.sim)) %>% 
-  reshape2::melt(id = "length")
+## Plot against length
+dat_sim = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA_length.RData")))
+
+dat.ar = as.data.frame(sapply(c(1:length(dat_sim)), function(x) dat_sim[[x]][,1])) %>%  
+  rename_all( ~paste0("length_", .)) %>% 
+  mutate(i = c(1:nb.sim)) %>% 
+  reshape2::melt(id = "i") %>% 
+  mutate(length = as.factor(rep(length.list, each = nb.sim)))
+
+dat.ma = as.data.frame(sapply(c(1:length(dat_sim)), function(x) dat_sim[[x]][,2])) %>%  
+  rename_all( ~paste0("length_", .)) %>% 
+  mutate(i = c(1:nb.sim)) %>% 
+  reshape2::melt(id = "i") %>% 
+  mutate(length = as.factor(rep(length.list, each = nb.sim)))
+
+dat.arma = rbind(dat.ar, dat.ma) %>% 
+  mutate(param = as.factor(rep(c("phi", "theta"), each = nrow(dat.ar))))
+
+p1 = ggplot(data = dat.ar, aes(x = length, y = value))+ theme_bw()+
+  geom_boxplot(lwd = 0.3, outlier.size = 0.3)+
+  geom_hline(yintercept = 0.2, lwd = 0.3, col = "gray")
+  # geom_hline(yintercept = c(0.7,-0.4), lwd = 0.3, col = "gray")+
+  
+
+p3 = ggplot(data = dat.arma, aes(x = length, y = value, fill = param))+ theme_bw()+
+  geom_boxplot(lwd = 0.15, outlier.size = 0.15)+
+  geom_hline(yintercept = c(0.6,-0.3), lwd = 0.3, col = "gray")
+
+p = p3 + ylab("Estimates")+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        plot.subtitle = element_text(size = 5),
+        legend.title=element_blank())
+ggsave(paste0(path_results,"attribution0/estimates_length_ARMA(1,1).jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+## Plot against coefficients
+
+dat_sim = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA.RData")))
+
+dat.ar = as.data.frame(sapply(c(1:length(dat_sim)), function(x) dat_sim[[x]][,1])) %>%  
+  rename_all( ~paste0("coef_", .)) %>% 
+  mutate(i = c(1:nb.sim)) %>% 
+  reshape2::melt(id = "i") %>% 
+  mutate(coef = as.factor(rep(coef.list, each = nb.sim))) %>% 
+  mutate(true = rep(coef.list, each = nb.sim))
+
+dat.ma = as.data.frame(sapply(c(1:length(dat_sim)), function(x) dat_sim[[x]][,2])) %>%  
+  rename_all( ~paste0("coef_", .)) %>% 
+  mutate(i = c(1:nb.sim)) %>% 
+  reshape2::melt(id = "i") %>% 
+  mutate(coef = as.factor(rep(coef.list, each = nb.sim))) %>% 
+  mutate(true = rep((0.3-coef.list), each = nb.sim))
+
+dat.arma = rbind(dat.ar, dat.ma) %>% 
+  mutate(estimates = as.factor(rep(c("phi", "theta"), each = nrow(dat.ar)))) %>% 
+  mutate(true_val = as.factor(rep(c("true_phi", "true_theta"), each = nrow(dat.ar)))) 
+
+
+p1 = ggplot(data = dat.ar, aes(x = coef, y = value))+ theme_bw()+
+  geom_boxplot(lwd = 0.3, outlier.size = 0.3)+
+  scale_y_continuous(breaks = seq(-0.1, 0.9,0.1), limits = c(-0.1, 0.9))
+
+p3 = ggplot(data = dat.arma, aes(x = coef, fill = estimates))+ theme_bw()+
+  geom_boxplot(aes( y = value), lwd = 0.15, outlier.size = 0.15, width=0.5 )+
+  geom_point(aes( y = true, shape = true_val), size = 0.1, col = "red")+
+  scale_shape_manual(values = c(1,2), labels = expression(Phi, theta))+
+  scale_fill_manual(values = c("aquamarine3", "chocolate1"), labels = expression(Phi, theta))
+p = p3 + ylab("Estimates")+
+  scale_y_continuous(breaks = seq(-0.8, 0.8, 0.2), limits = c(-0.8,0.8))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        legend.title = element_text(size=4),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        plot.subtitle = element_text(size = 5),
+        legend.margin=margin(t=0, r=0, b=0, l=0, unit="cm"))
+
+
+ggsave(paste0(path_results,"attribution0/estimates_coef_ARMA(1).jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
 
