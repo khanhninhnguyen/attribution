@@ -497,7 +497,7 @@ ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_length_sp
 
 
 # RUN THE ESTIMATION OF COEFFICIENTS REPARATELY  --------------------------
-sim_est <- function(model.order, param, x.axis, sigma.sim, phi, theta, nb.sim){
+sim_est <- function(model.order, param, x.axis, sigma.sim, phi, theta, nb.sim, N.fix){
   res <- list()
   for (i in c(1:length(param))) {
     set.seed(1)
@@ -507,13 +507,13 @@ sim_est <- function(model.order, param, x.axis, sigma.sim, phi, theta, nb.sim){
         n = param[i]
         y = simulate.general1(N = n, arma.model = c(ar=phi, ma=theta), burn.in = 1000, hetero = 0, sigma = sigma.sim)
       }else if(x.axis == "phi"){
-        n = 1000
+        n = N.fix
         y = simulate.general1(N = n, arma.model = c(ar=phi[i], ma=theta), burn.in = 1000, hetero = 0, sigma = sigma.sim)
       }else if(x.axis == "theta"){
-        n = 1000
+        n = N.fix
         y = simulate.general1(N = n, arma.model = c(ar=phi, ma=theta[i]), burn.in = 1000, hetero = 0, sigma = sigma.sim)
       }else{
-        n = 1000
+        n = N.fix
         y = simulate.general1(N = n, arma.model = c(ar=phi[i], ma=theta[i]), burn.in = 1000, hetero = 0, sigma = sigma.sim)
       }
       fit.arma = arima(y, order = model.order, method="ML")
@@ -538,12 +538,12 @@ sim.arma = sim_est(model.order = c(1,0,1), param = length.list, x.axis = "n", si
 save(sim.arma, file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA_length.RData"))
 
 ## with coefficient 
-sim.ar = sim_est(model.order = c(1,0,0), param = coef.list, x.axis = "phi", sigma.sim = 1, phi = coef.list, theta = 0, nb.sim = 10000)
-save(sim.ar, file = paste0(path_results, "attribution0/performance_autoarima_coef_AR.RData"))
-sim.ma = sim_est(model.order = c(0,0,1), param = coef.list, x.axis = "theta", sigma.sim = 1, phi = 0, theta = coef.list, nb.sim = 10000)
-save(sim.ma, file = paste0(path_results, "attribution0/performance_autoarima_coef_MA.RData"))
-sim.arma = sim_est(model.order = c(1,0,1), param = coef.list, x.axis = "", sigma.sim = 1, phi = coef.list, theta = (0.3-coef.list), nb.sim = 10000)
-save(sim.arma, file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA.RData"))
+sim.ar = sim_est(model.order = c(1,0,0), param = coef.list, x.axis = "phi", sigma.sim = 1, phi = coef.list, theta = 0, nb.sim = 10000, N.fix = 600)
+save(sim.ar, file = paste0(path_results, "attribution0/performance_autoarima_coef_AR_600.RData"))
+sim.ma = sim_est(model.order = c(0,0,1), param = coef.list, x.axis = "theta", sigma.sim = 1, phi = 0, theta = coef.list, nb.sim = 10000, N.fix = 600)
+save(sim.ma, file = paste0(path_results, "attribution0/performance_autoarima_coef_MA_600.RData"))
+sim.arma = sim_est(model.order = c(1,0,1), param = coef.list, x.axis = "", sigma.sim = 1, phi = coef.list, theta = (0.3-coef.list), nb.sim = 10000, N.fix = 600)
+save(sim.arma, file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA_600.RData"))
 
 ## Plot against length
 dat_sim = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA_length.RData")))
@@ -586,7 +586,7 @@ ggsave(paste0(path_results,"attribution0/estimates_length_ARMA(1,1).jpg" ), plot
 
 ## Plot against coefficients
 
-dat_sim = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA.RData")))
+dat_sim = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA_600.RData")))
 
 dat.ar = as.data.frame(sapply(c(1:length(dat_sim)), function(x) dat_sim[[x]][,1])) %>%  
   rename_all( ~paste0("coef_", .)) %>% 
@@ -629,6 +629,49 @@ p = p3 + ylab("Estimates")+
         legend.margin=margin(t=0, r=0, b=0, l=0, unit="cm"))
 
 
-ggsave(paste0(path_results,"attribution0/estimates_coef_ARMA(1).jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/estimates_coef_ARMA(1)_600.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+# test the non-stationarity -----------------------------------------------
+## simulate the AR(1) and estimate with arima
+set.seed(1)
+n = 1000
+t = c(1:n)
+f = 0.5*cos(2*pi*t/n)
+res <- list()
+res.all <- list()
+for (j in c(1:9)) {
+  for (i in c(1:nb.sim)) {
+    y = simulate.general1(N = n, arma.model = c(ar=0.1*j, ma=0), burn.in = 1000, hetero = 0, sigma = sigma.sim)
+    y.f = y+f
+    fit.arma = arima(y.f, order = c(1,0,1), method = "ML")
+    res[[i]] = fit.arma$coef
+  }
+  res.all[[j]] = res
+}
+save(res.all, file = paste0(path_results, "attribution0/confusion.RData"))
+
+set.seed(1)
+n = 1000
+t = c(1:n)
+res <- list()
+res.all <- list()
+for (j in c(1:9)) {
+  f = j*0.1*cos(2*pi*t/n)
+  for (i in c(1:nb.sim)) {
+    y = simulate.general1(N = n, arma.model = c(ar=0.3, ma=0), burn.in = 1000, hetero = 0, sigma = sigma.sim)
+    y.f = y+f
+    fit.arma = arima(y.f, order = c(1,0,1), method = "ML")
+    res[[i]] = fit.arma$coef
+  }
+  res.all[[j]] = res
+}
+save(res.all, file = paste0(path_results, "attribution0/confusion1.RData"))
+
+
+
+phi = sapply(c(1:nb.sim), function(x) res[[x]]$coef[1])
+theta = sapply(c(1:nb.sim), function(x) res[[x]]$coef[2])
+hist(phi)
+hist(theta)
 
 
