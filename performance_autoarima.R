@@ -5,7 +5,9 @@ source(paste0(path_code_att,"support_characterization.R"))
 
 # As a function of length -------------------------------------------------
 length.list = seq(200, 2000, 200)
-nb.sim = 10
+coef.list = seq(0, 0.8, 0.1)
+
+nb.sim = 10000
 tot.res = data.frame(n = length.list, 
                      TPR.white = rep(NA, length(length.list)),
                      TPR.ar = rep(NA, length(length.list)),
@@ -48,7 +50,6 @@ save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_le
 
 ## As a function of coefficients -------------------------------------------------
 
-coef.list = seq(0, 0.8, 0.1)
 tot.res = data.frame(coef = coef.list, 
                      TPR.ar = rep(NA, length(coef.list)),
                      TPR.ma = rep(NA, length(coef.list)),
@@ -57,7 +58,7 @@ tot.res = data.frame(coef = coef.list,
                      ))
 set.seed(1)
 tot.fit = list()
-n=10
+n=1000
 for (i in c(1:length(coef.list))) {
   phi = coef.list[i]
   theta = 0.3 - phi
@@ -211,6 +212,7 @@ all.length = get(load(file = paste0(path_results, "attribution0/performance_auto
 all.ar1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ar_all.RData")))
 all.ma1 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_ma_all.RData")))
 all.arma11 = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_arma_all.RData")))
+all.coef = get(load( file = paste0(path_results, "attribution0/performance_autoarima_coef_all.RData")))
 
 extract_arima <- function(df.res, model, true.param, phi, length.c){
   # choose model
@@ -222,6 +224,10 @@ extract_arima <- function(df.res, model, true.param, phi, length.c){
   if(phi==1){
     p = 1
   }else{p=3}
+  if(model == "White"){
+    name = "white"
+    p = 1
+  }
   # read all info
   n.iter = length(df.res)
   if(length(true.param)==1){ true.param = rep(true.param, n.iter)}
@@ -253,19 +259,21 @@ extract_arima <- function(df.res, model, true.param, phi, length.c){
 ## length---------------
 #NEED TO BE CHECKED ONLY WHEN THEY IDENTIRY THE TRUE MODEL
 
+white = extract_arima(all.length, model = "White", true.param = 0, phi = 1, length.c = 1)
 ar1 = extract_arima(all.length, model = "AR(1)", true.param = 0.3, phi = 1, length.c = 1)
-ma1 = extract_arima(all.length, model = "MA(1)", true.param = 0.3, phi = 0, length.c = 1)
-arma.phi = extract_arima(all.length, model = "ARMA(1,1)", true.param = 0.7, phi = 1, length.c = 1)
-arma.theta = extract_arima(all.length, model = "ARMA(1,1)", true.param = -0.4, phi = 0, length.c = 1)
+ma1 = extract_arima(all.length, model = "MA(1)", true.param = 0.2, phi = 0, length.c = 1)
+arma.phi = extract_arima(all.length, model = "ARMA(1,1)", true.param = 0.6, phi = 1, length.c = 1)
+arma.theta = extract_arima(all.length, model = "ARMA(1,1)", true.param = -0.3, phi = 0, length.c = 1)
 
 ### plot TPR -----------
 
 TPR = data.frame(n = length.list, 
+                 white = white$tpr$tpr,
                  ar = ar1$tpr$tpr, 
                  ma1 = ma1$tpr$tpr, 
-                 arma1 = arma1$tpr$tpr)
+                 arma1 = arma.phi$tpr$tpr)
 
-colnames(TPR) = c("N", "AR(1)", "MAR(1)", "ARMA(1,1)")
+colnames(TPR) = c("N", "White", "AR:0.3", "MA:0.2", "ARMA:0.6,-0.3")
 dat.p = reshape2::melt(TPR, id="N")
 p = ggplot(data = dat.p, aes(x = N, y = value/nb.sim, col = variable))+
   theme_bw()+
@@ -283,7 +291,7 @@ p = ggplot(data = dat.p, aes(x = N, y = value/nb.sim, col = variable))+
       plot.subtitle = element_text(size = 5),
       legend.title=element_blank())
 # 
-ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_length.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/auto.arima.identification_length.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 ### plot coefficients ----------------
 dat.ar = as.data.frame(plyr::ldply(ar1$est, rbind))  %>% 
@@ -329,21 +337,30 @@ ar1 = extract_arima(all.ar1, model = "AR(1)", true.param = coeff, phi = 1, lengt
 ma1 = extract_arima(all.ma1, model = "MA(1)", true.param = coeff, phi = 0, length.c = 0)
 arma.phi = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 1, length.c = 0)
 arma.theta = extract_arima(all.arma11, model = "ARMA(1,1)", true.param = coeff, phi = 0, length.c = 0)
+
+ar1 = extract_arima(all.coef, model = "AR(1)", true.param = coeff, phi = 1, length.c = 1)
+ma1 = extract_arima(all.coef, model = "MA(1)", true.param = coeff, phi = 0, length.c = 1)
+arma.phi = extract_arima(all.coef, model = "ARMA(1,1)", true.param = coeff, phi = 1, length.c = 1)
+arma.theta = extract_arima(all.coef, model = "ARMA(1,1)", true.param = coeff, phi = 0, length.c = 1)
+
 ### TPR------
 TPR = data.frame(coef = coeff, 
                  ar = ar1$tpr$tpr, 
                  ma1 = ma1$tpr$tpr, 
-                 arma1 = arma1$tpr$tpr)
+                 arma1 = arma.phi$tpr$tpr)
 TPR = TPR[-1,]
-colnames(TPR) = c("coef", "AR(1)", "MAR(1)", "ARMA(1,1)")
+colnames(TPR) = c("coef", "AR(1)", "MA(1)", "ARMA(1,1)")
 dat.p = reshape2::melt(TPR, id="coef")
 p = ggplot(data = dat.p, aes(x = coef, y = value/nb.sim, col = variable))+
   theme_bw()+
   geom_point(size = 0.3)+
   geom_hline(yintercept = 0.95, lwd = 0.3)+
   ylab("TPR")+
+  xlab("Coefficient")+
+  # xlab(expression(phi))+
   scale_x_continuous(breaks = coeff[-1], 
                      limits = c(0.1, 0.8))+
+                     # sec.axis = sec_axis(~ (0.3-.x), breaks = seq(0.2, -0.5, -0.1)), name = expression(theta))+
   theme(axis.text.x = element_text(size = 5),
         axis.text.y = element_text(size = 5),
         legend.text=element_text(size=4),
@@ -353,7 +370,7 @@ p = ggplot(data = dat.p, aes(x = coef, y = value/nb.sim, col = variable))+
         plot.subtitle = element_text(size = 5),
         legend.title=element_blank())
 # 
-ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_coef.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/auto.arima.identification_coef.tpr.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 ### estimates impact ----------
 
@@ -432,4 +449,62 @@ p = ggplot(data = dat.p, aes(x = truth, y = value/nb.sim, fill = predict))+
         legend.title=element_blank())
   
 ggsave(paste0(path_results,"attribution0/TPR.auto.arima.identification_coef_specific", coeff[chosen], ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+
+
+
+# RUN THE ESTIMATION OF COEFFICIENTS REPARATELY  --------------------------
+sim_est <- function(model.order, param, x.axis, sigma.sim, phi, theta, nb.sim){
+  res <- list()
+  for (i in c(1:length(param))) {
+    set.seed(1)
+    res.j = data.frame(matrix(NA, ncol = 2, nrow = nb.sim))
+    for (j in c(1:nb.sim)) {
+      if(x.axis == "n"){
+        n = param[i]
+        y = simulate.general1(N = n, arma.model = c(ar=phi, ma=theta), burn.in = 1000, hetero = 0, sigma = sigma.sim)
+      }else if(x.axis == "phi"){
+        n = 1000
+        y = simulate.general1(N = n, arma.model = c(ar=phi[i], ma=theta), burn.in = 1000, hetero = 0, sigma = sigma.sim)
+      }else if(x.axis == "theta"){
+        n = 1000
+        y = simulate.general1(N = n, arma.model = c(ar=phi, ma=theta[i]), burn.in = 1000, hetero = 0, sigma = sigma.sim)
+      }else{
+        n = 1000
+        y = simulate.general1(N = n, arma.model = c(ar=phi[i], ma=theta[i]), burn.in = 1000, hetero = 0, sigma = sigma.sim)
+      }
+      fit.arma = arima(y, order = model.order, method="ML")
+      
+      if(model.order[1] !=0){
+        res.j[j,1] = fit.arma$coef[which(names(fit.arma$coef) == "ar1")]
+      }
+      if(model.order[3] !=0){
+        res.j[j,2] = fit.arma$coef[which(names(fit.arma$coef) == "ma1")]
+      }
+    }
+    res[[i]] = res.j
+  }
+  return(res)
+}
+## with length
+sim.ar = sim_est(model.order = c(1,0,0), param = length.list, x.axis = "n", sigma.sim = 1, phi = 0.3, theta = 0, nb.sim = 10000)
+save(sim.ar, file = paste0(path_results, "attribution0/performance_autoarima_coef_AR_length.RData"))
+sim.ma = sim_est(model.order = c(0,0,1), param = length.list, x.axis = "n", sigma.sim = 1, phi = 0, theta = 0.2, nb.sim = 10000)
+save(sim.ma, file = paste0(path_results, "attribution0/performance_autoarima_coef_MA_length.RData"))
+sim.arma = sim_est(model.order = c(1,0,1), param = length.list, x.axis = "n", sigma.sim = 1, phi = 0.6, theta = -0.3, nb.sim = 10000)
+save(sim.arma, file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA_length.RData"))
+
+# with coefficient 
+sim.ar = sim_est(model.order = c(1,0,0), param = coef.list, x.axis = "phi", sigma.sim = 1, phi = coef.list, theta = 0, nb.sim = 10000)
+save(sim.ar, file = paste0(path_results, "attribution0/performance_autoarima_coef_AR.RData"))
+sim.ma = sim_est(model.order = c(0,0,1), param = coef.list, x.axis = "theta", sigma.sim = 1, phi = 0, theta = coef.list, nb.sim = 10000)
+save(sim.ma, file = paste0(path_results, "attribution0/performance_autoarima_coef_MA.RData"))
+sim.arma = sim_est(model.order = c(1,0,1), param = coef.list, x.axis = "", sigma.sim = 1, phi = coef.list, theta = (0.3-coef.list), nb.sim = 10000)
+save(sim.arma, file = paste0(path_results, "attribution0/performance_autoarima_coef_ARMA.RData"))
+
+dat.ar = as.data.frame(plyr::ldply(sim.ar, rbind))  %>% 
+  select("X1") %>% 
+  dplyr::rename( "phi" = "X1") %>% 
+  mutate(length =rep(as.factor(coef.list), nb.sim)) %>% 
+  reshape2::melt(id = "length")
 
