@@ -38,11 +38,11 @@ trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table
 
 Total.coded.old = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res[,paste0("t", list.name.test[x])])))
 colnames(Total.coded.old) = paste0("old", list.name.test)
-contra.old = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded.old[x,c(1:6)]), trunc.table))
+contra.old = sapply(c(1:nrow(Total.coded.old)), function(x) check_contradict(unlist(Total.coded.old[x,c(1:6)]), trunc.table))
 
 Total.coded.new = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res1[,paste0("t", list.name.test[x])])))
 colnames(Total.coded.new) = paste0("new", list.name.test)
-contra.new = sapply(c(1:nrow(Total.coded)), function(x) check_contradict(unlist(Total.coded.new[x,c(1:6)]), trunc.table))
+contra.new = sapply(c(1:nrow(Total.coded.new)), function(x) check_contradict(unlist(Total.coded.new[x,c(1:6)]), trunc.table))
 Total.res1$config = contra.new
 Total.res1[,list.name.test] = Total.coded.new
 all.t = cbind(Total.coded.old, Total.coded.new) %>% dplyr:: mutate(con1 = contra.old, new = contra.new)
@@ -56,6 +56,27 @@ ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
   theme_bw()+
   geom_bar(stat="identity", position=position_dodge(), width = 0.5)
  
+table(all.t$con1)
+table(all.t$new)
+
+
+# fdr correction ----------------------------------------------------------
+
+Keep.pval = as.data.frame(
+  sapply(c(1:6), function(x) round(pnorm(-abs(unlist(Total.res1[paste0("t", list.name.test[x])])), mean = 0, sd = 1, lower.tail = TRUE)*2, digits = 4)))
+pvalA <- purrr::map(1:dim(Keep.pval)[1],~p.adjust(Keep.pval[.x,], method = "fdr")) %>% Reduce(c,.) %>% matrix(ncol=6,nrow=dim(Keep.pval)[1],byrow=TRUE)
+colnames(pvalA) <- list.name.test
+signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Total.res1[paste0("t", list.name.test)])) %>% as.data.frame()
+contra.1 = sapply(c(1:nrow(signif)), function(x) check_contradict(unlist(signif [x,c(1:6)]), trunc.table))
+
+dat.p = data.frame(table(contra.new)) %>% rename("config" = "contra.new") %>%
+  mutate(name = rep("bias.cor",length(table(contra.new)))) %>%
+  rbind( data.frame(table(contra.1)) %>% rename("config" = "contra.1") %>%
+           mutate(name = rep("fdr",length(table(contra.1)))))
+
+ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
+  theme_bw()+
+  geom_bar(stat="identity", position=position_dodge(), width = 0.5)
 
 
 
