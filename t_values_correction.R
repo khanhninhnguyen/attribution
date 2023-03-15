@@ -1,6 +1,6 @@
 # correct the t values according to the E-E' 
 convert_coded <- function(x){
-  sapply(c(1:length(x)), function(i) ifelse(abs(x[i])>1.96, 1*sign(x[i]), 0)) 
+  sapply(c(1:length(x)), function(i) ifelse(abs(x[i])>2.58, 1*sign(x[i]), 0)) 
 }
 check_contradict <- function(y, table.selected){
   names(y) = NULL
@@ -78,6 +78,21 @@ ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
   theme_bw()+
   geom_bar(stat="identity", position=position_dodge(), width = 0.5)
 
+
+# limit at 1% -------------------------------------------------------------
+
+Total.coded.new1 = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res1[,paste0("t", list.name.test[x])])))
+colnames(Total.coded.new1) = paste0("new", list.name.test)
+contra.new1 = sapply(c(1:nrow(Total.coded.new1)), function(x) check_contradict(unlist(Total.coded.new1[x,c(1:6)]), trunc.table))
+
+dat.p = data.frame(table(contra.1)) %>% rename("config" = "contra.1") %>%
+  mutate(name = rep("bias.cor.fdr",length(table(contra.1)))) %>%
+  rbind( data.frame(table(contra.new1)) %>% rename("config" = "contra.new1") %>%
+           mutate(name = rep("1%",length(table(contra.new1)))))
+
+ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
+  theme_bw()+
+  geom_bar(stat="identity", position=position_dodge(), width = 0.5)
 
 
 
