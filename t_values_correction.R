@@ -1,6 +1,6 @@
 # correct the t values according to the E-E' 
-convert_coded <- function(x){
-  sapply(c(1:length(x)), function(i) ifelse(abs(x[i])>2.58, 1*sign(x[i]), 0)) 
+convert_coded <- function(x, cri){
+  sapply(c(1:length(x)), function(i) ifelse(abs(x[i])>cri, 1*sign(x[i]), 0)) 
 }
 check_contradict <- function(y, table.selected){
   names(y) = NULL
@@ -36,11 +36,11 @@ dat.p %>%
 ## check the contradicted cases 
 trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table.RData")))
 
-Total.coded.old = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res[,paste0("t", list.name.test[x])])))
+Total.coded.old = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res[,paste0("t", list.name.test[x])], cri = 1.96)))
 colnames(Total.coded.old) = paste0("old", list.name.test)
 contra.old = sapply(c(1:nrow(Total.coded.old)), function(x) check_contradict(unlist(Total.coded.old[x,c(1:6)]), trunc.table))
 
-Total.coded.new = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res1[,paste0("t", list.name.test[x])])))
+Total.coded.new = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res1[,paste0("t", list.name.test[x])], cri = 1.96)))
 colnames(Total.coded.new) = paste0("new", list.name.test)
 contra.new = sapply(c(1:nrow(Total.coded.new)), function(x) check_contradict(unlist(Total.coded.new[x,c(1:6)]), trunc.table))
 Total.res1$config = contra.new
@@ -62,6 +62,25 @@ table(all.t$new)
 
 # fdr correction ----------------------------------------------------------
 
+## without bias correction -------------------------------------------------
+Keep.pval = as.data.frame(
+  sapply(c(1:6), function(x) round(pnorm(-abs(unlist(Total.res[paste0("t", list.name.test[x])])), mean = 0, sd = 1, lower.tail = TRUE)*2, digits = 5)))
+pvalA <- purrr::map(1:dim(Keep.pval)[1],~p.adjust(Keep.pval[.x,], method = "fdr")) %>% Reduce(c,.) %>% matrix(ncol=6,nrow=dim(Keep.pval)[1],byrow=TRUE)
+colnames(pvalA) <- list.name.test
+signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Total.res[paste0("t", list.name.test)])) %>% as.data.frame()
+contra.1 = sapply(c(1:nrow(signif)), function(x) check_contradict(unlist(signif [x,c(1:6)]), trunc.table))
+### bar plot of configuration
+dat.p = data.frame(table(contra.old)) %>% rename("config" = "contra.old") %>%
+  mutate(name = rep("raw",length(table(contra.old)))) %>%
+  rbind( data.frame(table(contra.1)) %>% rename("config" = "contra.1") %>%
+           mutate(name = rep("fdr",length(table(contra.1)))))
+
+ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
+  theme_bw()+
+  geom_bar(stat="identity", position=position_dodge(), width = 0.5)
+### investigate why different 
+two.config = data.frame(raw = contra.old, fdr = contra.1, name = Total.res$station)
+
 Keep.pval = as.data.frame(
   sapply(c(1:6), function(x) round(pnorm(-abs(unlist(Total.res1[paste0("t", list.name.test[x])])), mean = 0, sd = 1, lower.tail = TRUE)*2, digits = 4)))
 pvalA <- purrr::map(1:dim(Keep.pval)[1],~p.adjust(Keep.pval[.x,], method = "fdr")) %>% Reduce(c,.) %>% matrix(ncol=6,nrow=dim(Keep.pval)[1],byrow=TRUE)
@@ -81,12 +100,12 @@ ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
 
 # limit at 1% -------------------------------------------------------------
 
-Total.coded.new1 = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res1[,paste0("t", list.name.test[x])])))
+Total.coded.new1 = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res[,paste0("t", list.name.test[x])], cri = 2.58)))
 colnames(Total.coded.new1) = paste0("new", list.name.test)
 contra.new1 = sapply(c(1:nrow(Total.coded.new1)), function(x) check_contradict(unlist(Total.coded.new1[x,c(1:6)]), trunc.table))
 
-dat.p = data.frame(table(contra.1)) %>% rename("config" = "contra.1") %>%
-  mutate(name = rep("bias.cor.fdr",length(table(contra.1)))) %>%
+dat.p = data.frame(table(contra.old)) %>% rename("config" = "contra.old") %>%
+  mutate(name = rep("5%",length(table(contra.old)))) %>%
   rbind( data.frame(table(contra.new1)) %>% rename("config" = "contra.new1") %>%
            mutate(name = rep("1%",length(table(contra.new1)))))
 
