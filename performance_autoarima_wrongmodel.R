@@ -70,9 +70,9 @@ save(Tot.res.MA, file = paste0(path_results, "attribution0/wrongmodel.ARMA1.RDat
 
 
 # plot results ------------------------------------------------------------
-true.ar = get(load(file = paste0(path_results, "attribution0/truemodel.ARMA1.RData")))
-wrong.ar = get(load(file = paste0(path_results, "attribution0/wrongmodel.ARMA1.RData")))
-true.model = "ARMA"
+true.ar = get(load(file = paste0(path_results, "attribution0/truemodel.MA1.RData")))
+wrong.ar = get(load(file = paste0(path_results, "attribution0/wrongmodel.MA1.RData")))
+true.model = "MA"
 t.true.ar = sapply(c(1:nb.sim), function(x) true.ar[[x]]$t.table$`t value`[1] )
 t.wrong.ar = sapply(c(1:nb.sim), function(x) wrong.ar[[x]]$t.table$`t value`[1] )
 
@@ -92,7 +92,7 @@ p1 = ggplot(data = d, aes(x = value, col = variable))+
 ggsave(filename = paste0(path_results, "attribution0/t_val_",true.model,".jpg"), plot = p1)
 
 phi.true.ar = sapply(c(1:nb.sim), function(x) true.ar[[x]]$coef.arma$theta)
-phi.wrong.ar = sapply(c(1:nb.sim), function(x) wrong.ar[[x]]$coef.arma$theta )
+phi.wrong.ar = sapply(c(1:nb.sim), function(x) wrong.ar[[x]]$coef.arma$phi)
 
 d = data.frame(true = phi.true.ar, est = phi.wrong.ar) %>% reshape2::melt()
 p2 = ggplot(data = d, aes(x = variable, y = value))+
