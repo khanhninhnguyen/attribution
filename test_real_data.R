@@ -1,7 +1,9 @@
 # this function used for the test of the real data
+source(paste0(path_code_att,"FGLS.R"))
+source(paste0(path_code_att,"support_characterization.R"))
+
 win.thres = 10
 dat = get(load( file = paste0(path_results,"attribution0/data.all_", win.thres, "years_", nearby_ver,"screened.RData")))
-source(paste0(path_code_att,"FGLS.R"))
 order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
 coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
 # reduced list of cases 
@@ -24,10 +26,25 @@ order.arma.l1 = lapply(list.test, function(x) {
   a = as.data.frame(order.arma.l[[x]][[1]])
   return(a[ind.sel,])})
 # modify the model according to the longest series for all 6 differences 
-for (m in c(1:6)) {
-  model.m = order.arma.l1[[m]]
-  
+check.list = reduced.list[,c(1,3)]
+unique = check.list[! duplicated(check.list),]
+
+for (i in c(1:nrow(unique))) {
+  ind = which(check.list$main == unique$main[i] & check.list$nearby == unique$nearby[i])
+  for (j in c(2:6)) {
+    a = order.arma.l1[[j]]
+    model.list =  a[ind,]
+    d = sapply(c(1:nrow(model.list)), function(x) model.iden(as.numeric(model.list[x,])))
+    if(length(unique(d))!=1){
+      print(paste0(unique$main[i],unique$nearby[i] ))
+      length.se.ind = which.max(length.all[ind,j])
+      model.se = model.list[length.se.ind,]
+      n = nrow(model.list)
+      order.arma.l1[[j]][ind,] = as.data.frame(matrix(rep(model.se, n),nrow=n,byrow = T))
+    }
+  }
 }
+
 # run the FGLS 
 all.res = list()
 # a1 = list.files(path = paste0(path_results, "attribution0/FGLS-GE/"))
@@ -36,7 +53,7 @@ all.res = list()
 # list.select = which(a2 %in% list.old == FALSE)
 
 list.ind = c(1:494)
-ind.sel1 = list.ind[which(list.ind %in% ind.sel == FALSE)]
+ind.sel1 = list.ind
 for (i in c(ind.sel1)) {
   df = dat[[reduced.list$station[i]]]
   fit.i = list()
@@ -46,15 +63,15 @@ for (i in c(ind.sel1)) {
     name.series = list.test[j]
     df.test = remove_na_2sides(df, name.series)
     
-    if(reduced.list$nbc1[i] > 1000){
-      start.day = df$date[3650] - 1000
-      df.test = df.test[which(df.test$date>start.day),]
-    }
-    
-    if(reduced.list$nbc2[i] > 1000){
-      end.day = df$date[3650] + 1000
-      df.test = df.test[which(df.test$date< end.day),]
-    }
+    # if(reduced.list$nbc1[i] > 1000){
+    #   start.day = df$date[3650] - 1000
+    #   df.test = df.test[which(df.test$date>start.day),]
+    # }
+    # 
+    # if(reduced.list$nbc2[i] > 1000){
+    #   end.day = df$date[3650] + 1000
+    #   df.test = df.test[which(df.test$date< end.day),]
+    # }
     ind.brp = which(df.test$date == df$date[3650])
     noise.model = unlist(as.data.frame(order.arma.l1[[j]])[i,])
     names(noise.model) = NULL

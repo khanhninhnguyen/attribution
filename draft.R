@@ -576,6 +576,7 @@ for (j in c(1:5)) {
 check.list = reduced.list[,c(1,3)]
 unique = check.list[! duplicated(check.list),]
 
+a = order.arma.l1[[1]]
 for (i in c(1:nrow(unique))) {
   ind = which(check.list$main == unique$main[i] & check.list$nearby == unique$nearby[i])
   model.list =  a[ind,]
