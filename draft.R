@@ -573,5 +573,16 @@ for (j in c(1:5)) {
   res.tot[j] = length(which(res.j<0.05))
 }
 
+check.list = reduced.list[,c(1,3)]
+unique = check.list[! duplicated(check.list),]
+
+for (i in c(1:nrow(unique))) {
+  ind = which(check.list$main == unique$main[i] & check.list$nearby == unique$nearby[i])
+  model.list =  a[ind,]
+  d = sapply(c(1:nrow(model.list)), function(x) model.iden(as.numeric(model.list[x,])))
+  if(length(unique(d))!=1){
+    print(paste0(unique$main[i],unique$nearby[i] ))
+  }
+}
 
 

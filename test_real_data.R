@@ -13,10 +13,21 @@ ind.sel = which(full.list$nearby!="pama" & full.list$min.var>0.002 & full.list$n
 ind.sel = ind.sel[-8]
 reduced.list = full.list[ind.sel,]
 rownames(reduced.list) = NULL
-
+# length list of 6 
+length.all <- data.frame(matrix(NA, ncol = 6, nrow = nrow(reduced.list)))
+for (k in c(1:nrow(reduced.list))) {
+  l.k = which(names(dat) == reduced.list$station[k])
+  length.all[k,] = sapply(c(1:6), function(x) length(na.omit(dat[[l.k]][,x])))
+}
+# 
 order.arma.l1 = lapply(list.test, function(x) {
   a = as.data.frame(order.arma.l[[x]][[1]])
   return(a[ind.sel,])})
+# modify the model according to the longest series for all 6 differences 
+for (m in c(1:6)) {
+  model.m = order.arma.l1[[m]]
+  
+}
 # run the FGLS 
 all.res = list()
 # a1 = list.files(path = paste0(path_results, "attribution0/FGLS-GE/"))
