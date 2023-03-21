@@ -1,6 +1,6 @@
 # this function used for the test of the real data
 source(paste0(path_code_att,"FGLS.R"))
-source(paste0(path_code_att,"support_characterization.R"))
+# source(paste0(path_code_att,"support_characterization.R"))
 
 win.thres = 10
 dat = get(load( file = paste0(path_results,"attribution0/data.all_", win.thres, "years_", nearby_ver,"screened.RData")))
