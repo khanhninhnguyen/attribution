@@ -1,4 +1,4 @@
-predictive_rule <- function(path_results, significance.level, offset, GE, number.pop, R){
+predictive_rule <- function(path_results, significance.level, version, GE, number.pop, R){
   if (!require(devtools)) install.packages("devtools")
   devtools::install_github("yanlinlin82/ggvenn")
   library(ggrepel)
@@ -87,9 +87,9 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   
   # The coded Z.trunc in terms of population
   Z.trunc.final.code <- Z.trunc.final[-rg.duplicate,] 
-  Z.trunc.final.code[Z.trunc.final==1]=3
-  Z.trunc.final.code[Z.trunc.final==-1]=2
-  Z.trunc.final.code[Z.trunc.final==0]=1
+  Z.trunc.final.code[Z.trunc.final.code==1]=3
+  Z.trunc.final.code[Z.trunc.final.code==-1]=2
+  Z.trunc.final.code[Z.trunc.final.code==0]=1
   
   head(Z.trunc.final.code)
   config.list <- 1:38
@@ -111,9 +111,8 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
         error.GE <- c(error.GE, tge)
       }
     }
-    
   }
-  
+  Data.Res.Test = Data.Res.Test[which(is.na(Data.Res.Test$tGE)==FALSE),]
   NumDetected.per.station <- Data.Res.Test %>% group_by(main) %>% 
     summarise(ldetected.per.station=length(unique(brp))) %>% dplyr::select(ldetected.per.station)
   
@@ -195,7 +194,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     # LDA
     ##############
     modlda<-lda(config~ ., data=DataLearn, CV=FALSE)
-    saveRDS(modlda, file = paste0(file_path_Results,'modlda_b',b,significance.level, offset, GE, number.pop,'.rds'))
+    saveRDS(modlda, file = paste0(file_path_Results,'modlda_b',b,significance.level, version, GE, number.pop,'.rds'))
     
     pred.lda <- predict(modlda,newdata=DataTest,na.action = na.pass)$class 
     err.lda <- mean(pred.lda!=DataTest$config)
@@ -223,7 +222,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     # err.cart
     
     modcart = caret::train(config~ ., data = DataLearn, method = "rpart", tuneLength = 10,trControl = cvControl,metric = "Accuracy")
-    saveRDS(modcart, file = paste0(file_path_Results,'modcart_b',b,significance.level, offset, GE, number.pop,'.rds'))
+    saveRDS(modcart, file = paste0(file_path_Results,'modcart_b',b,significance.level, version, GE, number.pop,'.rds'))
     
     pred.cart=predict(modcart, newdata = DataTest)
     err.cart <- mean(pred.cart!=DataTest$config)
@@ -247,7 +246,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     # k.opt=grid[which.min(error.knn.i)]
     # pred.knn <- knn(train=DataLearn[,1:5],test=DataTest[,1:5],cl=DataLearn$config,k=k.opt)
     modknn = caret::train(config~ ., data = DataLearn, method = "knn", tuneLength = 10,trControl = cvControl,metric = "Accuracy")
-    saveRDS(modknn, file = paste0(file_path_Results,'modknn_b',b,significance.level, offset, GE, number.pop,'.rds'))
+    saveRDS(modknn, file = paste0(file_path_Results,'modknn_b',b,significance.level, version, GE, number.pop,'.rds'))
     
     pred.knn=predict(modknn, newdata = DataTest)
     err.knn <- mean(pred.knn!=DataTest$config)
@@ -280,7 +279,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     # err.rf
     
     modrf = caret::train(config~ ., data = DataLearn, method = "rf", tuneLength = 4,trControl = cvControl,metric = "Accuracy", importance=TRUE)
-    saveRDS(modrf, file = paste0(file_path_Results,'modrf_b',b,significance.level, offset, GE, number.pop,'.rds'))
+    saveRDS(modrf, file = paste0(file_path_Results,'modrf_b',b,significance.level, version, GE, number.pop,'.rds'))
     pred.rf=predict(modrf, newdata = DataTest)
     err.rf <- mean(pred.rf!=DataTest$config)
     
@@ -314,7 +313,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     existing.pop.Learn <- 0
     existing.pop.Test <- 0
     
-    while ((existing.pop.Learn!=15) & (existing.pop.Test !=15)){
+    while ((existing.pop.Learn!=14) & (existing.pop.Test !=14)){
       trainIndex<-createDataPartition(1:nrow(Data.GGp) , p=0.8, list = FALSE)
       
       Data.GGp.Learn <- Data.GGp %>% slice(trainIndex)
@@ -353,11 +352,11 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     DataTest <- c()
     DataLearn <- Boot("Learn",Z.trunc.final.code,NbSimLearn)
     DataTest <- Boot("Test",Z.trunc.final.code,NbSimTest)
-    saveRDS(DataLearn, file = paste0(file_path_Results,"DataLearn_",b,significance.level, offset, GE, number.pop,".rds"))
-    saveRDS(DataTest, file = paste0(file_path_Results,"DataTest_",b,significance.level, offset, GE, number.pop,".rds"))
+    saveRDS(DataLearn, file = paste0(file_path_Results,"DataLearn_",b,significance.level, version, GE, number.pop,".rds"))
+    saveRDS(DataTest, file = paste0(file_path_Results,"DataTest_",b,significance.level, version, GE, number.pop,".rds"))
     
     Res.pred <- PredRule_ET_ErrorTest(DataLearn,DataTest,b,Nbconfig)
-    saveRDS(Res.pred, file = paste0(file_path_Results,"Res.pred_",b,significance.level, offset, GE, number.pop,".rds"))
+    saveRDS(Res.pred, file = paste0(file_path_Results,"Res.pred_",b,significance.level, version, GE, number.pop,".rds"))
     error.test.4.methods[b,] <- Res.pred$err.tot %>% unlist()
   }
   colnames(error.test.4.methods) <- c("lda","cart","knn","rf")
@@ -366,7 +365,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
   
   for (b in 1:B){
-    Res.pred <- readRDS(paste0(file_path_Results,"Res.pred_",b,significance.level, offset, GE, number.pop,".rds"))
+    Res.pred <- readRDS(paste0(file_path_Results,"Res.pred_",b,significance.level, version, GE, number.pop,".rds"))
     error.test.4.methods[b,] <- Res.pred$err.tot %>% unlist()
   }
   colnames(error.test.4.methods) <- c("lda","cart","knn","rf")
@@ -378,7 +377,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   print(apply(error.test.4.methods,2,which.min))
   
   b = apply(error.test.4.methods,2,which.min)[4]
-  FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b,significance.level, offset, GE, number.pop,".rds"))
+  FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b,significance.level, version, GE, number.pop,".rds"))
   Thresh <- significance.level
   p.values.i=c()
   truth.vec.i=c()
@@ -459,8 +458,8 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   
   Post.Prob.List
   
-  save(FinalTable, file = paste0(path_restest, "Final.Table", significance.level, offset, GE, number.pop, ".RData"))
-  save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.List", significance.level, offset, GE, number.pop, ".RData"))
+  save(FinalTable, file = paste0(path_restest, "Final.Table", significance.level, version, GE, number.pop, ".RData"))
+  save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.List", significance.level, version, GE, number.pop, ".RData"))
   
   FinalTable$w <- FinalTable$n1+FinalTable$n2
   Post.Prob.List <- list()
@@ -497,7 +496,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   
   Post.Prob.List
   
-  save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.Listn", significance.level, offset, GE, number.pop, ".RData"))
+  save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.Listn", significance.level, version, GE, number.pop, ".RData"))
   
 }
 
