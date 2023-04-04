@@ -106,7 +106,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     count() %>% as.data.frame() %>% dplyr::select(n)
   
   if(GE == 0){
-    List.names.final <- List.names.tot[!(List.names.tot %in% "GE")]
+    List.names.final <- List.names.tot[!(List.names.tot %in% "GEp")]
   }
   
   Keep.Data <- function(name.series){
@@ -143,7 +143,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   }
   
   
-  Boot <- function(type.dataset,Z.trunc.code,NbSim, seed){
+  Boot <- function(type.dataset,Z.trunc.code,NbSim){
     config=c()
     Data.res <- c()
     Nbconfig <- nrow(Z.trunc.code)
@@ -160,7 +160,6 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
         Pop <- c()
         code.names.series <- config.code[which(colnames(Z.trunc.code) %in% .x)]
         eval(parse(text=paste0("Pop=Pop.",.x,".",type.dataset,"[[",code.names.series,"]]")))
-        set.seed(seed[c])
         res.t=sample(Pop,Nb.config.c , replace = TRUE)
         return(res.t)
       }) %>% bind_cols() %>% as.data.frame()
@@ -295,9 +294,6 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   
   for (b in 1:B){
     
-    # seed.learn = sample(c(1:10000), 36, replace = FALSE)
-    # set.seed(b+20)
-    # seed.test = sample(c(1:10000), 36, replace = FALSE)
     ######
     # Vfold 
     existing.pop.Learn <- 0
@@ -309,8 +305,8 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
       Data.GGp.Learn <- Data.GGp %>% slice(trainIndex)
       Data.GGp.Test <- Data.GGp %>% slice(-trainIndex)
       
-      Data.GEp.Learn <- Data.GEp %>% slice(trainIndex)
-      Data.GEp.Test <- Data.GEp %>% slice(-trainIndex)
+      Data.GE.Learn <- Data.GE %>% slice(trainIndex)
+      Data.GE.Test <- Data.GE %>% slice(-trainIndex)
       
       Data.EEp.Learn <- Data.EEp %>% slice(trainIndex)
       Data.EEp.Test <- Data.EEp %>% slice(-trainIndex)
@@ -322,9 +318,9 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
       Data.GpE.Test <- Data.GpE %>% slice(-trainIndex)
       
       
-      existing.pop.Learn=sum(c(length(unique(Data.GGp.Learn$pop)),length(unique(Data.GEp.Learn$pop)),length(unique(Data.EEp.Learn$pop)),length(unique(Data.GpEp.Learn$pop)),length(unique(Data.GpE.Learn$pop)))) 
+      existing.pop.Learn=sum(c(length(unique(Data.GGp.Learn$pop)),length(unique(Data.GE.Learn$pop)),length(unique(Data.EEp.Learn$pop)),length(unique(Data.GpEp.Learn$pop)),length(unique(Data.GpE.Learn$pop)))) 
       
-      existing.pop.Test=sum(c(length(unique(Data.GGp.Test$pop)),length(unique(Data.GEp.Test$pop)),length(unique(Data.EEp.Test$pop)),length(unique(Data.GpEp.Test$pop)),length(unique(Data.GpE.Test$pop))))  
+      existing.pop.Test=sum(c(length(unique(Data.GGp.Test$pop)),length(unique(Data.GE.Test$pop)),length(unique(Data.EEp.Test$pop)),length(unique(Data.GpEp.Test$pop)),length(unique(Data.GpE.Test$pop))))  
     }
     
     #####
@@ -340,8 +336,8 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     
     DataLearn <- c()
     DataTest <- c()
-    DataLearn <- Boot("Learn",Z.trunc.final.code,NbSimLearn,seed.learn)
-    DataTest <- Boot("Test",Z.trunc.final.code,NbSimTest, seed.test)
+    DataLearn <- Boot("Learn",Z.trunc.final.code,NbSimLearn)
+    DataTest <- Boot("Test",Z.trunc.final.code,NbSimTest)
     saveRDS(DataLearn, file = paste0(file_path_Results,"DataLearn_",b,significance.level, offset, GE, number.pop,".rds"))
     saveRDS(DataTest, file = paste0(file_path_Results,"DataTest_",b,significance.level, offset, GE, number.pop,".rds"))
     
