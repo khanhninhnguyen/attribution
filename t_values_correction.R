@@ -113,6 +113,15 @@ ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
   theme_bw()+
   geom_bar(stat="identity", position=position_dodge(), width = 0.5)
 
+## with FDR+bias correction
+Keep.pval = as.data.frame(
+  sapply(c(1:6), function(x) round(pnorm(-abs(unlist(Total.res1[paste0("t", list.name.test[x])])), mean = 0, sd = 1, lower.tail = TRUE)*2, digits = 5)))
+pvalA <- purrr::map(1:dim(Keep.pval)[1],~p.adjust(Keep.pval[.x,], method = "fdr")) %>% Reduce(c,.) %>% matrix(ncol=6,nrow=dim(Keep.pval)[1],byrow=TRUE)
+colnames(pvalA) <- list.name.test
 
+### convert to t-value : keep the large value from the original 
+### 
+signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Total.res[paste0("t", list.name.test)])) %>% as.data.frame()
+contra.1 = sapply(c(1:nrow(signif)), function(x) check_contradict(unlist(signif [x,c(1:6)]), trunc.table))
 
 

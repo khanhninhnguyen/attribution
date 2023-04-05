@@ -52,11 +52,12 @@ predictive_rule <- function(path_results, significance.level, version, GE, numbe
   Z.trunc <- Z.trunc[keep.config,]
   num.conf <- 1:length(keep.config)
   row.names(Z.trunc) <- num.conf
+  Z.trunc1 = Z.trunc[which(Z.trunc$EEp==0),]
   
   prob <- prob[keep.config]
   prob <- prob/sum(prob)
   
-  sum(duplicated(Z.trunc))
+  sum(duplicated(Z.trunc1[,-4]))
   
   duplicated2 <- function(x){
     auxi <- do.call("paste",c(x,sep="_"))
@@ -67,15 +68,15 @@ predictive_rule <- function(path_results, significance.level, version, GE, numbe
     return(res)
   }
   
-  sum(duplicated2(Z.trunc[,-4]))/2
-  rg.duplicate <-which(duplicated2(Z.trunc[,-4])) 
+  sum(duplicated2(Z.trunc1[,-4]))/2
+  rg.duplicate <-which(duplicated2(Z.trunc1[,-4])) 
   cbind(Z.trunc[rg.duplicate,],prob[rg.duplicate])
   
   # original configurations
   cbind(Y[c(7,12,19,28),],c(7,12,19,28))
   # Removing of the configurations 19 and 28
   # Z.trunc.final <- Z.trunc[-c(12,28),]
-  Z.trunc.final <- Z.trunc
+  Z.trunc.final <- Z.trunc1
   dim(Z.trunc.final)
   dim(Z.trunc.final[Z.trunc.final$GE==1,])
   dim(Z.trunc.final[Z.trunc.final$GE==-1,])
@@ -86,14 +87,14 @@ predictive_rule <- function(path_results, significance.level, version, GE, numbe
   prob.final <- prob.final/sum(prob.final)
   
   # The coded Z.trunc in terms of population
-  Z.trunc.final.code <- Z.trunc.final[-rg.duplicate,] 
+  Z.trunc.final.code <- Z.trunc.final
   Z.trunc.final.code[Z.trunc.final.code==1]=3
   Z.trunc.final.code[Z.trunc.final.code==-1]=2
   Z.trunc.final.code[Z.trunc.final.code==0]=1
   
   head(Z.trunc.final.code)
   config.list <- 1:38
-  config.list.final <- config.list[-rg.duplicate] 
+  config.list.final <- as.numeric( rownames(Z.trunc.final.code))
   saveRDS(Z.trunc.final.code , file = paste0(file_path_Results,"List_config.rds"))
   
   name.results <- paste0(path_restest,"FGLS_on_real_data_t.txt")
