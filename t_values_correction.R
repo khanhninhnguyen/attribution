@@ -26,6 +26,13 @@ Total.res1 = Total.res
 Total.res1[,paste0("jump", list.non.collocated )] = jump.new
 Total.res1[,paste0("t", list.non.collocated )] = t.new 
 save(Total.res1, file = paste0(path_results, "attribution0/stats_test_real_data_corrected_dist.RData"))
+# save file for prediction 
+station = substr(Total.res1$station, 1, 4)
+brp = substr(Total.res1$station, 6, 15)
+nearby = substr(Total.res1$station, 17, 20)
+data.save = data.frame(main = station, brp = brp, nearby = nearby)
+data.save = cbind(data.save, Total.res1[,c(7:12)], Total.res1[,c(22,23,20)])
+write.table(data.save, file = paste0(path_results, "attribution/predictive_rule/stats_test_real_data_corrected_dist.txt"))
 
 ## plot histogram to compare
 dat.p = reshape2:: melt(data.frame(old = Total.res$`tG'-E`, new = t.new$`jumpG'-E`))
@@ -120,6 +127,27 @@ pvalA <- purrr::map(1:dim(Keep.pval)[1],~p.adjust(Keep.pval[.x,], method = "fdr"
 colnames(pvalA) <- list.name.test
 
 ### convert to t-value : keep the large value from the original 
+t.fdr = Total.res1[,c(7:12)]
+for(i in c(1:nrow(pvalA))){
+  p.i = pvalA[i,]
+  for(j in c(1:6)){
+    if(p.i[j] != 0){
+      sign.ij = sign(t.fdr[i,j])
+      t.c = sign.ij * abs(qt(p.i[j]/2, df = 1000))
+      t.fdr[i,j] = t.c
+    }
+  }
+}
+
+# save file for prediction 
+Total.res1[,c(7:12)] <- t.fdr
+station = substr(Total.res1$station, 1, 4)
+brp = substr(Total.res1$station, 6, 15)
+nearby = substr(Total.res1$station, 17, 20)
+data.save = data.frame(main = station, brp = brp, nearby = nearby)
+data.save = cbind(data.save, Total.res1[,c(7:12)], Total.res1[,c(22,23,20)])
+write.table(data.save, file = paste0(path_results, "attribution/predictive_rule/stats_test_real_data_corrected_dist_fdr.txt"))
+
 ### 
 signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Total.res[paste0("t", list.name.test)])) %>% as.data.frame()
 contra.1 = sapply(c(1:nrow(signif)), function(x) check_contradict(unlist(signif [x,c(1:6)]), trunc.table))

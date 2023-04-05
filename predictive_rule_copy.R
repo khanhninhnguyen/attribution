@@ -97,7 +97,7 @@ predictive_rule <- function(path_results, significance.level, version, GE, numbe
   config.list.final <- as.numeric( rownames(Z.trunc.final.code))
   saveRDS(Z.trunc.final.code , file = paste0(file_path_Results,"List_config.rds"))
   
-  name.results <- paste0(path_restest,"FGLS_on_real_data_t.txt")
+  name.results <- paste0(path_restest,"stats_test_real_data_corrected_dist_fdr.txt")
   Data.Res.Test <- read.table(name.results,header = TRUE, stringsAsFactors = FALSE)
   colnames(Data.Res.Test)[4:9] <- paste0("t", List.names.tot)
   # replicate NA value in G-E 
@@ -461,44 +461,44 @@ predictive_rule <- function(path_results, significance.level, version, GE, numbe
   
   save(FinalTable, file = paste0(path_restest, "Final.Table", significance.level, version, GE, number.pop, ".RData"))
   save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.List", significance.level, version, GE, number.pop, ".RData"))
-  
-  FinalTable$w <- FinalTable$n1+FinalTable$n2
-  Post.Prob.List <- list()
-  
-  
-  Nb.main.break=1
-  for (i in List.main){
-    Data.tmp1 <- FinalTable %>% dplyr::filter(main==i)
-    List.break.i <-unique(Data.tmp1$brp) 
-    for (j in List.break.i){
-      Data.tmp2 <- Data.tmp1 %>% dplyr::filter(brp==j)
-      A <- c(i,j)
-      Post.Prob <- c()
-      Config.Pred.Post <- c()
-      if (nrow(Data.tmp2) >1){
-        unique.pred <-unique(Data.tmp2$pred.y) 
-        for (l in 1:length(unique.pred)){
-          Post.Prob[l] <- sum((Data.tmp2$pred.y==unique.pred[l])*Data.tmp2$w)/sum(Data.tmp2$w)
-        }
-        names(Post.Prob) <-  unique.pred
-        Config.Pred.Post <- unique.pred[which.max(Post.Prob)]
-      } else {
-        Post.Prob[1] <- 1
-        names(Post.Prob) <-  Data.tmp2$pred.y
-        Config.Pred.Post <- Data.tmp2$pred.y
-      }
-      
-      Post.Prob.List[[Nb.main.break]] <- list(MainBreak=A,PostProb=Post.Prob,Config.Pred.Post=Config.Pred.Post)
-      
-      
-      Nb.main.break=Nb.main.break+1
-    }
-  }
-  
-  Post.Prob.List
-  
-  save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.Listn", significance.level, version, GE, number.pop, ".RData"))
-  
+  # 
+  # FinalTable$w <- FinalTable$n1+FinalTable$n2
+  # Post.Prob.List <- list()
+  # 
+  # 
+  # Nb.main.break=1
+  # for (i in List.main){
+  #   Data.tmp1 <- FinalTable %>% dplyr::filter(main==i)
+  #   List.break.i <-unique(Data.tmp1$brp) 
+  #   for (j in List.break.i){
+  #     Data.tmp2 <- Data.tmp1 %>% dplyr::filter(brp==j)
+  #     A <- c(i,j)
+  #     Post.Prob <- c()
+  #     Config.Pred.Post <- c()
+  #     if (nrow(Data.tmp2) >1){
+  #       unique.pred <-unique(Data.tmp2$pred.y) 
+  #       for (l in 1:length(unique.pred)){
+  #         Post.Prob[l] <- sum((Data.tmp2$pred.y==unique.pred[l])*Data.tmp2$w)/sum(Data.tmp2$w)
+  #       }
+  #       names(Post.Prob) <-  unique.pred
+  #       Config.Pred.Post <- unique.pred[which.max(Post.Prob)]
+  #     } else {
+  #       Post.Prob[1] <- 1
+  #       names(Post.Prob) <-  Data.tmp2$pred.y
+  #       Config.Pred.Post <- Data.tmp2$pred.y
+  #     }
+  #     
+  #     Post.Prob.List[[Nb.main.break]] <- list(MainBreak=A,PostProb=Post.Prob,Config.Pred.Post=Config.Pred.Post)
+  #     
+  #     
+  #     Nb.main.break=Nb.main.break+1
+  #   }
+  # }
+  # 
+  # Post.Prob.List
+  # 
+  # save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.Listn", significance.level, version, GE, number.pop, ".RData"))
+  # 
 }
 
 
