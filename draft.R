@@ -586,4 +586,9 @@ for (i in c(1:nrow(unique))) {
   }
 }
 
+l1 = get(load(file = paste0(path_results,"attribution0/coef.model.arma10",".RData")))
+l2 = read.table(
+  file = paste0(path_main,"paper/attribution/result/attribution/FGLS_on_real_data_autocorrelation.txt"),
+  header = TRUE)
 
+t1 = l1$gps.era[[1]][[1]]

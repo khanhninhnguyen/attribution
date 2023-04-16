@@ -281,9 +281,9 @@ p <- ggplot(res.plot, aes(fill=mod, y=pct, x=series, label = value)) +
 ggsave(paste0(path_results,"attribution/Datacharacterization_autoarima_test.jpg" ), plot = p, width = 14, height = 5, units = "cm", dpi = 1200)
 
 # Plot coefficients ------------------------
-all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
-order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
-coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution0/all.dat.longest", win.thres,".RData")))
+order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
 moving.var = get(load(file = paste0(path_results, "moving.var.RData")))
 
 n=length(coef.arma.l$gps.era[[1]][,1])
@@ -650,9 +650,9 @@ library(gridExtra)
 unicode_minus = function(x) sub('^-', '\U2212', format(x))
 # unicode_minus(format(round(SE,  digits = 3), nsmall = 3))
 
-all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
-order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
-coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution0/all.dat.longest", win.thres,".RData")))
+order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
 
 list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
 
