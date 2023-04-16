@@ -113,7 +113,7 @@ save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_AR
 
 
 
-# PLOT
+# PLOT ---------------------------------------------------------------
 arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1.RData")))
 ar = get(load(file = paste0(path_results, "attribution0/performance_autoarima_AR1.RData")))
 ma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_MA1.RData")))
@@ -152,7 +152,7 @@ get_data <- function(list.ini, param.val, true.model, details){
   }
   return(tot.df)
 }
-# Fig 1: TPR as a fc of length for different coefs
+## Fig 1: TPR as a fc of length for different coefs-------------------
 model.plot = "ARMA(1,1)"
 model.data = arma
 param.name = "phi"
@@ -185,7 +185,7 @@ p = ggplot(data = df, aes(x = N, y = TPR, col = phi)) +
 # 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.N.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
-# Fig 2: TPR as a fc of coefs for different length
+## Fig 2: TPR as a fc of coefs for different length---------------------
 
 model.plot = "ARMA(1,1)"
 model.data = arma
@@ -218,8 +218,59 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
         legend.spacing.y = unit(-0.1, 'cm'),
         plot.subtitle = element_text(size = 5))+
   guides(color=guide_legend(title = param.name, nrow = 5, byrow = TRUE))
-# 
+ 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+
+## Fig 3 detail of the model identification --------------------------
+model.plot = "ARMA(1,1)"
+model.data = arma
+param.name = "phi"
+selected.ind = c(2:7)
+details = 1
+all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
+ar.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "AR(1)")))
+ma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "MA(1)")))
+arma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "ARMA(1,1)")))
+
+df = data.frame(ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list[selected.ind]) %>%
+  reshape2::melt(id = "phi") %>%
+  mutate(predict = as.factor(rep(c("AR(1)", "MA(1)", "ARMA(1,1)"), each = 6))) %>%
+  mutate(phi = as.factor(phi))
+
+p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
+  theme_bw()+
+  geom_bar(position="stack", stat="identity", width = 0.5)+
+  ylab("Percentage")+
+  labs(subtitle = paste0("Model: " , true.model, ", N = ", length.list[details]))+
+  scale_y_continuous(labels = scales::percent) +
+  # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
+  #           position = position_stack(vjust = 0.5), size = 1)+
+  ggrepel::geom_text_repel(aes(label = paste0(value*100/nb.sim,"%")), 
+                           position = position_stack(vjust = 0.5), size = 1, direction = "y", 
+                           box.padding = unit(0.01, "lines"))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text=element_text(size=4),
+        legend.title=element_text(size = 4.5),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        legend.title.align=0.5,
+        plot.subtitle = element_text(size = 4)) +
+  guides(color=guide_legend(title = param.name)) 
+
+
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+
+
+ 
+
+
+
+
+
 
 
 
