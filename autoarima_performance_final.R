@@ -2,11 +2,11 @@
 source(paste0(path_code_att,"FGLS.R"))
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"support_characterization.R"))
+length.list = seq(200, 2000, 200)
+coef.list = seq(0, 0.8, 0.1)
 
 # SIMULATION ---------------------------------------------------------------
 ## AR(1) model -------------------------------------------------------------
-length.list = seq(200, 2000, 200)
-coef.list = seq(0, 0.8, 0.1)
 
 nb.sim = 1000
 tot.res = data.frame(n = length.list, 
@@ -152,8 +152,74 @@ get_data <- function(list.ini, param.val, true.model, details){
   }
   return(tot.df)
 }
+# Fig 1: TPR as a fc of length for different coefs
+model.plot = "ARMA(1,1)"
+model.data = arma
+param.name = "phi"
+selected.ind = c(2:7)
+df = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = 0)[selected.ind,] %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(N = length.list) %>% 
+  reshape2::melt(id = "N") %>% 
+  mutate(phi = as.factor(rep(coef.list[selected.ind], each = 10))) %>% 
+  mutate(TPR = value/nb.sim)
 
-a = get_data(list.ini = ar, param.val = 0, true.model = "AR(1)", details = 3)
+p = ggplot(data = df, aes(x = N, y = TPR, col = phi)) +
+  theme_bw() + 
+  geom_hline(yintercept = 0.95, lwd = 0.25, col = "black")+
+  geom_point(size = 0.3) +
+  geom_line(lwd = 0.25)+
+  scale_x_continuous(breaks = length.list, 
+                     limits = c(200, 2000))+ 
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text = element_text(size = 4.5),
+        legend.title=element_text(size = 4.5),
+        axis.title = element_text(size = 5.5),
+        plot.tag = element_text(size = 5),
+        legend.box.spacing = unit(0, "pt"),
+        legend.title.align=0.5,
+        plot.subtitle = element_text(size = 5))+
+  guides(color=guide_legend(title = param.name)) 
+# 
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.N.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+# Fig 2: TPR as a fc of coefs for different length
+
+model.plot = "ARMA(1,1)"
+model.data = arma
+param.name = "N"
+selected.ind = c(2:7)
+df = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = 0)[selected.ind,] %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(N = as.factor(length.list)) %>% 
+  reshape2::melt(id = "N") %>% 
+  mutate(phi = rep(coef.list[selected.ind], each = 10)) %>% 
+  mutate(TPR = value/nb.sim)
+
+p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
+  theme_bw() + 
+  geom_hline(yintercept = 0.95, lwd = 0.25, col = "black")+
+  geom_point(size = 0.3) +
+  geom_line(lwd = 0.25)+
+  scale_x_continuous(breaks = coef.list[selected.ind], 
+                     limits = c(0.1, 0.61))+ 
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text = element_text(size = 3),
+        legend.title=element_text(size = 4.5),
+        axis.title = element_text(size = 5.5),
+        plot.tag = element_text(size = 5),
+        legend.box.spacing = unit(0, "pt"),
+        legend.title.align=0.5,
+        legend.key.width = unit(0.3, "cm"),
+        legend.spacing.y = unit(-0.1, 'cm'),
+        plot.subtitle = element_text(size = 5))+
+  guides(color=guide_legend(title = param.name, nrow = 5, byrow = TRUE))
+# 
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 
 
