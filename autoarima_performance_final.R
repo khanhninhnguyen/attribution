@@ -4,20 +4,12 @@ source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"support_characterization.R"))
 length.list = seq(200, 2000, 200)
 coef.list = seq(0, 0.8, 0.1)
-nb.sim = 1000
-
-# SIMULATION ---------------------------------------------------------------
-## AR(1) model -------------------------------------------------------------
-
-nb.sim = 1000
-tot.res = data.frame(n = length.list, 
-                     TPR.white = rep(NA, length(length.list)),
-                     TPR.ar = rep(NA, length(length.list)),
-                     TPR.ma = rep(NA, length(length.list)),
-                     TPR.arma = rep(NA, length(length.list)))
+nb.sim = 10
 burn.in = 1000
 hetero = 0
 sigma.sim = 1
+# SIMULATION ---------------------------------------------------------------
+## AR(1) model -------------------------------------------------------------
 
 set.seed(1)
 tot.res = list()
@@ -41,18 +33,6 @@ for (l in c(1:length(length.list))) {
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_AR1.RData"))
 
 ## MA(1) model -------------------------------------------------------------
-length.list = seq(200, 2000, 200)
-coef.list = seq(0, 0.8, 0.1)
-
-nb.sim = 1000
-tot.res = data.frame(n = length.list, 
-                     TPR.white = rep(NA, length(length.list)),
-                     TPR.ar = rep(NA, length(length.list)),
-                     TPR.ma = rep(NA, length(length.list)),
-                     TPR.arma = rep(NA, length(length.list)))
-burn.in = 1000
-hetero = 0
-sigma.sim = 1
 
 set.seed(1)
 tot.res = list()
@@ -74,20 +54,7 @@ for (l in c(1:length(length.list))) {
 }
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_MA1.RData"))
-## ARMA(1,1) model -------------------------------------------------------------
-
-length.list = seq(200, 2000, 200)
-coef.list = seq(0, 0.8, 0.1)
-
-nb.sim = 1000
-tot.res = data.frame(n = length.list, 
-                     TPR.white = rep(NA, length(length.list)),
-                     TPR.ar = rep(NA, length(length.list)),
-                     TPR.ma = rep(NA, length(length.list)),
-                     TPR.arma = rep(NA, length(length.list)))
-burn.in = 1000
-hetero = 0
-sigma.sim = 1
+## ARMA(1,1)a model -------------------------------------------------------------
 
 set.seed(1)
 tot.res = list()
@@ -112,6 +79,213 @@ for (l in c(1:length(length.list))) {
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_ARMA1.RData"))
 
 
+
+
+## ARMA(1,1)b model -------------------------------------------------------------
+
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    ma0 = 0.5-ar0
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = fit.arima(y.ar)
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_ARMA1b.RData"))
+
+## Accuracy of the coeff estimation ----------------------------------------
+### when detect the true model      ----------------------------------------
+#### AR(1)                          ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(1,0,0), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_AR1_true.RData"))
+#### MA(1)                          ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=0,ma=ar0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(0,0,1), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_MA1_true.RData"))
+#### ARMA(1,1)a                      ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    ma0 = 0.3 - ar0
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(1,0,1), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1a_true.RData"))
+
+#### ARMA(1,1)b                      ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    ma0 = 0.5 - ar0
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(1,0,1), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1b_true.RData"))
+
+
+### when detect the wrong model     ----------------------------------------
+#### AR(1) but detect MA(1)         ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(0,0,1), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_AR1_wrong.RData"))
+
+#### MA(1) but detect AR(1)         ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=0,ma=ar0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(1,0,0), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_MA1_wrong.RData"))
+
+#### ARMA(1,1) but detect MA(1)         ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    ma0 = 0.3 - coef.list[i]
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(0,0,1), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1a_wrong_MA.RData"))
+
+#### ARMA(1,1) but detect AR(1)         ----------------------------------------
+set.seed(1)
+tot.res = list()
+for (l in c(1:length(length.list))) {
+  n = length.list[l]
+  tot.fit = list()
+  for (i in c(1:length(coef.list))) {
+    fit.i = list()
+    ar0 = coef.list[i]
+    ma0 = 0.3 - coef.list[i]
+    for (j in c(1:nb.sim)) {
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      # fit
+      fit.ar = arima( y.ar, order = c(1,0,0), method="ML")
+      fit.i[[j]] = fit.ar
+    }
+    tot.fit[[i]] = fit.i
+  }
+  tot.res[[l]] = tot.fit
+}
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1a_wrong_AR.RData"))
 
 
 # PLOT ---------------------------------------------------------------
