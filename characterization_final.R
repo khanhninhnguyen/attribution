@@ -10,7 +10,7 @@ one.year=365
 L = one.year*win.thres
 
 # data 
-dat = get(load( file = paste0(path_results,"attribution/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
+dat = get(load( file = paste0(path_results,"attribution0/data.all_", win.thres = 10,"years_", nearby_ver,"screened.RData")))
 # # list longest segment ---------------------
 # list.break = data.frame(ref = substr(names(dat), start = 1, stop = 4),
 #                         brp = substr(names(dat), start = 6, stop = 15),

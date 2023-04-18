@@ -4,6 +4,7 @@ source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"support_characterization.R"))
 length.list = seq(200, 2000, 200)
 coef.list = seq(0, 0.8, 0.1)
+nb.sim = 1000
 
 # SIMULATION ---------------------------------------------------------------
 ## AR(1) model -------------------------------------------------------------
@@ -124,7 +125,7 @@ get_data <- function(list.ini, param.val, true.model, details){
   if(details!=0){
     tot.df = data.frame(matrix(NA, ncol = length(list.ini[[1]]), nrow = nb.sim))
     for (j in c(1:length(list.ini[[1]]))) {
-      model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[5]][[j]][[x]]$pq))
+      model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[details]][[j]][[x]]$pq))
       tot.df[,j] = model.est
     }
   }else{
@@ -227,22 +228,23 @@ model.plot = "ARMA(1,1)"
 model.data = arma
 param.name = "phi"
 selected.ind = c(2:7)
-details = 1
+details = 10
 all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
 ar.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "AR(1)")))
 ma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "MA(1)")))
 arma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "ARMA(1,1)")))
+white.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "White")))
 
-df = data.frame(ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list[selected.ind]) %>%
+df = data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list[selected.ind]) %>%
   reshape2::melt(id = "phi") %>%
-  mutate(predict = as.factor(rep(c("AR(1)", "MA(1)", "ARMA(1,1)"), each = 6))) %>%
+  mutate(predict = as.factor(rep(c( "White", "AR(1)", "MA(1)", "ARMA(1,1)"), each = 6))) %>%
   mutate(phi = as.factor(phi))
 
 p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
   theme_bw()+
   geom_bar(position="stack", stat="identity", width = 0.5)+
   ylab("Percentage")+
-  labs(subtitle = paste0("Model: " , true.model, ", N = ", length.list[details]))+
+  labs(subtitle = paste0("Model: " , model.plot, ", N = ", length.list[details]))+
   scale_y_continuous(labels = scales::percent) +
   # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
   #           position = position_stack(vjust = 0.5), size = 1)+
@@ -251,17 +253,17 @@ p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
                            box.padding = unit(0.01, "lines"))+
   theme(axis.text.x = element_text(size = 5),
         axis.text.y = element_text(size = 5),
-        legend.text=element_text(size=4),
-        legend.title=element_text(size = 4.5),
+        legend.text = element_text(size=4),
+        legend.title = element_text(size = 4.5),
         axis.title = element_text(size = 5),
         legend.key.size = unit(0.3, "cm"),
         plot.tag = element_text(size = 5),
-        legend.title.align=0.5,
+        legend.title.align = 0.5,
         plot.subtitle = element_text(size = 4)) +
-  guides(color=guide_legend(title = param.name)) 
+  guides(color = guide_legend(title = param.name)) 
 
 
-ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 
 
