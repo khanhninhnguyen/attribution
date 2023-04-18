@@ -4,7 +4,7 @@ source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"support_characterization.R"))
 length.list = seq(200, 2000, 200)
 coef.list = seq(0, 0.8, 0.1)
-nb.sim = 10
+nb.sim = 1000
 burn.in = 1000
 hetero = 0
 sigma.sim = 1
