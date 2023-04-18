@@ -327,6 +327,43 @@ get_data <- function(list.ini, param.val, true.model, details){
   }
   return(tot.df)
 }
+get_data1 <- function(list.ini, param.val, true.model, details){
+  nb.sim = length(list.ini[[1]][[1]])
+  # choose details case at specific length 
+  if(details!=0){
+    tot.df = data.frame(matrix(NA, ncol = length(list.ini[[1]]), nrow = nb.sim))
+    for (j in c(1:length(list.ini[[1]]))) {
+      model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[details]][[j]][[x]]$coef))
+      tot.df[,j] = model.est
+    }
+  }else{
+    
+    if(param.val == 0){
+      tot.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+      for (i in c(1:length(list.ini))) {
+        for (j in c(1:length(list.ini[[1]]))) {
+          model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[i]][[j]][[x]]$coef))
+          y = length(which(model.est == true.model))
+          tot.df[j,i] = y
+        }
+      }
+    }else{ # could be filtered the case of true model 
+      tot.df = data.frame(matrix(NA, ncol = 2*length(list.ini), nrow = length(list.ini[[1]])))
+      for (i in c(1:length(list.ini))) {
+        for (j in c(1:length(list.ini[[1]]))) {
+          phi = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$coef[1])
+          theta = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$coef[3])
+          tot.df[j,(2*i-1)] = mean(phi, na.rm = TRUE)
+          tot.df[j,(2*i)] = mean(theta, na.rm = TRUE)
+        }
+      }
+    }
+  }
+  return(tot.df)
+}
+get_data_acc <- function(list.ini, param.val, true.model, details){
+  
+}
 ## Fig 1: TPR as a fc of length for different coefs-------------------
 model.plot = "ARMA(1,1)"
 model.data = arma
@@ -451,4 +488,8 @@ ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.
 
 
 
+
+
+## Fig 4: accuracy of param estimates
+arma = get(load(file = paste0(path_results, "attribution0/performance_arima_MA1_wrong.RData")))
 
