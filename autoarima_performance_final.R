@@ -361,8 +361,22 @@ get_data1 <- function(list.ini, param.val, true.model, details){
   }
   return(tot.df)
 }
-get_data_acc <- function(list.ini, param.val, true.model, details){
+get_data_acc <- function(list.ini, phi, theta){
+  phi.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+  theta.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+  param = c("", "")
+  if(phi == 1){ param[1] = "ar1"}
+  if(theta == 1){ param[2] = "ma1"}
   
+  for (i in c(1:length(list.ini))) {
+    for (j in c(1:length(list.ini[[1]]))) {
+      model.est = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$var.coef[1,param])
+      phi.df[j,i] = mean( model.est[1,], na.rm = TRUE)
+      theta.df[j,i] = mean( model.est[1,], na.rm = TRUE)
+    }
+  }
+  tot.df = list(phi = phi.df, theta = theta.df)
+  return(tot.df)
 }
 ## Fig 1: TPR as a fc of length for different coefs-------------------
 model.plot = "ARMA(1,1)"
@@ -492,4 +506,13 @@ ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.
 
 ## Fig 4: accuracy of param estimates
 arma = get(load(file = paste0(path_results, "attribution0/performance_arima_MA1_wrong.RData")))
+
+
+
+# Fig 4  ------------------------------------------------------------------
+arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_ARMA1a_true.RData")))
+a = get_data_acc(list.ini = arma.acc, phi = 1, theta =1)
+
+
+
 
