@@ -10,3 +10,6 @@ for (i in c(1:length(list.station))) {
   correlation[i] = cor(a$ERAI, a$GPS, use='complete.obs')
 }
 
+summary(correlation)
+
+

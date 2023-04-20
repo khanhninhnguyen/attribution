@@ -8,6 +8,8 @@ nb.sim = 1000
 burn.in = 1000
 hetero = 0
 sigma.sim = 1
+selected.ind = c(2:7)
+
 # SIMULATION ---------------------------------------------------------------
 ## AR(1) model -------------------------------------------------------------
 
@@ -361,23 +363,6 @@ get_data1 <- function(list.ini, param.val, true.model, details){
   }
   return(tot.df)
 }
-get_data_acc <- function(list.ini, phi, theta){
-  phi.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
-  theta.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
-  param = c("", "")
-  if(phi == 1){ param[1] = "ar1"}
-  if(theta == 1){ param[2] = "ma1"}
-  
-  for (i in c(1:length(list.ini))) {
-    for (j in c(1:length(list.ini[[1]]))) {
-      model.est = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$var.coef[1,param])
-      phi.df[j,i] = mean( model.est[1,], na.rm = TRUE)
-      theta.df[j,i] = mean( model.est[1,], na.rm = TRUE)
-    }
-  }
-  tot.df = list(phi = phi.df, theta = theta.df)
-  return(tot.df)
-}
 ## Fig 1: TPR as a fc of length for different coefs-------------------
 model.plot = "ARMA(1,1)"
 model.data = arma
@@ -490,29 +475,70 @@ p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
 ## Fig 4: accuracy of param estimates
 arma = get(load(file = paste0(path_results, "attribution0/performance_arima_MA1_wrong.RData")))
 
 
 
-# Fig 4  ------------------------------------------------------------------
-arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_ARMA1a_true.RData")))
-a = get_data_acc(list.ini = arma.acc, phi = 1, theta =1)
+## Fig 4  s.e of estimates as a fc of n for different coef-------------------
+get_data_acc <- function(list.ini, phi, theta){
+  phi.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+  theta.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+  param = c("", "")
+  if(phi == 1){ param[1] = "ar1"}
+  if(theta == 1){ param[2] = "ma1"}
+  
+  for (i in c(1:length(list.ini))) {
+    for (j in c(1:length(list.ini[[1]]))) {
+      model.est = sapply(c(1:nb.sim), function(x) { sqrt(diag(list.ini[[i]][[j]][[x]]$var.coef[param,param]))})
+      phi.df[j,i] = mean( model.est[1,], na.rm = TRUE)
+      theta.df[j,i] = mean( model.est[1,], na.rm = TRUE)
+    }
+  }
+  tot.df = list(phi = phi.df, theta = theta.df)
+  return(tot.df)
+}
+model.plot = "ARMA1a"
+model.true = "ARMA(1,1)"
+model.est = "ARMA(1,1)"
 
+if(model.true == model.est){
+  est.true = "true"
+}else{est.true = "wrong"}
+
+arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true, ".RData")))
+
+df.all = get_data_acc(list.ini = arma.acc, phi = 1, theta =1)
+## plot for phi 
+param.name = "phi"
+df = df.all$phi[selected.ind,]  %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(N = length.list) %>% 
+  reshape2::melt(id = "N") %>% 
+  mutate(phi = as.factor(rep(coef.list[selected.ind], each = 10))) 
+
+p = ggplot(data = df, aes(x = N, y = value, col = phi))+
+  theme_bw()+
+  geom_point(size = 0.3) +
+  geom_line(lwd = 0.25)+
+  scale_x_continuous(breaks = length.list, 
+                     limits = c(200, 2000))+ 
+  ylab("Standard error of phi")+
+  labs(subtitle = paste0("Simulated model: " , model.true, ", Estimate model:", model.est))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text = element_text(size=4),
+        legend.title = element_text(size = 4.5),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        legend.title.align = 0.5,
+        plot.subtitle = element_text(size = 5)) +
+  guides(color = guide_legend(title = param.name)) 
+
+
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.", model.plot, "_", est.true, param.name, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 
 
