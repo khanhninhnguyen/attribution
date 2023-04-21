@@ -490,9 +490,9 @@ get_data_acc <- function(list.ini, phi, theta){
   
   for (i in c(1:length(list.ini))) {
     for (j in c(1:length(list.ini[[1]]))) {
-      model.est = sapply(c(1:nb.sim), function(x) { sqrt(diag(list.ini[[i]][[j]][[x]]$var.coef[param,param]))})
-      phi.df[j,i] = mean( model.est[1,], na.rm = TRUE)
-      theta.df[j,i] = mean( model.est[1,], na.rm = TRUE)
+      model.est = sapply(c(1:nb.sim), function(x) { list.ini[[i]][[j]][[x]]$coef[param]})
+      phi.df[j,i] = sd( model.est[1,], na.rm = TRUE)
+      theta.df[j,i] = sd( model.est[1,], na.rm = TRUE)
     }
   }
   tot.df = list(phi = phi.df, theta = theta.df)

@@ -235,8 +235,8 @@ dev.off()
 
 
 # plot the histogram of noise model -----------------
-order.arma.l = get(load(file = paste0(path_results,"attribution/order.model.arma", win.thres,".RData")))
-coef.arma.l = get(load(file = paste0(path_results,"attribution/coef.model.arma", win.thres,".RData")))
+order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
 
 list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
 length.data =nrow(reduced.list)
@@ -825,8 +825,8 @@ ggsave(paste0(path_results,"attribution/Autoarima.jpg" ), plot = p, width = 14.4
 
 # table of variance for paper ---------------------------------------------
 
-all.coef = get(load( file = paste0(path_results, "attribution/all.coef.longest", win.thres,".RData")))
-all.dat = get(load(file = paste0(path_results, "attribution/all.dat.longest", win.thres,".RData")))
+all.coef = get(load( file = paste0(path_results, "attribution0/all.coef.longest", win.thres,".RData")))
+all.dat = get(load(file = paste0(path_results, "attribution0/all.dat.longest", win.thres,".RData")))
 mean.res = data.frame(matrix(NA, ncol = 0, nrow = nrow(reduced.list)))
 range.res = data.frame(matrix(NA, ncol = 0, nrow = nrow(reduced.list)))
 
