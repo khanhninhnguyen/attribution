@@ -500,13 +500,13 @@ get_data_acc <- function(list.ini, phi, theta){
 }
 model.plot = "ARMA1a"
 model.true = "ARMA(1,1)"
-model.est = "ARMA(1,1)"
+model.est = "MA"
 
 if(model.true == model.est){
   est.true = "true"
 }else{est.true = "wrong"}
 
-arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true, ".RData")))
+arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true, "_", model.est,".RData")))
 
 df.all = get_data_acc(list.ini = arma.acc, phi = 1, theta =1)
 ## plot for phi 
@@ -524,6 +524,8 @@ p = ggplot(data = df, aes(x = N, y = value, col = phi))+
   geom_line(lwd = 0.25)+
   scale_x_continuous(breaks = length.list, 
                      limits = c(200, 2000))+ 
+  scale_y_continuous(breaks = seq(0, max(df$value)+0.05,0.05),
+                     limits = c(0, max(df$value)))+ 
   ylab("Standard error of phi")+
   labs(subtitle = paste0("Simulated model: " , model.true, ", Estimate model:", model.est))+
   theme(axis.text.x = element_text(size = 5),

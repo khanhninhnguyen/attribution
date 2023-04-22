@@ -593,9 +593,9 @@ l2 = read.table(
 
 t1 = l1$gps.era[[1]][[1]]
 
-phi = 0.6
-theta = 0.3
-n = 400
+phi = 0.4
+theta = -0.1
+n = 1000
 v = ((1-phi*theta)**2)*(1-phi**2)/((phi - theta)**2)
 sqrt(v/n)
 
