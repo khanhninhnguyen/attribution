@@ -292,6 +292,8 @@ save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1a
 
 # PLOT ---------------------------------------------------------------
 arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1.RData")))
+armab = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1b.RData")))
+
 ar = get(load(file = paste0(path_results, "attribution0/performance_autoarima_AR1.RData")))
 ma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_MA1.RData")))
 
@@ -365,7 +367,7 @@ get_data1 <- function(list.ini, param.val, true.model, details){
 }
 ## Fig 1: TPR as a fc of length for different coefs-------------------
 model.plot = "ARMA(1,1)"
-model.data = arma
+model.data = armab
 param.name = "phi"
 selected.ind = c(2:7)
 df = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = 0)[selected.ind,] %>% 
@@ -394,12 +396,12 @@ p = ggplot(data = df, aes(x = N, y = TPR, col = phi)) +
         plot.subtitle = element_text(size = 5))+
   guides(color=guide_legend(title = param.name)) 
 # 
-ggsave(paste0(path_results,"attribution0/auto.arima.TPR.N.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.N.", model.plot, "b.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 ## Fig 2: TPR as a fc of coefs for different length---------------------
 
 model.plot = "ARMA(1,1)"
-model.data = arma
+model.data = armab
 param.name = "N"
 selected.ind = c(2:7)
 df = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = 0)[selected.ind,] %>% 
@@ -430,15 +432,15 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
         plot.subtitle = element_text(size = 5))+
   guides(color=guide_legend(title = param.name, nrow = 5, byrow = TRUE))
  
-ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot, "b.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 
 ## Fig 3 detail of the model identification --------------------------
 model.plot = "ARMA(1,1)"
-model.data = arma
+model.data = armab
 param.name = "phi"
 selected.ind = c(2:7)
-details = 10
+details = 5
 all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
 ar.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "AR(1)")))
 ma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "MA(1)")))
@@ -473,14 +475,12 @@ p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
   guides(color = guide_legend(title = param.name)) 
 
 
-ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, "b.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 ## Fig 4: accuracy of param estimates
 arma = get(load(file = paste0(path_results, "attribution0/performance_arima_MA1_wrong.RData")))
-
-
-
 ## Fig 4  s.e of estimates as a fc of n for different coef-------------------
+
 get_data_acc <- function(list.ini, phi, theta){
   phi.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
   theta.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
@@ -492,26 +492,45 @@ get_data_acc <- function(list.ini, phi, theta){
     for (j in c(1:length(list.ini[[1]]))) {
       model.est = sapply(c(1:nb.sim), function(x) { list.ini[[i]][[j]][[x]]$coef[param]})
       phi.df[j,i] = sd( model.est[1,], na.rm = TRUE)
-      theta.df[j,i] = sd( model.est[1,], na.rm = TRUE)
+      theta.df[j,i] = sd( model.est[2,], na.rm = TRUE)
     }
   }
   tot.df = list(phi = phi.df, theta = theta.df)
   return(tot.df)
 }
-model.plot = "ARMA1a"
-model.true = "ARMA(1,1)"
-model.est = "MA"
+get_data_acc_mean <- function(list.ini, phi, theta){
+  phi.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+  theta.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+  param = c("", "")
+  if(phi == 1){ param[1] = "ar1"}
+  if(theta == 1){ param[2] = "ma1"}
+  
+  for (i in c(1:length(list.ini))) {
+    for (j in c(1:length(list.ini[[1]]))) {
+      model.est = sapply(c(1:nb.sim), function(x) { list.ini[[i]][[j]][[x]]$coef[param]})
+      phi.df[j,i] = mean( model.est[1,], na.rm = TRUE)
+      theta.df[j,i] = mean( model.est[2,], na.rm = TRUE)
+    }
+  }
+  tot.df = list(phi = phi.df, theta = theta.df)
+  return(tot.df)
+}
+
+model.plot = "MA1"
+model.true = "MA(1)"
+model.est = "MA(1)"
 
 if(model.true == model.est){
   est.true = "true"
 }else{est.true = "wrong"}
 
-arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true, "_", model.est,".RData")))
+arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true,".RData")))
+# arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true, "_", model.est,".RData")))
 
 df.all = get_data_acc(list.ini = arma.acc, phi = 1, theta =1)
-## plot for phi 
-param.name = "phi"
-df = df.all$phi[selected.ind,]  %>% 
+### plot for the true model -------------------------------------------------
+param.name = "theta"
+df = df.all[[param.name ]][selected.ind,]  %>% 
   t() %>% 
   as.data.frame() %>% 
   mutate(N = length.list) %>% 
@@ -524,9 +543,9 @@ p = ggplot(data = df, aes(x = N, y = value, col = phi))+
   geom_line(lwd = 0.25)+
   scale_x_continuous(breaks = length.list, 
                      limits = c(200, 2000))+ 
-  scale_y_continuous(breaks = seq(0, max(df$value)+0.05,0.05),
+  scale_y_continuous(breaks = seq(0, max(df$value)+0.02,0.02),
                      limits = c(0, max(df$value)))+ 
-  ylab("Standard error of phi")+
+  ylab(paste0("Standard error of ", param.name))+
   labs(subtitle = paste0("Simulated model: " , model.true, ", Estimate model:", model.est))+
   theme(axis.text.x = element_text(size = 5),
         axis.text.y = element_text(size = 5),
@@ -541,6 +560,64 @@ p = ggplot(data = df, aes(x = N, y = value, col = phi))+
 
 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.", model.plot, "_", est.true, param.name, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+### plot for the wrong model -------------------------------------------------
+model.plot = "ARMA1a"
+model.true = "ARMA(1,1)"
+model.est = "MA(1)"
+
+if(model.true == model.est){
+  est.true = "true"
+}else{est.true = "wrong"}
+arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true, "_", "MA",".RData")))
+
+df.mean = get_data_acc_mean(list.ini = arma.acc, phi = 1, theta =1)
+df.sd = get_data_acc(list.ini = arma.acc, phi = 1, theta =1)
+param.name = "theta"
+
+df.mean.m = df.mean[[param.name ]][selected.ind,]  %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(N = length.list) %>% 
+  reshape2::melt(id = "N") %>% 
+  mutate(phi = as.factor(rep(coef.list[selected.ind], each = 10))) 
+
+df.sd.m = df.sd[[param.name ]][selected.ind,]  %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  mutate(N = length.list) %>% 
+  reshape2::melt(id = "N") %>% 
+  mutate(phi = as.factor(rep(coef.list[selected.ind], each = 10))) 
+
+df = left_join(df.mean.m, df.sd.m, by =c("N","phi"))
+
+p = ggplot(data = df, aes(x = N, y = value.x, col = phi))+
+  theme_bw()+
+  geom_point(size = 0.3) +
+  geom_line(lwd = 0.25)+
+  
+  scale_x_continuous(breaks = length.list, 
+                     limits = c(200, 2000))+ 
+  scale_y_continuous(breaks = seq(0, max(df$value)+0.02,0.02),
+                     limits = c(0, max(df$value)))+ 
+  ylab(paste0("Standard error of ", param.name))+
+  labs(subtitle = paste0("Simulated model: " , model.true, ", Estimate model:", model.est))+
+  theme(axis.text.x = element_text(size = 5),
+        axis.text.y = element_text(size = 5),
+        legend.text = element_text(size=4),
+        legend.title = element_text(size = 4.5),
+        axis.title = element_text(size = 5),
+        legend.key.size = unit(0.3, "cm"),
+        plot.tag = element_text(size = 5),
+        legend.title.align = 0.5,
+        plot.subtitle = element_text(size = 5)) +
+  guides(color = guide_legend(title = param.name)) 
+
+
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.", model.plot, "_", est.true, param.name, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+
+
+
 
 
 
