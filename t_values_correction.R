@@ -127,7 +127,7 @@ pvalA <- purrr::map(1:dim(Keep.pval)[1],~p.adjust(Keep.pval[.x,], method = "fdr"
 colnames(pvalA) <- list.name.test
 
 ### convert to t-value : keep the large value from the original 
-t.fdr = Total.res1[,c(7:12)]
+t.fdr = Total.res[,c(7:12)]
 for(i in c(1:nrow(pvalA))){
   p.i = pvalA[i,]
   for(j in c(1:6)){
@@ -146,7 +146,7 @@ brp = substr(Total.res1$station, 6, 15)
 nearby = substr(Total.res1$station, 17, 20)
 data.save = data.frame(main = station, brp = brp, nearby = nearby)
 data.save = cbind(data.save, Total.res1[,c(7:12)], Total.res1[,c(22,23,20)])
-write.table(data.save, file = paste0(path_results, "attribution/predictive_rule/stats_test_real_data_corrected_dist_fdr.txt"))
+write.table(data.save, file = paste0(path_results, "attribution/predictive_rule/stats_test_real_data_fdr.txt"))
 
 ### 
 signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Total.res[paste0("t", list.name.test)])) %>% as.data.frame()
