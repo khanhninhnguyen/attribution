@@ -1,4 +1,4 @@
-predictive_rule <- function(path_results, significance.level, offset, GE, number.pop, R){
+predictive_rule <- function(path_results, significance.level, offset, GE, number.pop, R, remove.var, name.version){
   if (!require(devtools)) install.packages("devtools")
   devtools::install_github("yanlinlin82/ggvenn")
   library(ggrepel)
@@ -66,53 +66,55 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     dimnames(res) <- NULL
     return(res)
   }
+  rm.ind = which(list.name.test == remove.var)
   
-  sum(duplicated2(Z.trunc[,-4]))/2
-  rg.duplicate <-which(duplicated2(Z.trunc[,-4])) 
+  sum(duplicated2(Z.trunc[,-rm.ind]))/2
+  rg.duplicate <-which(duplicated2(Z.trunc[,-rm.ind ])) 
   cbind(Z.trunc[rg.duplicate,],prob[rg.duplicate])
   
   # original configurations
   cbind(Y[c(7,12,19,28),],c(7,12,19,28))
   # Removing of the configurations 19 and 28
-  # Z.trunc.final <- Z.trunc[-c(12,28),]
-  Z.trunc.final <- Z.trunc
+  remove.config = c(12,28)
+  Z.trunc.final <- Z.trunc[-remove.config,]
+  # Z.trunc.final <- Z.trunc
   dim(Z.trunc.final)
   dim(Z.trunc.final[Z.trunc.final$GE==1,])
   dim(Z.trunc.final[Z.trunc.final$GE==-1,])
   
   # New table and probabilities
-  Z.trunc.final <- Z.trunc.final[,-4]
-  prob.final <- prob[-rg.duplicate] 
+  # Z.trunc.final <- Z.trunc.final[-rm.ind]
+  prob.final <- prob[-remove.config] 
   prob.final <- prob.final/sum(prob.final)
   
   # The coded Z.trunc in terms of population
-  Z.trunc.final.code <- Z.trunc.final[-rg.duplicate,] 
-  Z.trunc.final.code[Z.trunc.final==1]=3
-  Z.trunc.final.code[Z.trunc.final==-1]=2
-  Z.trunc.final.code[Z.trunc.final==0]=1
+  Z.trunc.final.code <- Z.trunc.final[-remove.config,] 
+  Z.trunc.final.code[Z.trunc.final.code==1]=3
+  Z.trunc.final.code[Z.trunc.final.code==-1]=2
+  Z.trunc.final.code[Z.trunc.final.code==0]=1
   
   head(Z.trunc.final.code)
   config.list <- 1:38
-  config.list.final <- config.list[-rg.duplicate] 
+  config.list.final <- config.list[-remove.config] 
   saveRDS(Z.trunc.final.code , file = paste0(file_path_Results,"List_config.rds"))
   
-  name.results <- paste0(path_restest,"FGLS_on_real_data_t.txt")
+  name.results <- paste0(path_restest, name.version)
   Data.Res.Test <- read.table(name.results,header = TRUE, stringsAsFactors = FALSE)
   colnames(Data.Res.Test)[4:9] <- paste0("t", List.names.tot)
-  # replicate NA value in G-E 
-  error.GE <- c()
-  for(tge in c(1:nrow(Data.Res.Test))){
-    if(is.na(Data.Res.Test$tGE[tge])==TRUE){
-      indi = which(Data.Res.Test$main == Data.Res.Test$main[tge] & Data.Res.Test$brp == Data.Res.Test$brp[tge])
-      ti = unique(as.numeric(na.omit(Data.Res.Test$tGE[indi])))
-      if(length(ti)!= 0){
-        Data.Res.Test$tGE[tge] = ti
-      }else{
-        error.GE <- c(error.GE, tge)
-      }
-    }
-    
-  }
+  # # replicate NA value in G-E 
+  # error.GE <- c()
+  # for(tge in c(1:nrow(Data.Res.Test))){
+  #   if(is.na(Data.Res.Test$tGE[tge])==TRUE){
+  #     indi = which(Data.Res.Test$main == Data.Res.Test$main[tge] & Data.Res.Test$brp == Data.Res.Test$brp[tge])
+  #     ti = unique(as.numeric(na.omit(Data.Res.Test$tGE[indi])))
+  #     if(length(ti)!= 0){
+  #       Data.Res.Test$tGE[tge] = ti
+  #     }else{
+  #       error.GE <- c(error.GE, tge)
+  #     }
+  #   }
+  #   
+  # }
   
   NumDetected.per.station <- Data.Res.Test %>% group_by(main) %>% 
     summarise(ldetected.per.station=length(unique(brp))) %>% dplyr::select(ldetected.per.station)
@@ -121,7 +123,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     count() %>% as.data.frame() %>% dplyr::select(n)
   
   # if(GE == 0){
-  List.names.final <- List.names.tot[!(List.names.tot %in% "EEp")]
+  List.names.final <- List.names.tot[-rm.ind]
   # }
   
   Keep.Data <- function(name.series){
@@ -320,8 +322,8 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
       Data.GGp.Learn <- Data.GGp %>% slice(trainIndex)
       Data.GGp.Test <- Data.GGp %>% slice(-trainIndex)
       
-      Data.GE.Learn <- Data.GE %>% slice(trainIndex)
-      Data.GE.Test <- Data.GE %>% slice(-trainIndex)
+      Data.EEp.Learn <- Data.EEp %>% slice(trainIndex)
+      Data.EEp.Test <- Data.EEp %>% slice(-trainIndex)
       
       Data.GEp.Learn <- Data.GEp %>% slice(trainIndex)
       Data.GEp.Test <- Data.GEp %>% slice(-trainIndex)
@@ -333,9 +335,9 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
       Data.GpE.Test <- Data.GpE %>% slice(-trainIndex)
       
       
-      existing.pop.Learn=sum(c(length(unique(Data.GGp.Learn$pop)),length(unique(Data.GE.Learn$pop)),length(unique(Data.GEp.Learn$pop)),length(unique(Data.GpEp.Learn$pop)),length(unique(Data.GpE.Learn$pop)))) 
+      existing.pop.Learn=sum(c(length(unique(Data.GGp.Learn$pop)),length(unique(Data.GEp.Learn$pop)),length(unique(Data.EEp.Learn$pop)),length(unique(Data.GpEp.Learn$pop)),length(unique(Data.GpE.Learn$pop)))) 
       
-      existing.pop.Test=sum(c(length(unique(Data.GGp.Test$pop)),length(unique(Data.GE.Test$pop)),length(unique(Data.GEp.Test$pop)),length(unique(Data.GpEp.Test$pop)),length(unique(Data.GpE.Test$pop))))  
+      existing.pop.Test=sum(c(length(unique(Data.GGp.Test$pop)),length(unique(Data.GEp.Test$pop)),length(unique(Data.EEp.Test$pop)),length(unique(Data.GpEp.Test$pop)),length(unique(Data.GpE.Test$pop))))  
     }
     
     #####
@@ -392,10 +394,10 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   }
   
   pred.truth <- as.data.frame(cbind(truth.vec.i,Z.truth.i))
-  colnames(pred.truth) <- c("code.GE" ,"code.GGp", "code.GEp" , "code.GpEp","code.GpE","Z.truth")
+  colnames(pred.truth) <- c("code.GGp", "code.GEp" , "code.EEp", "code.GpEp","code.GpE","Z.truth")
   
   Data.Res.Test <- cbind(Data.Res.Test,pred.truth)
-  RealData.x <- Data.Res.Test[,colnames(Data.Res.Test) %in% c("tGE", "tGGp","tGEp","tGpEp","tGpE")]
+  RealData.x <- Data.Res.Test[,colnames(Data.Res.Test) %in% c("tGGp","tGEp","tEEp", "tGpEp","tGpE")]
   colnames(RealData.x) <- List.names.final
   
   RealData.predy <- predict(FinalPred,newdata=RealData.x) 
