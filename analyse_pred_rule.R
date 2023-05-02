@@ -1,8 +1,8 @@
 
-final.t = get(load(file = paste0(path_results, "attribution/Final.Table.RData")))
-prob.t = get(load(file = paste0(path_results, "attribution/Post.Prob.List.RData")))
+final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Final.Table.0.01.RData")))
+prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.List.0.01.RData")))
 prob.tn = get(load(file = paste0(path_results, "attribution/Post.Prob.Listn.RData")))
-tot = get(load(file = paste0(path_results,"attribution/stats_test_real_data.RData")))
+tot = get(load(file = paste0(path_results,"attribution0/stats_test_real_data.RData")))
 tot = cbind(final.t[,c(1:3)], tot)
 rownames(tot) = NULL
 rownames(final.t) = NULL
@@ -91,7 +91,7 @@ p <- ggplot(data.plot, aes(fill=config, y=c, x=g)) +
         axis.title = element_text(size = 6), legend.key.size = unit(0.2, "cm"), 
         plot.tag = element_text(size = 6),legend.title=element_text(size=5),legend.box.spacing = unit(0, "pt"),
         plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/config_dist.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/config_dist.0.01.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
 
 # data -------------------------------
 win.thres = 10

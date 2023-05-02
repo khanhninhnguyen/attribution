@@ -599,3 +599,16 @@ n = 1000
 v = ((1-phi*theta)**2)*(1-phi**2)/((phi - theta)**2)
 sqrt(v/n)
 
+name.version ="FGLS_on_real_data_t.txt"
+name.version = "stats_test_real_data_fdr.txt"
+significance.level=0.01
+offset=0
+GE=0
+number.pop = 3
+remove.var = "G-E"
+R = 100
+
+
+Thresh <- significance.level
+
+

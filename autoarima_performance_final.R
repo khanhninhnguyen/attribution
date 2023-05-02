@@ -3,7 +3,7 @@ source(paste0(path_code_att,"FGLS.R"))
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"support_characterization.R"))
 length.list = seq(200, 2000, 200)
-coef.list = seq(0, 0.8, 0.1)
+coef.list = seq(-0.8, 0.8, 0.1)
 nb.sim = 1000
 burn.in = 1000
 hetero = 0
@@ -78,7 +78,7 @@ for (l in c(1:length(length.list))) {
   tot.res[[l]] = tot.fit
 }
 
-save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_ARMA1.RData"))
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_ARMA1a.RData"))
 
 
 
@@ -106,6 +106,35 @@ for (l in c(1:length(length.list))) {
 }
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_ARMA1b.RData"))
+
+## general ARMA(1,1)
+
+sum.list = seq(0.1, 0.6, 0.1)
+for (s in c(1:length(sum.list))) {
+  sum.i = sum.list[s]
+  set.seed(1)
+  tot.res = list()
+  for (l in c(1:length(length.list))) {
+    n = length.list[l]
+    tot.fit = list()
+    for (i in c(1:length(coef.list))) {
+      fit.i = list()
+      ar0 = coef.list[i]
+      ma0 = sum.i-ar0
+      print(c(ar0, ma0))
+      for (j in c(1:nb.sim)) {
+        y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+        # fit
+        fit.ar = fit.arima(y.ar)
+        fit.i[[j]] = fit.ar
+      }
+      tot.fit[[i]] = fit.i
+    }
+    tot.res[[l]] = tot.fit
+  }
+  save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_ARMA1", sum.i ,".RData"))
+}
+
 
 ## Accuracy of the coeff estimation ----------------------------------------
 ### when detect the true model      ----------------------------------------

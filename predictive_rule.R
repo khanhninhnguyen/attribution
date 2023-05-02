@@ -88,7 +88,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   prob.final <- prob.final/sum(prob.final)
   
   # The coded Z.trunc in terms of population
-  Z.trunc.final.code <- Z.trunc.final[-remove.config,] 
+  Z.trunc.final.code <- Z.trunc.final
   Z.trunc.final.code[Z.trunc.final.code==1]=3
   Z.trunc.final.code[Z.trunc.final.code==-1]=2
   Z.trunc.final.code[Z.trunc.final.code==0]=1
@@ -153,8 +153,11 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
   
   Pop.create <- function(dataset){
     Pop1 <- dataset %>% dplyr::filter(pop==1) %>% dplyr::select(t)  %>% unlist()
+    print(Pop1)
     Pop2 <- dataset %>% dplyr::filter(pop==2) %>% dplyr::select(t)  %>% unlist()
+    print(Pop2)
     Pop3 <- dataset %>% dplyr::filter(pop==3) %>% dplyr::select(t)  %>% unlist()
+    print(Pop3)
     Pop=list(Pop1,Pop2,Pop3)
     return(Pop)
   }
@@ -166,6 +169,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
     Nbconfig <- nrow(Z.trunc.code)
     
     for (c in 1:Nbconfig){
+      print(c)
       config.code <- Z.trunc.code[c,]
       N <- eval(parse(text=paste0("NbSim",type.dataset)))
       if (type.dataset=="Learn"){
@@ -177,7 +181,7 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
         Pop <- c()
         code.names.series <- config.code[which(colnames(Z.trunc.code) %in% .x)]
         eval(parse(text=paste0("Pop=Pop.",.x,".",type.dataset,"[[",code.names.series,"]]")))
-        res.t=sample(Pop,Nb.config.c , replace = TRUE)
+        res.t=sample(Pop, Nb.config.c, replace = TRUE)
         return(res.t)
       }) %>% bind_cols() %>% as.data.frame()
       colnames(data.c)=List.names.final

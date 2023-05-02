@@ -247,3 +247,62 @@ colnames(compa) = c(paste0(colnames(compa)[1:6], ".old"), paste0(colnames(compa)
 compa[which(compa$`G-G'.old` != compa$`G-G'.new`),]
 
 
+
+
+
+# Infor when doing the data characterization ------------------------------
+win.thres = 10
+all.dat = get(load(file = paste0(path_results, "attribution0/all.dat.longest", win.thres,".RData")))
+order.arma.l = get(load(file = paste0(path_results,"attribution0/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution0/coef.model.arma", win.thres,".RData")))
+
+full.list = get(load( file = paste0(path_results, "attribution0/list.segments.selected", win.thres = 10,".RData")))
+reduced.list = full.list
+reduced.list$nbc = reduced.list$nbc1+reduced.list$nbc2
+reduced.list$station = paste0(reduced.list$main,".",as.character(reduced.list$brp), ".", reduced.list$nearby)
+rownames(reduced.list) = NULL
+# reduced.list = reduced.list[which(reduced.list$nearby!="pama"),]
+
+## model
+list.model = c("White", "AR(1)", "MA(1)", "ARMA(1,1)")
+length.data =nrow(reduced.list)
+six.model = data.frame(matrix(NA, ncol = 6, nrow = length.data))
+for (i in 1:length(list.test)) {
+  name.test = list.test[i]
+  six.model[,i] = sapply(c(1:length.data), function(x) model.iden(as.numeric(unlist(order.arma.l[[name.test]][[1]][x,]))))
+}
+colnames(six.model) <- list.test
+
+# phi 
+six.phi = data.frame(matrix(NA, ncol = 6, nrow = length.data))
+for (i in 1:length(list.test)) {
+  name.test = list.test[i]
+  six.phi[,i] = sapply(c(1:length.data), function(x) as.numeric(unlist(coef.arma.l[[name.test]][[1]][x,1])))
+}
+colnames(six.phi) <- list.test
+
+# theta 
+six.theta = data.frame(matrix(NA, ncol = 6, nrow = length.data))
+for (i in 1:length(list.test)) {
+  name.test = list.test[i]
+  six.theta[,i] = sapply(c(1:length.data), function(x) as.numeric(unlist(coef.arma.l[[name.test]][[1]][x,3])))
+}
+colnames(six.theta) <- list.test
+
+data.out = data.frame(matrix(NA, nrow = nrow(six.model), ncol = 12))
+data.out[,seq(1,12,2)] <- six.phi
+data.out[,seq(2,12,2)] <- six.theta
+colnames(data.out) = c(paste("phi", (list.name.test), sep = "."), paste("theta", (list.name.test), sep = "."))
+
+# add other information 
+data.out = cbind(data.out, full.list[,-13])
+
+
+# remove duplicated cases in G-E and PAMA (error) station
+six.model$gps.era[which(is.na(reduced.list$chose)==TRUE)] =NA
+data.out[which(is.na(six.model$gps.era) == TRUE), c(1:2)] = NA 
+data.out = data.out[which(full.list$nearby!="pama"),]
+
+write.table(format(data.out, digits=2), file = paste0(path_results, "attribution0/characterization_real_data_autocorrelation.txt"), 
+            quote = FALSE, row.names = FALSE, sep = "\t")
+
