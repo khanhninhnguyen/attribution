@@ -22,9 +22,11 @@ for (l in c(1:length(length.list))) {
     fit.i = list()
     ar0 = coef.list[i]
     for (j in c(1:nb.sim)) {
-      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+      y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
       # fit
-      fit.ar = fit.arima(y.ar)
+      # fit.ar = fit.arima(y.ar)
+      fit.ar = forecast::auto.arima( y.ar, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                                    max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
       fit.i[[j]] = fit.ar
     }
     tot.fit[[i]] = fit.i
@@ -32,7 +34,7 @@ for (l in c(1:length(length.list))) {
   tot.res[[l]] = tot.fit
 }
 
-save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_AR1.RData"))
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_AR1_test.RData"))
 
 ## MA(1) model -------------------------------------------------------------
 
@@ -70,7 +72,9 @@ for (l in c(1:length(length.list))) {
     for (j in c(1:nb.sim)) {
       y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
       # fit
-      fit.ar = fit.arima(y.ar)
+      # fit.ar = fit.arima(y.ar)
+      fit.ar = forecast::auto.arima( y.ar, d = 0, ic = "bic", seasonal = FALSE, stationary = TRUE, allowmean =FALSE,lambda = NULL,
+                                     max.p = 1, max.q = 1, start.p = 0, trace = FALSE, allowdrift = FALSE,  approximation=FALSE)
       fit.i[[j]] = fit.ar
     }
     tot.fit[[i]] = fit.i
@@ -107,7 +111,7 @@ for (l in c(1:length(length.list))) {
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_ARMA1b.RData"))
 
-## general ARMA(1,1)
+## general ARMA(1,1) -------------------------------------------------------------
 
 sum.list = seq(0.1, 0.6, 0.1)
 for (s in c(1:length(sum.list))) {
@@ -226,6 +230,34 @@ for (l in c(1:length(length.list))) {
 
 save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1b_true.RData"))
 
+
+## general ARMA(1,1) -------------------------------------------------------------
+
+sum.list = seq(0.1, 0.6, 0.1)
+for (s in c(1:length(sum.list))) {
+  sum.i = sum.list[s]
+  set.seed(1)
+  tot.res = list()
+  for (l in c(1:length(length.list))) {
+    n = length.list[l]
+    tot.fit = list()
+    for (i in c(1:length(coef.list))) {
+      fit.i = list()
+      ar0 = coef.list[i]
+      ma0 = sum.i-ar0
+      print(c(ar0, ma0))
+      for (j in c(1:nb.sim)) {
+        y.ar = simulate.general1(N = n, arma.model = c(ar=ar0,ma=ma0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
+        # fit
+        fit.ar = arima( y.ar, order = c(1,0,1), method="ML")
+        fit.i[[j]] = fit.ar
+      }
+      tot.fit[[i]] = fit.i
+    }
+    tot.res[[l]] = tot.fit
+  }
+  save(tot.res, file = paste0(path_results, "attribution0/truemodel_autoarima_ARMA1", sum.i ,".RData"))
+}
 
 ### when detect the wrong model     ----------------------------------------
 #### AR(1) but detect MA(1)         ----------------------------------------
@@ -706,6 +738,21 @@ ggsave(paste0(path_results,"attribution0/auto.arima.sdcoef.", model.plot, "_", e
 
 
 
+
+
+
+
+
+# check if the significance test is necessary -----------------------------
+
+phi = sapply(c(1:nb.sim), function(x) arimaorder(fit.i[[x]]))
+est.mol = as.data.frame(t(phi))
+est.mod = sapply(c(1:nb.sim), function(x) model.iden(as.numeric(est.mol[x,])))
+table(est.mod)
+ind.s = which(est.mod == "ARMA(1,1)")
+phi = as.data.frame(t(sapply(ind.s, function(x) fit.i[[x]]$coef)))
+phi.se = as.data.frame(t(sapply(ind.s, function(x) sqrt(diag(fit.i[[x]]$var.coef)))))
+t = phi/phi.se
 
 
 
