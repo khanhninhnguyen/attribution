@@ -30,8 +30,10 @@ library(tidyverse)
 
 path_restest <- paste0(path_results,"attribution/predictive_rule/")
 file_path_Results=paste0(path_results,'attribution/predictive_rule/')
-
-
+name.results <- paste0(path_restest,"stats_test_real_data_corrected_dist_fdr.txt")
+# name.results <- paste0(path_restest, name.version) # name of test result file 
+NbSim = 10
+significance.level = 0.05
 # make the truth table and probability ------------------------------------
 
 G=c(rep(1,9), rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9))
@@ -68,16 +70,114 @@ prob <- prob[keep.config]
 prob <- prob/sum(prob)
 
 # remove the duplicated due to the selection of variable ------------------
+# keep the one with break in GPS
+#+ 
+remove.var = "G-E"
 
+Y1 = Y
+rownames(Y1) = NULL
+#+ 
 rm.ind = which(list.name.test == remove.var)
+Z.trunc.rm = Z.trunc[,-rm.ind]
+List.names.final = list.name.test[-rm.ind]
 sum(duplicated2(Z.trunc[,-rm.ind]))/2
-rg.duplicate <- which(duplicated2(Z.trunc[,-rm.ind ])) 
+rg.duplicate <- which(duplicated2(Z.trunc.rm)) 
+keep.ind = duplicated3(Z.trunc.rm, Y1)
+
+remove.config = rg.duplicate[which(rg.duplicate %in% keep.ind == FALSE)]
+Z.trunc.final <- Z.trunc[-remove.config,]
+
+prob.final <- prob[-remove.config] 
+prob.final <- prob.final/sum(prob.final)
+
+Z.trunc.final.code <- Z.trunc.final
+Z.trunc.final.code[Z.trunc.final.code==1]=3
+Z.trunc.final.code[Z.trunc.final.code==-1]=2
+Z.trunc.final.code[Z.trunc.final.code==0]=1
+# save the list of configurations
+head(Z.trunc.final.code)
+config.list <- 1:38
+config.list.final <- config.list[-remove.config] 
+saveRDS(Z.trunc.final.code , file = paste0(file_path_Results,"List_config.rds"))
+
+# 
+Data.Res.Test <- read.table(name.results,header = TRUE, stringsAsFactors = FALSE)
+colnames(Data.Res.Test)[4:9] <- paste0("t", List.names.tot)
+
+# Complete dataset --------------------------------------------------------
+
+NumDetected.per.station <- Data.Res.Test %>% group_by(main) %>% 
+  summarise(ldetected.per.station=length(unique(brp))) %>% dplyr::select(ldetected.per.station)
+
+NumNearby.per.station.detection <- Data.Res.Test %>% group_by(main,brp) %>% 
+  count() %>% as.data.frame() %>% dplyr::select(n)
+
+List.names.final = List.names.tot[-rm.ind]
+for (i in  1:length(List.names.final)){
+  eval(parse(text=paste0("Data.",List.names.final[i],"=Keep.Data(List.names.final[i])")))  
+}
+
+Nbconfig <- nrow(Z.trunc.final)
+NbSim <- R*Nbconfig #in order to have at least 5 samples for each configurations. 
+B <- 20
+NbSimLearn <- NbSim*0.8
+NbSimTest <- NbSim*0.2
 
 
+error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
 
+set.seed(1)
 
-
-
-
-
-
+for (b in 1:B){
+  
+  ######
+  # Vfold 
+  existing.pop.Learn <- 0
+  existing.pop.Test <- 0
+  
+  while ((existing.pop.Learn!=15) & (existing.pop.Test !=15)){
+    trainIndex<-createDataPartition(1:nrow(Data.GGp) , p=0.8, list = FALSE)
+    
+    Data.GGp.Learn <- Data.GGp %>% slice(trainIndex)
+    Data.GGp.Test <- Data.GGp %>% slice(-trainIndex)
+    
+    Data.EEp.Learn <- Data.EEp %>% slice(trainIndex)
+    Data.EEp.Test <- Data.EEp %>% slice(-trainIndex)
+    
+    Data.GEp.Learn <- Data.GEp %>% slice(trainIndex)
+    Data.GEp.Test <- Data.GEp %>% slice(-trainIndex)
+    
+    Data.GpEp.Learn <- Data.GpEp %>% slice(trainIndex)
+    Data.GpEp.Test <- Data.GpEp %>% slice(-trainIndex)
+    
+    Data.GpE.Learn <- Data.GpE %>% slice(trainIndex)
+    Data.GpE.Test <- Data.GpE %>% slice(-trainIndex)
+    
+    
+    existing.pop.Learn=sum(c(length(unique(Data.GGp.Learn$pop)),length(unique(Data.GEp.Learn$pop)),length(unique(Data.EEp.Learn$pop)),length(unique(Data.GpEp.Learn$pop)),length(unique(Data.GpE.Learn$pop)))) 
+    
+    existing.pop.Test=sum(c(length(unique(Data.GGp.Test$pop)),length(unique(Data.GEp.Test$pop)),length(unique(Data.EEp.Test$pop)),length(unique(Data.GpEp.Test$pop)),length(unique(Data.GpE.Test$pop))))  
+  }
+  
+  #####
+  # Construction of the pop of t.values for each series Learn and Test
+  for (i in 1:length(List.names.final)){
+    eval(parse(text=paste0("Pop.",List.names.final[i],".Learn=Pop.create(Data.",List.names.final[i],".Learn)")))
+    eval(parse(text=paste0("Pop.",List.names.final[i],".Test=Pop.create(Data.",List.names.final[i],".Test)")))
+  }
+  
+  
+  #####
+  # Bootstrap: ccontruction de DataLearn et DataTest respecting the proportion of configuration
+  
+  DataLearn <- c()
+  DataTest <- c()
+  DataLearn <- Boot("Learn",Z.trunc.final.code,NbSimLearn)
+  DataTest <- Boot("Test",Z.trunc.final.code,NbSimTest)
+  saveRDS(DataLearn, file = paste0(file_path_Results,"DataLearn_",b,significance.level, offset, GE, number.pop,".rds"))
+  saveRDS(DataTest, file = paste0(file_path_Results,"DataTest_",b,significance.level, offset, GE, number.pop,".rds"))
+  
+  Res.pred <- PredRule_ET_ErrorTest(DataLearn,DataTest,b,Nbconfig)
+  saveRDS(Res.pred, file = paste0(file_path_Results,"Res.pred_",b,significance.level, offset, GE, number.pop,".rds"))
+  error.test.4.methods[b,] <- Res.pred$err.tot %>% unlist()
+}
