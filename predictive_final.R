@@ -125,7 +125,7 @@ for (i in  1:length(List.names.final)){
 # equal prob data  --------------------------------------------------------
 error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
 NbSim <- R*Nbconfig #in order to have at least 5 samples for each configurations. 
-B <- 5
+# B <- 5
 NbSimLearn <- NbSim*0.8
 NbSimTest <- NbSim*0.2
 set.seed(1)
@@ -191,7 +191,7 @@ NbSim = NbSimLearn
 Nbconfig <- nrow(Z.trunc.final)
 
 set.seed(1)
-
+error.test <- rep(NA, B)
 for (b in 1:B){
   
   ######
@@ -243,8 +243,72 @@ for (b in 1:B){
   
   Res.pred1 <- PredRule_RF(DataLearn,DataTest,b,Nbconfig)
   saveRDS(Res.pred1, file = paste0(file_path_Results,"Res.pred_",b,significance.level, offset, GE, number.pop,".rds"))
-  error.test.4.methods[b,] <- Res.pred1$err.tot 
+  error.test[b] <- Res.pred1$err.tot 
+}
+# read the best predictive rule
+FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b = which.min(error.test),significance.level, offset, GE, number.pop,".rds"))
+
+# apply the best rule to the real data  -----------------------------------
+
+# check cases in the table
+Thresh <- significance.level
+p.values.i=c()
+truth.vec.i=c()
+Z.truth.i <- c()
+for (i in 1:nrow(Data.Res.Test)){
+  a <- c()
+  p.values.i <- 2*pnorm(-abs(as.numeric(Data.Res.Test[i,paste0("t", List.names.final)])))
+  a<- ifelse(p.values.i<Thresh,1,0)*sign(as.numeric(Data.Res.Test[i,paste0("t", List.names.final)]))
+  truth.vec.i <- rbind(truth.vec.i,a)
+  Z.truth.i <- c(Z.truth.i,config.list.final[which(duplicated2(rbind(Z.trunc.final[,-rm.ind],a)))[1]])
 }
 
+pred.truth <- as.data.frame(cbind(truth.vec.i,Z.truth.i))
+colnames(pred.truth) <- c("code.GGp", "code.GEp" , "code.EEp", "code.GpEp","code.GpE","Z.truth")
+
+# Data.Res.Test <- cbind(Data.Res.Test,pred.truth)
+RealData.x <- Data.Res.Test[,colnames(Data.Res.Test) %in% c("tGGp","tGEp","tEEp", "tGpEp","tGpE")]
+colnames(RealData.x) <- List.names.final
+
+RealData.predy <- predict(FinalPred,newdata=RealData.x) 
+FinalTable <- cbind(Data.Res.Test,config.list.final[RealData.predy])
+colnames(FinalTable)[which(colnames(FinalTable)=="config.list.final[RealData.predy]")] <- "pred.y"
+
+List.main <- unique(FinalTable$main)
+FinalTable$w <- 1/FinalTable$distance
+
+Post.Prob.List <- list()
+Nb.main.break=1
+for (i in List.main){
+  Data.tmp1 <- FinalTable %>% dplyr::filter(main==i)
+  List.break.i <-unique(Data.tmp1$brp) 
+  for (j in List.break.i){
+    Data.tmp2 <- Data.tmp1 %>% dplyr::filter(brp==j)
+    A <- c(i,j)
+    Post.Prob <- c()
+    Config.Pred.Post <- c()
+    if (nrow(Data.tmp2) >1){
+      unique.pred <-unique(Data.tmp2$pred.y) 
+      for (l in 1:length(unique.pred)){
+        Post.Prob[l] <- sum((Data.tmp2$pred.y==unique.pred[l])*Data.tmp2$w)/sum(Data.tmp2$w)
+      }
+      names(Post.Prob) <-  unique.pred
+      Config.Pred.Post <- unique.pred[which.max(Post.Prob)]
+    } else {
+      Post.Prob[1] <- 1
+      names(Post.Prob) <-  Data.tmp2$pred.y
+      Config.Pred.Post <- Data.tmp2$pred.y
+    }
+    
+    Post.Prob.List[[Nb.main.break]] <- list(MainBreak=A,PostProb=Post.Prob,Config.Pred.Post=Config.Pred.Post)
+    
+    
+    Nb.main.break=Nb.main.break+1
+  }
+}
+
+Post.Prob.List
+save(FinalTable, file = paste0(path_restest, "Final.Table", significance.level, offset, GE, number.pop, ".RData"))
+save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.List", significance.level, offset, GE, number.pop, ".RData"))
 
 
