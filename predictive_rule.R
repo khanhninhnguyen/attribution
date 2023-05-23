@@ -351,7 +351,6 @@ predictive_rule <- function(path_results, significance.level, offset, GE, number
       eval(parse(text=paste0("Pop.",List.names.final[i],".Test=Pop.create(Data.",List.names.final[i],".Test)")))
     }
     
-    
     #####
     # Bootstrap: ccontruction de DataLearn et DataTest respecting the proportion of configuration
     

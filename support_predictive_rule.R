@@ -191,4 +191,63 @@ PredRule_ET_ErrorTest <- function(DataLearn,DataTest,b,Nbconfig){
   #return(err.tot)
   
 }
+Boot1 <- function(type.dataset,Z.trunc.code,NbSim){
+  config=c()
+  Data.res <- c()
+  Nbconfig <- nrow(Z.trunc.code)
+  
+  for (ind.c in 1:Nbconfig){
+    print(ind.c)
+    config.code <- Z.trunc.code[ind.c,]
+    # N <- eval(parse(text=paste0("NbSim",type.dataset)))
+    N = NbSim * prob.final[ind.c]
+    if (type.dataset=="Learn"){
+      Nb.config.c <- N*0.8
+    } else {Nb.config.c <- N*0.2}
+    config <- c(config,rep(ind.c,Nb.config.c))
+    
+    data.c <- purrr::map(List.names.final,~{
+      Pop <- c()
+      code.names.series <- config.code[which(colnames(Z.trunc.code) %in% .x)]
+      eval(parse(text=paste0("Pop=Pop.",.x,".",type.dataset,"[[",code.names.series,"]]")))
+      res.t=sample(Pop, Nb.config.c, replace = TRUE)
+      return(res.t)
+    }) %>% bind_cols() %>% as.data.frame()
+    colnames(data.c)=List.names.final
+    Data.res = rbind(Data.res,data.c)
+  }
+  
+  Data.res <-Data.res %>% mutate(config=config)
+  Data.res$config <- as.factor(Data.res$config)
+  return(Data.res)
+  
+}
+PredRule_RF<- function(DataLearn,DataTest,b,Nbconfig){
+  
+  config.tot <- 1:Nbconfig
+  
+  cvControl=trainControl(method="cv",number=10)
+  ##############
+  # RF
+  ##############
+
+  modrf = caret::train(config~ ., data = DataLearn, method = "rf", tuneLength = 4,trControl = cvControl,metric = "Accuracy", importance=TRUE)
+  saveRDS(modrf, file = paste0(file_path_Results,'modrf_b',b,significance.level, offset, GE, number.pop,'.rds'))
+  pred.rf=predict(modrf, newdata = DataTest)
+  err.rf <- mean(pred.rf!=DataTest$config)
+  
+  which.misclassif.cluster.rf <- which(pred.rf!=DataTest$config)
+  misclassif.cluster.rf <- rbind(DataTest$config[which.misclassif.cluster.rf],pred.rf[which.misclassif.cluster.rf])
+  never.pred.rf <- config.tot[!(config.tot %in% pred.rf)]
+  
+  # return
+  return(list(err.tot = err.rf,
+              which.misclassif.tot = which.misclassif.cluster.rf,
+              misclassif.tot = misclassif.cluster.rf,
+              never.pred.tot = never.pred.rf,
+              modrf = modrf))
+  #err.tot=c(err.lda,err.cart,err.knn,err.rf)
+  #return(err.tot)
+  
+}
 
