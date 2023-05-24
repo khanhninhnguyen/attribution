@@ -34,7 +34,7 @@ file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 name.version ="FGLS_on_real_data_t.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
 NbSim = 43850
-significance.level = 0.05
+significance.level = 0.01
 B = 20
 offset=0
 GE=0
@@ -245,8 +245,13 @@ for (b in 1:B){
   saveRDS(Res.pred1, file = paste0(file_path_Results,"Res.pred_",b,significance.level, offset, GE, number.pop,".rds"))
   error.test[b] <- Res.pred1$err.tot 
 }
-# read the best predictive rule
-FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b = which.min(error.test),significance.level, offset, GE, number.pop,".rds"))
+# read he best predictive rule
+tot.err <- rep(NA, B) 
+for (i in c(1:B)) {
+  r <- readRDS(paste0(file_path_Results,"Res.pred_",b = i,significance.level, offset, GE, number.pop,".rds"))
+  tot.err[i] = r$err.tot
+}
+FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b = which.min(tot.err ),significance.level, offset, GE, number.pop,".rds"))
 
 # apply the best rule to the real data  -----------------------------------
 
@@ -266,7 +271,7 @@ for (i in 1:nrow(Data.Res.Test)){
 pred.truth <- as.data.frame(cbind(truth.vec.i,Z.truth.i))
 colnames(pred.truth) <- c("code.GGp", "code.GEp" , "code.EEp", "code.GpEp","code.GpE","Z.truth")
 
-# Data.Res.Test <- cbind(Data.Res.Test,pred.truth)
+Data.Res.Test <- cbind(Data.Res.Test,pred.truth)
 RealData.x <- Data.Res.Test[,colnames(Data.Res.Test) %in% c("tGGp","tGEp","tEEp", "tGpEp","tGpE")]
 colnames(RealData.x) <- List.names.final
 
