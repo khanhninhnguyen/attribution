@@ -28,6 +28,7 @@ library(class)
 library(rsample)
 library(tidyverse)
 
+source(paste0(path_code_att,"support_predictive_rule.R"))
 path_restest <- paste0(path_results,"attribution/predictive_rule/")
 file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 # name.results <- paste0(path_restest,"stats_test_real_data_corrected_dist_fdr.txt")
