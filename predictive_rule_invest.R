@@ -3,10 +3,11 @@ significance.level = 0.05
 offset = 0
 GE = 0
 number.pop =3
-# final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Final.Table", significance.level, offset, GE, number.pop, ".RData")))
-# prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.List", significance.level, offset, GE, number.pop, ".RData")))
-prob.tn = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.Listn", significance.level, offset, GE, number.pop, ".RData")))
+final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Final.Table", significance.level, offset, GE, number.pop, ".RData")))
+prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Post.Prob.List", significance.level, offset, GE, number.pop, ".RData")))
+# prob.tn = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.Listn", significance.level, offset, GE, number.pop, ".RData")))
 tot = get(load(file = paste0(path_results,"attribution0/stats_test_real_data.RData")))
+# old result fromm paper
 final.t = get(load(file = "/home/knguyen/Documents/PhD/paper/attribution/result/attribution/Final.Table.RData"))
 prob.t = get(load(file = "/home/knguyen/Documents/PhD/paper/attribution/result/attribution/Post.Prob.List.RData"))
 
@@ -98,14 +99,18 @@ ggsave(paste0(path_results,"attribution/similarity1.jpg" ), plot = p, width = 14
 
 
 # PLOT T VALUES OF CLASSES IN 1 GROUP -------------------------------------
-
+b = 3
+FinalPred <- readRDS(paste0(path_results,"attribution/predictive_rule/details/", "modrf_b",b,significance.level, offset, GE, number.pop,".rds"))
+dataLearn <- readRDS(file = paste0(path_results,"attribution/predictive_rule/details/", "DataLearn_",b,significance.level, offset, GE, number.pop,".rds"))
+dataTest <- readRDS(file = paste0(path_results,"attribution/predictive_rule/details/", "DataTest_",b,significance.level, offset, GE, number.pop,".rds"))
+b=2
 FinalPred <- readRDS(paste0(path_main,"paper/attribution/result/attribution/", "modrf_b",b,".rds"))
 dataLearn <- readRDS(file = paste0(path_main,"paper/attribution/result/attribution/", "DataLearn_",b,".rds"))
 dataTest <- readRDS(file = paste0(path_main,"paper/attribution/result/attribution/", "DataTest_",b,".rds"))
 
-grp = 1
-list.classes = c(1,3,5,7,29,31,33)
-b=2
+grp = 3
+list.classes = c(3, 8, 16, 22)
+
 dataLearn$config = rep(name.config, each = 80)
 a = dataLearn[which(dataLearn$config %in% list.classes),]
 res1 = reshape2::melt(a, id = "config")
@@ -116,13 +121,13 @@ p <- ggplot(res1, aes(x = variable, y = value, fill = config))+ theme_bw()+ geom
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/group",grp, ".jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/group",grp, "train1.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
 # test set 
-grp = 1
-list.classes = c(1,3,5,7,29,31,33)
+grp = 2
+list.classes = c(35)
 b=2
 dataTest$config = rep(name.config, each = 20)
-a = dataLearn[which(dataTest$config %in% list.classes),]
+a = dataTest[which(dataTest$config %in% list.classes),]
 res1 = reshape2::melt(a, id = "config")
 res1$config = as.factor(res1$config)
 p <- ggplot(res1, aes(x = variable, y = value, fill = config))+ theme_bw()+ geom_boxplot(lwd = 0.1, outlier.size = 0.1)+
@@ -131,7 +136,7 @@ p <- ggplot(res1, aes(x = variable, y = value, fill = config))+ theme_bw()+ geom
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/group",grp, ".jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/group",grp, "test.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
 
 
 # additional importance for this group
@@ -166,7 +171,7 @@ p <- ggplot(res1, aes(x = variable, y = value, fill = pred.y))+ theme_bw()+
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/real_groupp",grp, ".jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/real_group",grp, "1.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
 
 
 
@@ -174,7 +179,7 @@ ggsave(paste0(path_results,"attribution/real_groupp",grp, ".jpg" ), plot = p, wi
 
 count.config = data.frame(table(final.t$pred.y))
 count.config.test = data.frame(table(final.t$Z.truth))
-count.configs = left_join(count.config, count.config.test, by = "Var1") %>% 
+count.configs = full_join(count.config, count.config.test, by = "Var1") %>% 
   replace(is.na(.), 0) %>% 
   mutate(truth = Freq.y) %>% 
   mutate(pred = Freq.x - Freq.y) %>% 

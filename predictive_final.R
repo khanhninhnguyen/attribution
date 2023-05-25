@@ -34,7 +34,7 @@ file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 # name.results <- paste0(path_restest,"stats_test_real_data_corrected_dist_fdr.txt")
 name.version ="FGLS_on_real_data_t.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
-NbSim = 94940
+NbSim = 94940/5
 significance.level = 0.05
 B = 20
 offset=0
