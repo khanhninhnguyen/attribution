@@ -98,8 +98,8 @@ Total.res$distance = reduced.list$distances
 Total.res = cbind(Total.res, reduced.list[,c(4:5)])
 
 # convert to coded table 
-convert_coded <- function(x){
-  sapply(c(1:length(x)), function(i) ifelse(abs(x[i])>1.96, 1*sign(x[i]), 0)) 
+convert_coded <- function(x, thres){
+  sapply(c(1:length(x)), function(i) ifelse((2*pnorm(-abs(x[i])))<thres, 1*sign(x[i]), 0)) 
 }
 
 Total.coded = data.frame(matrix(NA, ncol = 5, nrow = nrow(Total.res)))
