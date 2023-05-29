@@ -2,7 +2,7 @@
 significance.level = 0.05
 offset = 0
 GE = 0
-number.pop =3
+number.pop =1
 final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Final.Table", significance.level, offset, GE, number.pop, ".RData")))
 prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Post.Prob.List", significance.level, offset, GE, number.pop, ".RData")))
 # prob.tn = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.Listn", significance.level, offset, GE, number.pop, ".RData")))
