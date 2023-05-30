@@ -2,7 +2,7 @@
 significance.level = 0.05
 offset = 0
 GE = 0
-number.pop =1
+number.pop =3
 final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Final.Table", significance.level, offset, GE, number.pop, ".RData")))
 prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Post.Prob.List", significance.level, offset, GE, number.pop, ".RData")))
 # prob.tn = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.Listn", significance.level, offset, GE, number.pop, ".RData")))
@@ -109,7 +109,7 @@ dataLearn <- readRDS(file = paste0(path_main,"paper/attribution/result/attributi
 dataTest <- readRDS(file = paste0(path_main,"paper/attribution/result/attribution/", "DataTest_",b,".rds"))
 
 grp = 3
-list.classes = c(3, 8, 16, 22)
+list.classes = c(1,8,15,22)
 
 dataLearn$config = rep(name.config, each = 80)
 a = dataLearn[which(dataLearn$config %in% list.classes),]
@@ -158,7 +158,7 @@ ggsave(paste0(path_results,"attribution/group_var_Imp",grp, ".jpg" ), plot = p, 
 # PLOT DISTRIBUTION IN THE REAL DATA --------------------------------------
 
 a = final.t[which(final.t$pred.y %in% list.classes),c(5:9,19)]
-res1 = reshape2::melt(a, id = 'pred.y')
+res1 = reshape2::melt(a[,c(5:9,19)], id = 'pred.y')
 # res1=res1[which(res1$pred.y %in% c(1,4)),]
 res1$pred.y = as.factor(res1$pred.y)
 # res1$value = abs(res1$value)
@@ -171,7 +171,7 @@ p <- ggplot(res1, aes(x = variable, y = value, fill = pred.y))+ theme_bw()+
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/real_group",grp, "1.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/real_group", "50.0.05.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
 
 
 
@@ -223,3 +223,33 @@ for (i in c(1:length(all.case.p))) {
 
 list.low.prob$case = all.case.p
 all.case.p = "auck.2016-07-22.wark"
+
+
+# link to ditance ---------------------------------------------------------
+cor.dis = get(load(file = paste0(path_results, "attribution0/stats_test_real_data_corrected_dist.RData")))
+variance = read.table(file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), header = TRUE, stringsAsFactors = FALSE)
+data.plot = data.frame(n = cor.dis$n1+cor.dis$n2, 
+                       code =  sapply(c(1:nrow(final.t)), function(x) do.call("paste",c(final.t[x,13:17],sep="_"))),
+                       var.rat = variance$mean.G.G./variance$mean.G.E,
+                       hdist = cor.dis$distance, 
+                       vdist = cor.dis$ver.distance, 
+                       pred = final.t$pred.y,
+                       truth = sapply(c(1:nrow(final.t)), function(x) ifelse(is.na(final.t$Z.truth[x]), 1, 2)),
+                       ID = c(1:nrow(cor.dis)))
+data.plot$pred = sapply(c(1:nrow(data.plot)), function(x) ifelse(data.plot$pred[x] %in% c(22,8), data.plot$pred[x], 40))
+data.plot$pred = as.factor(data.plot$pred )
+
+data.plot$code = sapply(c(1:nrow(data.plot)), function(x) ifelse(data.plot$code[x] %in% unique(data.plot$code)[15], data.plot$code[x], 40))
+data.plot$code =as.factor(data.plot$code)
+
+ggplot(data = data.plot, aes(x = hdist, y = var.rat, col = code)) + theme_bw()+
+  geom_point(shape=factor(data.plot$truth))
++geom_text(aes(label=ID), nudge_y =0.5)
+
+do.call("paste",c(final.t[x,13:17],sep="_"))
+
+
+
+
+
+

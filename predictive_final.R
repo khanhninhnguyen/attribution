@@ -35,11 +35,11 @@ file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 name.version ="FGLS_on_real_data_t.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
 NbSim = 94940
-significance.level = 0.05
+significance.level = 0.01
 B = 20
 offset=0
 GE=0
-number.pop = 1
+number.pop = 3
 # make the truth table and probability ------------------------------------
 
 G=c(rep(1,9), rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9))
@@ -254,7 +254,7 @@ for (b in 1:B){
 # read he best predictive rule
 tot.err <- rep(NA, B) 
 for (i in c(1:B)) {
-  r <- readRDS(paste0(file_path_Results,"Res.pred_",b = i,significance.level, offset, GE, number.pop,".rds"))
+  r <- readRDS(paste0(file_path_Results,"details/Res.pred_",b = i,significance.level, offset, GE, number.pop,".rds"))
   tot.err[i] = r$err.tot
 }
 FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b = which.min(tot.err ),significance.level, offset, GE, number.pop,".rds"))

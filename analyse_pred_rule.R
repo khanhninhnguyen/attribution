@@ -91,7 +91,7 @@ p <- ggplot(data.plot, aes(fill=config, y=c, x=g)) +
         axis.title = element_text(size = 6), legend.key.size = unit(0.2, "cm"), 
         plot.tag = element_text(size = 6),legend.title=element_text(size=5),legend.box.spacing = unit(0, "pt"),
         plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/config_dist.test.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/config_dist.test_1.jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
 
 # data -------------------------------
 win.thres = 10
