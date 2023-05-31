@@ -229,27 +229,44 @@ all.case.p = "auck.2016-07-22.wark"
 cor.dis = get(load(file = paste0(path_results, "attribution0/stats_test_real_data_corrected_dist.RData")))
 variance = read.table(file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), header = TRUE, stringsAsFactors = FALSE)
 data.plot = data.frame(n = cor.dis$n1+cor.dis$n2, 
-                       code =  sapply(c(1:nrow(final.t)), function(x) do.call("paste",c(final.t[x,13:17],sep="_"))),
+                       code = sapply(c(1:nrow(final.t)), function(x) do.call("paste",c(final.t[x,13:17],sep="_"))),
                        var.rat = variance$mean.G.G./variance$mean.G.E,
                        hdist = cor.dis$distance, 
                        vdist = cor.dis$ver.distance, 
                        pred = final.t$pred.y,
                        truth = sapply(c(1:nrow(final.t)), function(x) ifelse(is.na(final.t$Z.truth[x]), 1, 2)),
-                       ID = c(1:nrow(cor.dis)))
+                       ID = c(1:nrow(cor.dis)),
+                       stringsAsFactors = FALSE)
 data.plot$pred = sapply(c(1:nrow(data.plot)), function(x) ifelse(data.plot$pred[x] %in% c(22,8), data.plot$pred[x], 40))
 data.plot$pred = as.factor(data.plot$pred )
 
 data.plot$code = sapply(c(1:nrow(data.plot)), function(x) ifelse(data.plot$code[x] %in% unique(data.plot$code)[15], data.plot$code[x], 40))
-data.plot$code =as.factor(data.plot$code)
+data.plot$code = as.factor(data.plot$code)
 
-ggplot(data = data.plot, aes(x = hdist, y = var.rat, col = code)) + theme_bw()+
-  geom_point(shape=factor(data.plot$truth))
-+geom_text(aes(label=ID), nudge_y =0.5)
+data.plot$code[which(is.na(final.t$Z.truth) == FALSE)] <- 0
+a = data.frame(table(data.plot$code), stringsAsFactors = FALSE)
+list.con = a$Var1[which(a$Freq>8)]
+data.plot$code = sapply(c(1:nrow(data.plot)), function(x) ifelse(data.plot$code[x] %in% list.con, data.plot$code[x], 40))
+
+data.plot$truth = data.plot$truth+15
+ggplot(data = data.plot, aes(x = hdist, y = var.rat, col = as.factor(truth))) + theme_bw()+
+  geom_point()
+  # geom_point(shape=data.plot$truth)
+  
+# +geom_text(aes(label=ID), nudge_y =0.5)
 
 do.call("paste",c(final.t[x,13:17],sep="_"))
 
+a= final.t[which(is.na(final.t$Z.truth)==TRUE),]
 
+data.plot$g = sapply(c(1:nrow(data.plot)), function(x){
+  t = abs(final.t$tGGp[x]) 
+  if(t<1.96 & t>0){y =0}
+  else if(t<2.58 & t>1.96){y =1}
+  # else if(t<3.3 & t>2.58){y =2}
+  # else if(t<3.9 & t>3.3){y =3}
+  else{y =4}
+})
 
-
-
-
+ggplot(data = data.plot, aes(x = hdist, y = var.rat, col = g)) + theme_bw()+
+  geom_point()
