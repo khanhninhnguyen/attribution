@@ -198,7 +198,7 @@ Nbconfig <- nrow(Z.trunc.final)
 
 set.seed(1)
 error.test <- rep(NA, B)
-for (b in 2:B){
+for (b in 3:B){
   
   ######
   # Vfold 
@@ -254,7 +254,7 @@ for (b in 2:B){
 # read he best predictive rule
 tot.err <- rep(NA, B) 
 for (i in c(1:B)) {
-  r <- readRDS(paste0(file_path_Results,"dRes.pred_",b = i,significance.level, offset, GE, number.pop,".rds"))
+  r <- readRDS(paste0(file_path_Results,"Res.pred_",b = i,significance.level, offset, GE, number.pop,".rds"))
   tot.err[i] = r$err.tot
 }
 FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b = which.min(tot.err ),significance.level, offset, GE, number.pop,".rds"))
