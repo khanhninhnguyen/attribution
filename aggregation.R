@@ -91,9 +91,53 @@ last.pre = sapply(c(1:n), function(x) prob.t[[x]]$Config.Pred.Post)
 dat.p1 = data.frame( name = last.name, brp = last.brp, last.pre)
 p = plot_group(dat.p = dat.p1)
 
-ggsave(paste0(path_results,"attribution/config_dist", version, ".jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/config_dist", version = "prob", ".jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
 
+# agrregate with probability ----------------------------------------------
+FinalTable = five
 
+prob <- c(0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
+          0.010125,0.010125,0.18225,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,0.010125,
+          0.18225,0.010125,0.010125,0.010125,0.0005625,0.0005625,0.010125,0.0005625,0.0005625,
+          0.010125,0.18225,0.010125,0.0005625,0.010125,0.0005625,0.0005625,0.010125,0.0005625,
+          0.00225,0.00225,0.0405,0.000125,0.000125,0.00225,0.000125,0.000125,0.00225,0.00225,
+          0.0405,0.00225,0.000125,0.00225,0.000125,0.000125,0.00225,0.000125)
+keep.config <- c(1:3,6:15,17,19:24,26,28:30,33:40,43,46:49,52)
+prob <- prob[keep.config]
+
+List.main <- unique(FinalTable$main)
+FinalTable$p = sapply(c(1:nrow(FinalTable)), function(x) prob[FinalTable$pred.y[x]])
+Post.Prob.List <- list()
+Nb.main.break=1
+for (i in List.main){
+  Data.tmp1 <- FinalTable %>% dplyr::filter(main==i)
+  List.break.i <-unique(Data.tmp1$brp) 
+  for (j in List.break.i){
+    Data.tmp2 <- Data.tmp1 %>% dplyr::filter(brp==j)
+    A <- c(i,j)
+    Post.Prob <- c()
+    Config.Pred.Post <- c()
+    if (nrow(Data.tmp2) >1){
+      unique.pred <-unique(Data.tmp2$pred.y) 
+      for (l in 1:length(unique.pred)){
+        Post.Prob[l] <- sum((Data.tmp2$pred.y==unique.pred[l])*Data.tmp2$p)/sum(Data.tmp2$p)
+      }
+      names(Post.Prob) <-  unique.pred
+      Config.Pred.Post <- unique.pred[which.max(Post.Prob)]
+    } else {
+      Post.Prob[1] <- 1
+      names(Post.Prob) <-  Data.tmp2$pred.y
+      Config.Pred.Post <- Data.tmp2$pred.y
+    }
+    
+    Post.Prob.List[[Nb.main.break]] <- list(MainBreak=A,PostProb=Post.Prob,Config.Pred.Post=Config.Pred.Post)
+    
+    
+    Nb.main.break=Nb.main.break+1
+  }
+}
+
+save(Post.Prob.List, file = paste0(path_results, "attribution/Post.Prob.List", version, "prob.RData"))
 
 
 

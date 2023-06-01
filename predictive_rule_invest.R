@@ -234,7 +234,7 @@ data.plot = data.frame(n = cor.dis$n1+cor.dis$n2,
                        hdist = cor.dis$distance, 
                        vdist = cor.dis$ver.distance, 
                        pred = final.t$pred.y,
-                       truth = sapply(c(1:nrow(final.t)), function(x) ifelse(is.na(final.t$Z.truth[x]), 1, 2)),
+                       truth = sapply(c(1:nrow(final.t)), function(x) ifelse(is.na(final.t$Z.truth[x]), 2, 1)),
                        ID = c(1:nrow(cor.dis)),
                        stringsAsFactors = FALSE)
 data.plot$pred = sapply(c(1:nrow(data.plot)), function(x) ifelse(data.plot$pred[x] %in% c(22,8), data.plot$pred[x], 40))
@@ -258,6 +258,8 @@ ggplot(data = data.plot, aes(x = hdist, y = var.rat, col = as.factor(truth))) + 
 do.call("paste",c(final.t[x,13:17],sep="_"))
 
 a= final.t[which(is.na(final.t$Z.truth)==TRUE),]
+data.plot$j = abs(Total.res1$`jumpG-E`)
+data.plot = data.plot[which(is.na(final.t$Z.truth)==TRUE),]
 
 data.plot$g = sapply(c(1:nrow(data.plot)), function(x){
   t = abs(final.t$tGGp[x]) 
@@ -268,5 +270,31 @@ data.plot$g = sapply(c(1:nrow(data.plot)), function(x){
   else{y =4}
 })
 
-ggplot(data = data.plot, aes(x = hdist, y = var.rat, col = g)) + theme_bw()+
+ggplot(data = data.plot, aes(x = hdist, y = var.rat, shape = as.factor(g2), col = as.factor(g))) + theme_bw()+
   geom_point()
+
+data.plot$g1 = sapply(c(1:nrow(data.plot)), function(x){
+  t = data.plot$g[x]
+  if(t<500 & t>0){y =0}
+  else if(t<900 & t>500){y =1}
+  # else if(t<3.3 & t>2.58){y =2}
+  # else if(t<3.9 & t>3.3){y =3}
+  else{y =4}
+  return(y)
+})
+data.plot$g2 = sapply(c(1:nrow(data.plot)), function(x) ifelse(sum(abs(final.t[x, 13:17])) >1, 1,0) )
+
+dat = data.plot
+dat$j = abs(Total.res1$`jumpG-E`)
+
+tree <- rpart(truth ~ n+hdist+var.rat+j, data = dat, method = "class")
+rpart.plot(tree)
+
+dat$g1 =  sapply(c(1:nrow(data.plot)), function(x) ifelse(dat$n[x] >652, 1, 0))
+dat$g2 = sapply(c(1:nrow(data.plot)), function(x) ifelse(dat$j[x]>0.38,1,0) )
+dat$g2 = as.factor(dat$g2+10)
+ggplot(data = dat, aes(x = hdist, y = var.rat, shape = g2, col = as.factor(truth))) + theme_bw()+
+  geom_point()
+
+cvControl=trainControl(method="cv",number=10)
+caret::train(truth ~ n+hdist+j, data = dat, method = "rpart", tuneLength = 10,trControl = cvControl)
