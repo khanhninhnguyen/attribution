@@ -71,12 +71,15 @@ plot_group <- function(dat.p){
   data.plot = aggregate(c~last.pre+g, dat.p, sum)
   colnames(data.plot)[1] = "config"
   data.plot$config = as.factor(data.plot$config)
+  max.group = aggregate(c~g, data.plot, sum)
+  max.y = ceiling(max(max.group$c/10))*10
   
   p <- ggplot(data.plot, aes(fill=config, y=c, x=g)) + 
     geom_bar(position="stack", stat="identity")+theme_bw()+
     geom_text(aes(label = config),
               colour = "black",  size=1.8,
               position = position_stack(vjust = 0.5)) +
+    scale_y_continuous(breaks = seq(0,  max.y , 10), limit = c(0, max.y))+
     labs(y ="Count", x = "Group",  fill='Configuration') + 
     theme(axis.text.x = element_text(size = 6), axis.text.y = element_text(size = 6),legend.text=element_text(size=4),
           axis.title = element_text(size = 6), legend.key.size = unit(0.2, "cm"), 
