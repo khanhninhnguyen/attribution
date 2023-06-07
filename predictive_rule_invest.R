@@ -298,3 +298,19 @@ ggplot(data = dat, aes(x = hdist, y = var.rat, shape = g2, col = as.factor(truth
 
 cvControl=trainControl(method="cv",number=10)
 caret::train(truth ~ n+hdist+j, data = dat, method = "rpart", tuneLength = 10,trControl = cvControl)
+
+# test --------------------------------------------------------------------
+all = five
+g1a = all[which(five$code.GGp==1 & five$code.GEp ==1 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==1),]
+g1b = all[which(five$code.GGp==-1 & five$code.GEp ==-1 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==-1),]
+g2 = all[which(five$code.GGp==0 & five$code.GEp ==0 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),]
+
+f1a = g1a[order(g1a $pred.y,decreasing=FALSE),]
+
+f1b = g1b[order(g1b $pred.y,decreasing=FALSE),]
+f2 = g2[order(g2 $pred.y,decreasing=FALSE),]
+
+rownames(f1a) = NULL
+rownames(f1b) = NULL
+rownames(f2) = NULL
+
