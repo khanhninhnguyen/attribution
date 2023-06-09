@@ -2,9 +2,9 @@
 significance.level = 0.05
 offset = 0
 GE = 0
-number.pop =3
-final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Final.Table", significance.level, offset, GE, number.pop, ".RData")))
-prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Post.Prob.List", significance.level, offset, GE, number.pop, ".RData")))
+number.pop = 1
+final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Final.Table", significance.level, offset, GE, number.pop, ".RData")))
+prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.List", significance.level, offset, GE, number.pop, ".RData")))
 # prob.tn = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.Listn", significance.level, offset, GE, number.pop, ".RData")))
 tot = get(load(file = paste0(path_results,"attribution0/stats_test_real_data.RData")))
 # old result fromm paper
@@ -156,9 +156,9 @@ ggsave(paste0(path_results,"attribution/group_var_Imp",grp, ".jpg" ), plot = p, 
 
 
 # PLOT DISTRIBUTION IN THE REAL DATA --------------------------------------
-
+list.classes = c(1, 31)
 a = final.t[which(final.t$pred.y %in% list.classes),c(5:9,19)]
-res1 = reshape2::melt(a[,c(5:9,19)], id = 'pred.y')
+res1 = reshape2::melt(a, id = 'pred.y')
 # res1=res1[which(res1$pred.y %in% c(1,4)),]
 res1$pred.y = as.factor(res1$pred.y)
 # res1$value = abs(res1$value)
@@ -171,7 +171,7 @@ p <- ggplot(res1, aes(x = variable, y = value, fill = pred.y))+ theme_bw()+
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
-ggsave(paste0(path_results,"attribution/real_group", "50.0.05.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/real_group",do.call(paste, c(as.list(list.classes), sep = "")), ".0.05.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
 
 
 
@@ -304,13 +304,20 @@ all = five
 g1a = all[which(five$code.GGp==1 & five$code.GEp ==1 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==1),]
 g1b = all[which(five$code.GGp==-1 & five$code.GEp ==-1 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==-1),]
 g2 = all[which(five$code.GGp==0 & five$code.GEp ==0 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),]
+g3a = all[which(five$code.GGp==-1 & five$code.GEp ==0 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),]
+g3b = all[which(five$code.GGp==1 & five$code.GEp ==0 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),]
+g4 = all[which(five$code.EEp!=0 & is.na(five$Z.truth)==FALSE),]
 
 f1a = g1a[order(g1a $pred.y,decreasing=FALSE),]
 
 f1b = g1b[order(g1b $pred.y,decreasing=FALSE),]
 f2 = g2[order(g2 $pred.y,decreasing=FALSE),]
+f3a = g3a[order(g3a$pred.y,decreasing=FALSE),]
+f3b = g3b[order(g3b$pred.y,decreasing=FALSE),]
 
 rownames(f1a) = NULL
 rownames(f1b) = NULL
 rownames(f2) = NULL
 
+rownames(f3a) = NULL
+rownames(f3b) = NULL

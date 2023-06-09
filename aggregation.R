@@ -97,7 +97,7 @@ last.pre = sapply(c(1:n), function(x) prob.t[[x]]$Config.Pred.Post)
 dat.p1 = data.frame( name = last.name, brp = last.brp, last.pre)
 p = plot_group(dat.p = dat.p1)
 
-ggsave(paste0(path_results,"attribution/config_dist", version = "prob", ".jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/config_dist", version = "unequal.dist", ".jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
 
 # agrregate with probability ----------------------------------------------
 FinalTable = five
