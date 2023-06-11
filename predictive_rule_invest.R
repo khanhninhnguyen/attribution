@@ -156,7 +156,7 @@ ggsave(paste0(path_results,"attribution/group_var_Imp",grp, ".jpg" ), plot = p, 
 
 
 # PLOT DISTRIBUTION IN THE REAL DATA --------------------------------------
-list.classes = c(1, 31)
+list.classes = c(1, 8, 15, 22 )
 a = final.t[which(final.t$pred.y %in% list.classes),c(5:9,19)]
 res1 = reshape2::melt(a, id = 'pred.y')
 # res1=res1[which(res1$pred.y %in% c(1,4)),]
@@ -322,3 +322,16 @@ rownames(f2) = NULL
 
 rownames(f3a) = NULL
 rownames(f3b) = NULL
+
+d = b[,-1] %>% mutate( pred = as.factor(final.t$pred.y))  %>%
+  reshape2::melt("pred")
+ggplot(d, aes(x = variable, y = abs(value), fill = pred))+ theme_bw()+ 
+  geom_boxplot(lwd = 0.1, outlier.size = 0.1)+
+  labs( y = "jump")+
+  theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
+        plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
+        legend.title=element_blank(), legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4))
+
+d = Total.res1[which(five$code.GGp==0 & five$code.GEp ==0 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),(2:5)] %>% mutate( pred = as.factor(final.t$pred.y))  %>%
+  reshape2::melt("pred")

@@ -306,3 +306,14 @@ data.out = data.out[which(full.list$nearby!="pama"),]
 write.table(format(data.out, digits=2), file = paste0(path_results, "attribution0/characterization_real_data_autocorrelation.txt"), 
             quote = FALSE, row.names = FALSE, sep = "\t")
 
+# statistics of variance of offset 
+
+Total.res = data.frame(matrix(NA, ncol = 6, nrow = nrow(reduced.list)))
+for (i in c(1:nrow(reduced.list))) {
+  name.i = reduced.list$station[i]
+  dat.i = get(load(file = paste0(path_results,"attribution0/FGLS/", name.i, "fgls.RData")))
+  var.est = sapply(c(1:6), function(x) dat.i[[list.test[x]]]$all.out$vcov[9,9])
+  Total.res[i,] = var.est
+}
+colnames(Total.res) <- list.name.test
+

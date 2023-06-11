@@ -298,4 +298,62 @@ write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/
 # plot the noise vs distance 
 
 cor.dis = get(load(file = paste0(path_results, "attribution0/stats_test_real_data_corrected_dist.RData")))
-variance = read.table(file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), header = TRUE, stringsAsFactors = FALSE)
+variance = read.table(file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"),
+                      header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
+name.test = "G'-E'"
+dat.p = data.frame(mean.var = variance[,paste0("mean.", name.test)], 
+                   distance = cor.dis$distance,
+                   group = as.factor(sapply(c(1:nrow(variance)), function(x) ifelse(cor.dis$distance[x] >50, "far", "close"))))
+ggplot(data = dat.p, aes(x = distance, y = mean.var))+
+  theme_bw()+
+  geom_point()+
+  labs(title = name.test)+
+  ylim(c(0,12))+
+  xlab("Distance (km)") + ylab("Mean of MW variance")
+
+# distribution of noise 
+
+dat.p %>%
+  ggplot(aes(x=mean.var, fill=group)) + theme_bw()+
+  geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 100) +
+  scale_fill_manual(values=c("#69b3a2", "coral")) +
+  xlab(paste0("Mean of MW variance ", name.test)) +
+  theme(axis.text = element_text(size = 12))
+# for non-collocated 
+dat.p %>%
+  ggplot(aes(x=mean.var)) + theme_bw()+
+  geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 100) +
+  xlab(paste0("Mean of MW variance ", name.test)) +
+  theme(axis.text = element_text(size = 12))
+
+# variance of jump with distance 
+
+name.test = "G-E'"
+dat.p = data.frame(mean.var = Total.res[,paste0(name.test)], 
+                   distance = cor.dis$distance,
+                   group = as.factor(sapply(c(1:nrow(variance)), function(x) ifelse(cor.dis$distance[x] >50, "far", "close"))))
+
+dat.p %>%
+  ggplot(aes(x=mean.var, fill=group)) + theme_bw()+
+  geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 100) +
+  scale_fill_manual(values=c("#69b3a2", "coral")) +
+  xlab(paste0("Mean of est variance of the jump ", name.test)) +
+  theme(axis.text = element_text(size = 12))
+# boxplot 
+
+dat.plot = Total.res[,c(-1,-5)] %>% 
+  mutate(group = as.factor(sapply(c(1:nrow(variance)), function(x) ifelse(cor.dis$distance[x] >50, "far", "close"))))  %>% 
+  reshape2::melt(id = "group")  %>% 
+  rbind(dat = data.frame(group = as.factor("close"), 
+                         variable = rep(list.name.test[c(1,5)], each = 494),
+                         value = c(Total.res[,1],Total.res[,5])))  
+
+  
+
+
+
+
+
+
+
+
