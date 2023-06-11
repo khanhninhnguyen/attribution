@@ -307,6 +307,7 @@ g2 = all[which(five$code.GGp==0 & five$code.GEp ==0 & five$code.EEp == 0 & five$
 g3a = all[which(five$code.GGp==-1 & five$code.GEp ==0 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),]
 g3b = all[which(five$code.GGp==1 & five$code.GEp ==0 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),]
 g4 = all[which(five$code.EEp!=0 & is.na(five$Z.truth)==FALSE),]
+g3b = all[which(five$code.GGp==0 & five$code.GEp ==1 & five$code.EEp == 0 & five$code.GpE ==0 & five$code.GpEp==0),]
 
 f1a = g1a[order(g1a $pred.y,decreasing=FALSE),]
 

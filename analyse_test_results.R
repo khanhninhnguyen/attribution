@@ -295,3 +295,7 @@ write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/
 
 
 # check the length of data old and new 
+# plot the noise vs distance 
+
+cor.dis = get(load(file = paste0(path_results, "attribution0/stats_test_real_data_corrected_dist.RData")))
+variance = read.table(file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"), header = TRUE, stringsAsFactors = FALSE)
