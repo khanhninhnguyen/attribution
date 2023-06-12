@@ -342,7 +342,10 @@ for (b in 1:B){
 }
 tot.err <- rep(NA, B) 
 for (i in c(1:B)) {
-  r <- readRDS(paste0(file_path_Results,"Res.pred_",b = i,significance.level, offset, GE, number.pop,"CART.rds"))
+  r <- readRDS(paste0(file_path_Results,"Res.pred_",b = i,significance.level, offset, GE, number.pop,".rds"))
   tot.err[i] = r$err.tot
 }
+mean(tot.err)
+sd(tot.err)
+
 FinalPred <- readRDS(paste0(file_path_Results,"Res.pred_",b = which.min(tot.err ),significance.level, offset, GE, number.pop,"LDA.rds"))
