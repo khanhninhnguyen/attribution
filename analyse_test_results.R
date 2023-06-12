@@ -1,4 +1,5 @@
 # analyse the test results 
+unicode_minus = function(x) sub('^-', '\U2212', format(x))
 
 # check the contradiction function ------
 G = c(1,0,-1)
@@ -353,6 +354,49 @@ dat.plot = Total.res[,c(-1,-5)] %>%
 
 
 
+
+
+
+
+
+
+# DISTRIBUTION OF JUMPS, STD ERR AND T VALUES FOR 2 GROUPS ----------------
+
+tot = get(load(file = paste0(path_results,"attribution0/stats_test_real_data.RData")))
+five = get(load(file = "/home/knguyen/Documents/PhD/paper/attribution/result/attribution/Final.Table.RData"))
+for (i in c(1:6)) {
+  name.t = list.name.test[i]
+  tot[paste0("std.err", name.t)] <- tot[paste0("jump", name.t)]/ tot[paste0("t", name.t)]
+}
+# remove replicated value in G-E
+name.t = "G-E"
+tot[which(is.na(five$tGE)==TRUE),c(paste0("std.err", name.t), paste0("jump", name.t), paste0("t", name.t))] <- NA
+
+
+collo = list.name.test[c(1,5)]
+noncollo = list.name.test[-c(1,5)]
+
+param = "t"
+data.plot= tot[,paste0(param, noncollo)] %>%
+  mutate(group = as.factor(sapply(c(1:494), function(x) ifelse(tot$distance[x]<50, "<50", ">50")))) %>%
+  reshape2::melt(id = "group")  %>%
+  rbind(dat = data.frame(group = as.factor(rep("<50", 494*2)),
+                         variable = rep(paste0(param, collo), each = 494),
+                         value = unlist(tot[,paste0(param, collo)]))) %>%
+  `rownames<-`( NULL ) %>% 
+  mutate(variable = gsub(param, "", data.plot$variable))
+data.plot$variable = factor(data.plot$variable, levels = list.name.test)
+
+p <- ggplot(data.plot, aes(x = variable, col = group, y = abs(value)))+ theme_bw()+ 
+  geom_boxplot(lwd = 0.2, outlier.size = 0.1)+
+  labs(y = paste0("Absolute value of the ", param))+
+  theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), legend.title=element_text(size=5),
+        plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
+        legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4)) +
+  guides(color = guide_legend(title = "Distance"))
+
+ggsave(paste0(path_results,"attribution/abs_", param, "_distance.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
 

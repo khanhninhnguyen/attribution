@@ -186,7 +186,11 @@ PredRule_ET_ErrorTest <- function(DataLearn,DataTest,b,Nbconfig){
   
   never.pred.tot <- list(lda=never.pred.lda,cart=never.pred.cart,knn=never.pred.knn,rf=never.pred.rf)
   
-  return(list(err.tot=err.tot,which.misclassif.tot=which.misclassif.tot,misclassif.tot=misclassif.tot,never.pred.tot=never.pred.tot,modlda=modlda,modcart=modcart,modknn=modknn,modrf=modrf))
+  return(list(err.tot=err.tot,
+              which.misclassif.tot=which.misclassif.tot,
+              misclassif.tot=misclassif.tot,
+              never.pred.tot=never.pred.tot,
+              modlda=modlda,modcart=modcart,modknn=modknn,modrf=modrf))
   #err.tot=c(err.lda,err.cart,err.knn,err.rf)
   #return(err.tot)
   
@@ -246,6 +250,85 @@ PredRule_RF<- function(DataLearn,DataTest,b,Nbconfig){
               misclassif.tot = misclassif.cluster.rf,
               never.pred.tot = never.pred.rf,
               modrf = modrf))
+  #err.tot=c(err.lda,err.cart,err.knn,err.rf)
+  #return(err.tot)
+  
+}
+PredRule_CART<- function(DataLearn,DataTest,b,Nbconfig){
+  
+  config.tot <- 1:Nbconfig
+  
+  cvControl=trainControl(method="cv",number=10)
+  
+  modcart = caret::train(config~ ., data = DataLearn, method = "rpart", tuneLength = 10,trControl = cvControl,metric = "Accuracy")
+  saveRDS(modcart, file = paste0(file_path_Results,'modcart_b',b,significance.level, offset, GE, number.pop,'.rds'))
+  
+  pred.cart=predict(modcart, newdata = DataTest)
+  err.cart <- mean(pred.cart!=DataTest$config)
+  which.misclassif.cluster.cart <- which(pred.cart!=DataTest$config)
+  misclassif.cluster.cart <- rbind(DataTest$config[which.misclassif.cluster.cart],pred.cart[which.misclassif.cluster.cart])
+  never.pred.cart <- config.tot[!(config.tot %in% pred.cart)]
+  err.cart
+  
+  # return
+  return(list(err.tot = err.cart,
+              which.misclassif.tot = which.misclassif.cluster.cart ,
+              misclassif.tot = misclassif.cluster.cart,
+              never.pred.tot = never.pred.cart,
+              mod = modcart))
+  #err.tot=c(err.lda,err.cart,err.knn,err.rf)
+  #return(err.tot)
+  
+}
+PredRule_knn<- function(DataLearn,DataTest,b,Nbconfig){
+  
+  config.tot <- 1:Nbconfig
+  
+  cvControl=trainControl(method="cv",number=10)
+  ##############
+  # RF
+  ##############
+  modknn = caret::train(config~ ., data = DataLearn, method = "knn", tuneLength = 10,trControl = cvControl,metric = "Accuracy")
+  saveRDS(modknn, file = paste0(file_path_Results,'modknn_b',b,significance.level, offset, GE, number.pop,'.rds'))
+  
+  pred.knn=predict(modknn, newdata = DataTest)
+  err.knn <- mean(pred.knn!=DataTest$config)
+  which.misclassif.cluster.knn <- which(pred.knn!=DataTest$config)
+  misclassif.cluster.knn <- rbind(DataTest$config[which.misclassif.cluster.knn],pred.knn[which.misclassif.cluster.knn])
+  never.pred.knn <- config.tot[!(config.tot %in% pred.knn)]
+  err.knn
+  
+  # return
+  return(list(err.tot = err.knn,
+              which.misclassif.tot = which.misclassif.cluster.knn,
+              misclassif.tot = misclassif.cluster.knn,
+              never.pred.tot = never.pred.knn,
+              mod = modknn))
+  #err.tot=c(err.lda,err.cart,err.knn,err.rf)
+  #return(err.tot)
+  
+}
+PredRule_LDA<- function(DataLearn,DataTest,b,Nbconfig){
+  
+  config.tot <- 1:Nbconfig
+  
+  # LDA
+  ##############
+  modlda<-lda(config~ ., data=DataLearn, CV=FALSE)
+  saveRDS(modlda, file = paste0(file_path_Results,'modlda_b',b,significance.level, offset, GE, number.pop,'.rds'))
+  
+  pred.lda <- predict(modlda,newdata=DataTest,na.action = na.pass)$class 
+  err.lda <- mean(pred.lda!=DataTest$config)
+  which.misclassif.cluster.lda <- which(pred.lda!=DataTest$config)
+  misclassif.cluster.lda <- rbind(DataTest$config[which.misclassif.cluster.lda],pred.lda[which.misclassif.cluster.lda])
+  never.pred.lda <- config.tot[!(config.tot %in% pred.lda)]
+  
+  # return
+  return(list(err.tot = err.lda,
+              which.misclassif.tot = which.misclassif.cluster.lda,
+              misclassif.tot = misclassif.cluster.lda,
+              never.pred.tot = never.pred.lda,
+              mod = modlda))
   #err.tot=c(err.lda,err.cart,err.knn,err.rf)
   #return(err.tot)
   

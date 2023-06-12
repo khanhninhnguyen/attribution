@@ -323,3 +323,26 @@ save(FinalTable, file = paste0(path_restest, "Final.Table", significance.level, 
 save(Post.Prob.List, file = paste0(path_restest, "Post.Prob.List", significance.level, offset, GE, number.pop, ".RData"))
 
 
+
+
+# RUN OTHER CLASSIFIER ----------------------------------------------------
+
+Nbconfig <- nrow(Z.trunc.final)
+
+set.seed(1)
+for (b in 1:B){
+  
+  DataLearn <- readRDS(file = paste0(file_path_Results,"DataLearn_",b,significance.level, offset, GE, number.pop,".rds"))
+  DataTest <- readRDS(file = paste0(file_path_Results,"DataTest_",b,significance.level, offset, GE, number.pop,".rds"))
+  
+  # Res.pred1 <- PredRule_LDA(DataLearn,DataTest,b,Nbconfig)
+  # Res.pred1 <- PredRule_CART(DataLearn,DataTest,b,Nbconfig)
+  Res.pred1 <- PredRule_knn(DataLearn,DataTest,b,Nbconfig)
+  saveRDS(Res.pred1, file = paste0(file_path_Results,"Res.pred_",b,significance.level, offset, GE, number.pop,"knn.rds"))
+}
+tot.err <- rep(NA, B) 
+for (i in c(1:B)) {
+  r <- readRDS(paste0(file_path_Results,"Res.pred_",b = i,significance.level, offset, GE, number.pop,"CART.rds"))
+  tot.err[i] = r$err.tot
+}
+FinalPred <- readRDS(paste0(file_path_Results,"Res.pred_",b = which.min(tot.err ),significance.level, offset, GE, number.pop,"LDA.rds"))

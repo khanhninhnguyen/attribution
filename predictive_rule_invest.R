@@ -323,11 +323,11 @@ rownames(f2) = NULL
 rownames(f3a) = NULL
 rownames(f3b) = NULL
 
-d = b[,-1] %>% mutate( pred = as.factor(final.t$pred.y))  %>%
-  reshape2::melt("pred")
-ggplot(d, aes(x = variable, y = abs(value), fill = pred))+ theme_bw()+ 
-  geom_boxplot(lwd = 0.1, outlier.size = 0.1)+
-  labs( y = "jump")+
+d = g2[,c(4,19)] %>% mutate( pred.y = as.factor(g2$pred.y))  %>%
+  reshape2::melt("pred.y")
+ggplot(d, aes(x = pred.y, y = abs(value)))+ theme_bw()+ 
+  geom_boxplot(lwd = 0.5, outlier.size = 1)+
+  labs( y = "jump in the main stations")+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), 
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
