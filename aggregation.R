@@ -67,12 +67,7 @@ plot_group <- function(dat.p){
   dat.p$g[which(dat.p[,chosen.w] %in% G.E.E == TRUE)] = "G&E&E'"
   dat.p$g[which(dat.p[,chosen.w] %in% G1.E.E == TRUE)] = "G'&E&E'"
   
-  cols <- c("aquamarine","aquamarine1", "aquamarine2", "aquamarine3","aquamarine4",
-            "cyan", "cyan1", "cyan2", "cyan3", "cyan4",
-            "brown", "brown1", "brown2", "brown3", "brown4",
-            "coral", "coral1", "coral2", "coral3", "coral4",
-            "gold", "gold1", "gold2", "gold3", "gold4",
-            paste0("gray", c(1:13)))
+  cols = hcl.colors(n=36, palette = "RdYlBu")
   
   dat.p$c =1 
   data.plot = aggregate(c~last.pre+g, dat.p, sum)
@@ -88,14 +83,18 @@ plot_group <- function(dat.p){
               position = position_stack(vjust = 0.5)) +
     scale_y_continuous(breaks = seq(0,  max.y , 10), limit = c(0, max.y))+
     labs(y ="Count", x = "Group",  fill='Configuration') + 
-    scale_fill_manual(breaks = c(1:38),
-                         values= cols)
+    scale_fill_manual(breaks = c(1:38)[-c(12,28)],
+                      values= cols)+
     theme(axis.text.x = element_text(size = 6), axis.text.y = element_text(size = 6),legend.text=element_text(size=4),
           axis.title = element_text(size = 6), legend.key.size = unit(0.2, "cm"), 
           plot.tag = element_text(size = 6),legend.title=element_text(size=5),legend.box.spacing = unit(0, "pt"),
           plot.margin = rep(unit(0,"null"),4))
+    
   return(p)
 }
+
+
+r_color[seq(399, 475,2)]
 
 prob.t = get(load(file = paste0(path_results, "attribution/Post.Prob.List", version, ".RData")))
 n = length(prob.t)
@@ -226,6 +225,7 @@ write.table(format(statistic, digits = 2), file = paste0(path_results, "attribut
 # PLOT FOR PAPER ----------------------------------------------------------
 FinalTable = five  
 l1 = aggre1(FinalTable)
+l1 = aggre2(FinalTable)
 
 n = length(l1)
 dat1 = data.frame(name = sapply(c(1:n), function(x) l1[[x]]$MainBreak[1]), 
@@ -234,9 +234,12 @@ dat1 = data.frame(name = sapply(c(1:n), function(x) l1[[x]]$MainBreak[1]),
 
 p = plot_group(dat.p = dat1)
 
-ggsave(paste0(path_results,"attribution/config_dist", version = "unequal.dist", ".jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution/config_dist", version = "unequal.1.dist", ".jpg" ), plot = p, width = 8.8, height = 6, units = "cm", dpi = 600)
 
-
+# 1% significant level 
+final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Final.Table",
+                                 significance.level= 0.01, offset=0, GE=0, number.pop=3, ".RData")))
+FinalTable = final.t
 
 
 
