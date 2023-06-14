@@ -285,7 +285,9 @@ grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), 
   g <- ggplotGrob(plots[[1]] + theme(legend.position = position))$grobs
   legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
   lheight <- sum(legend$height)
+  # print(lheight)
   lwidth <- sum(legend$width)
+  # print(lwidth)
   gl <- lapply(plots, function(x) x + theme(legend.position = "none"))
   gl <- c(gl, nrow = nrow, ncol = ncol)
 

@@ -106,8 +106,9 @@ plot_group <- function(dat.p, tag){
   colnames(data.plot)[1] = "config"
   data.plot$config = as.factor(data.plot$config)
   max.group = aggregate(c~g, data.plot, sum)
-  max.y = ceiling(max(max.group$c/10))*10
-  
+  # max.y = ceiling(max(max.group$c/10))*10
+  max.y = 75 
+    
   p <- ggplot(data.plot, aes(fill=config, y=c, x=g)) + 
     geom_bar(position="stack", stat="identity")+theme_bw()+
     geom_text(aes(label = config),
@@ -117,16 +118,27 @@ plot_group <- function(dat.p, tag){
     labs(y ="Count", x = "Group",  fill='Configuration', tag = tag) + 
     scale_fill_manual(breaks = c(1:38)[-c(12,28)],
                       values= cols)+
-    theme(axis.text.x = element_text(size = 6),
-          axis.text.y = element_text(size = 6),
-          legend.text=element_text(size=4),
-          axis.title = element_text(size = 6), 
-          # legend.key.size = unit(0.2, "cm"), 
-          plot.tag = element_text(size = 6),
-          legend.title=element_text(size=5),
-          legend.box.spacing = unit(0, "pt"),
-          plot.margin = rep(unit(0,"null"),4))
-  
+    # theme(axis.text.x = element_text(size = 6),
+    #       axis.text.y = element_text(size = 6),
+    #       legend.text=element_text(size=4),
+    #       axis.title = element_text(size = 6), 
+    #       legend.key.size = unit(0.2, "cm"),
+    #       plot.tag = element_text(size = 6),
+    #       legend.title=element_text(size=5),
+    #       legend.box.spacing = unit(0, "pt"),
+    #       plot.margin = rep(unit(0,"null"),4))
+  theme(axis.text.x = element_text(size = 6), 
+        axis.text.y = element_text(size = 6),
+        legend.text=element_text(size=6),
+        axis.title = element_text(size = 7),
+        legend.key.size = unit(0.4, unit1),
+        plot.tag = element_text(size = 7),
+        legend.title=element_text(size=5),
+        plot.margin = rep(unit(0,"null"),4),
+        # plot.margin = margin(t = 2, b = 0, r = 2, l = 2),
+        plot.tag.position = "topleft",
+        legend.box.spacing = unit(0,unit2))
+
   return(p)
 }
 
@@ -322,7 +334,12 @@ FinalTable = final.t
 
 # align into 4 figures ----------------------------------------------------
 #f1 : 5%
+unit1 = "cm"
+unit2 = "pt"
+unit3 = "null"
+
 five = get(load(file = "/home/knguyen/Documents/PhD/paper/attribution/result/attribution/Final.Table.RData"))
+tag.list = c("a)","b)","c)","d)")
 
 FinalTable = five
 l1 = aggre1(FinalTable)
@@ -331,7 +348,7 @@ dat1 = data.frame(name = sapply(c(1:n), function(x) l1[[x]]$MainBreak[1]),
                   brp = sapply(c(1:n), function(x) l1[[x]]$MainBreak[2]),
                   last.pre = sapply(c(1:n), function(x) l1[[x]]$Config.Pred.Post))
 
-p1 = plot_group(dat.p = dat1)
+p1 = plot_group(dat.p = dat1, tag = tag.list[1])
 
 #f2 :1% 
 final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Final.Table",
@@ -344,7 +361,7 @@ dat2 = data.frame(name = sapply(c(1:n), function(x) l2[[x]]$MainBreak[1]),
                   brp = sapply(c(1:n), function(x) l2[[x]]$MainBreak[2]),
                   last.pre = sapply(c(1:n), function(x) l2[[x]]$Config.Pred.Post))
 
-p2 = plot_group(dat.p = dat2)
+p2 = plot_group(dat.p = dat2, tag = tag.list[2])
 #f3 :unequal 5% 
 final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Final.Table",
                                  significance.level= 0.05, offset=0, GE=0, number.pop=1, ".RData")))
@@ -356,7 +373,7 @@ dat3 = data.frame(name = sapply(c(1:n), function(x) l3[[x]]$MainBreak[1]),
                   brp = sapply(c(1:n), function(x) l3[[x]]$MainBreak[2]),
                   last.pre = sapply(c(1:n), function(x) l3[[x]]$Config.Pred.Post))
 
-p3 = plot_group(dat.p = dat3)
+p3 = plot_group(dat.p = dat3, tag = tag.list[3])
 #f4: by prob 
 FinalTable = five
 l4 = aggre2(FinalTable)
@@ -365,13 +382,14 @@ dat4 = data.frame(name = sapply(c(1:n), function(x) l4[[x]]$MainBreak[1]),
                   brp = sapply(c(1:n), function(x) l4[[x]]$MainBreak[2]),
                   last.pre = sapply(c(1:n), function(x) l4[[x]]$Config.Pred.Post))
 
-p4 = plot_group(dat.p = dat4)
+p4 = plot_group(dat.p = dat4, tag = tag.list[4])
 
 # Align
-tag.list = c("a)","b)","c)","d)")
 p = grid_arrange_shared_legend(p1, p2, p3, p4, nrow = 2, ncol = 2)
+p = p + guides(color=guide_legend(nrow=2, byrow=TRUE)) 
 
 print(p)
+
 ggsave(paste0(path_results,"attribution/test1.jpg" ), plot = p, width = 14.4, height = 15, units = "cm", dpi = 1200)
 
 
