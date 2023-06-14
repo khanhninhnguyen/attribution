@@ -127,11 +127,11 @@ plot_group <- function(dat.p, tag){
     #       legend.title=element_text(size=5),
     #       legend.box.spacing = unit(0, "pt"),
     #       plot.margin = rep(unit(0,"null"),4))
-  theme(axis.text.x = element_text(size = 6), 
-        axis.text.y = element_text(size = 6),
-        legend.text=element_text(size=6),
+  theme(axis.text.x = element_text(size = 5.5), 
+        axis.text.y = element_text(size = 5.5),
+        legend.text = element_text(size = 5.5),
         axis.title = element_text(size = 7),
-        legend.key.size = unit(0.4, unit1),
+        legend.key.size = unit(0.2, unit1),
         plot.tag = element_text(size = 7),
         legend.title=element_text(size=5),
         plot.margin = rep(unit(0,"null"),4),
@@ -385,11 +385,10 @@ dat4 = data.frame(name = sapply(c(1:n), function(x) l4[[x]]$MainBreak[1]),
 p4 = plot_group(dat.p = dat4, tag = tag.list[4])
 
 # Align
-p = grid_arrange_shared_legend(p1, p2, p3, p4, nrow = 2, ncol = 2)
-p = p + guides(color=guide_legend(nrow=2, byrow=TRUE)) 
+p = ggarrange(p1, p2, p3, p4, ncol=2, nrow=2, common.legend = TRUE, legend="right")
 
 print(p)
 
-ggsave(paste0(path_results,"attribution/test1.jpg" ), plot = p, width = 14.4, height = 15, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/test1.jpg" ), plot = p, width = 14.4, height = 12, units = "cm", dpi = 1200)
 
 

@@ -307,7 +307,7 @@ grid_arrange_shared_legend <- function(..., nrow = 1, ncol = length(list(...)), 
 
 p = grid_arrange_shared_legend(p1, p2, p3, p4,p5, p6, nrow = 3, ncol = 2)
 print(p)
-ggsave(paste0(path_results,"attribution/simulation_FGLS_HAC1.jpg" ), plot = p, width = 14.4, height = 15, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/simulation_FGLS_HAC1.jpg" ), plot = p, width = 14.4, height = 12, units = "cm", dpi = 1200)
 
 
 
