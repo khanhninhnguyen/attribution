@@ -34,12 +34,12 @@ file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 # name.results <- paste0(path_restest,"stats_test_real_data_corrected_dist_fdr.txt")
 name.version ="FGLS_on_real_data_t.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
-NbSim = 37865
-significance.level = 0.05
+# NbSim = 10000
+significance.level = 0.01
 B = 20
 offset=0
 GE=0
-number.pop = 1
+number.pop = 3
 # make the truth table and probability ------------------------------------
 
 G=c(rep(1,9), rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9))
@@ -129,6 +129,8 @@ for (i in  1:length(List.names.final)){
 }
 
 # equal prob data  --------------------------------------------------------
+R = 100
+Nbconfig <- nrow(Z.trunc.final)
 error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
 NbSim <- R*Nbconfig #in order to have at least 5 samples for each configurations. 
 # B <- 5
@@ -192,6 +194,8 @@ for (b in 1:B){
 type.dataset = "Learn"
 Z.trunc.code = Z.trunc.final.code
 NbSim = NbSimLearn
+
+FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b = 3,significance.level, offset, GE, number.pop,".rds"))
 
 # diff prob data  --------------------------------------------------------
 Nbconfig <- nrow(Z.trunc.final)

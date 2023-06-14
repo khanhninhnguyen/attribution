@@ -1,6 +1,6 @@
 
-final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Final.Table.0.01.RData")))
-prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.List.0.01.RData")))
+final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Final.Table.0.01.RData")))
+prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/details/Post.Prob.List.0.01.RData")))
 prob.tn = get(load(file = paste0(path_results, "attribution/Post.Prob.Listn.RData")))
 tot = get(load(file = paste0(path_results,"attribution0/stats_test_real_data.RData")))
 tot = cbind(final.t[,c(1:3)], tot)
