@@ -35,11 +35,11 @@ file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 name.version ="FGLS_on_real_data_t.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
 NbSim = 37865
-significance.level = 0.05
+significance.level = 0.01
 B = 20
 offset=0
 GE=0
-number.pop = 1
+number.pop = 3
 # make the truth table and probability ------------------------------------
 
 G=c(rep(1,9), rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9))
@@ -129,13 +129,17 @@ for (i in  1:length(List.names.final)){
 }
 
 # equal prob data  --------------------------------------------------------
+R = 100
+Nbconfig <- nrow(Z.trunc.final)
+
 error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
 NbSim <- R*Nbconfig #in order to have at least 5 samples for each configurations. 
 # B <- 5
 NbSimLearn <- NbSim*0.8
 NbSimTest <- NbSim*0.2
 set.seed(1)
-for (b in 1:B){
+
+for (b in 13:B){
   
   ######
   # Vfold 
@@ -192,6 +196,22 @@ for (b in 1:B){
 type.dataset = "Learn"
 Z.trunc.code = Z.trunc.final.code
 NbSim = NbSimLearn
+
+B=20
+error.test.4.methods <- matrix(NA,nrow=B,ncol=4)
+
+for (b in 1:B){
+  Res.pred <- readRDS(paste0(file_path_Results,"Res.pred_",b,significance.level, offset, GE, number.pop,".rds"))
+  error.test.4.methods[b,] <- Res.pred$err.tot %>% unlist()
+}
+colnames(error.test.4.methods) <- c("lda","cart","knn","rf")
+
+boxplot(error.test.4.methods)
+
+print(colMeans(error.test.4.methods))
+print(apply(error.test.4.methods,2,sd))
+print(apply(error.test.4.methods,2,which.min))
+
 
 # diff prob data  --------------------------------------------------------
 Nbconfig <- nrow(Z.trunc.final)

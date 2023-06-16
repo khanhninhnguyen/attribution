@@ -392,3 +392,11 @@ print(p)
 ggsave(paste0(path_results,"attribution/test1.jpg" ), plot = p, width = 14.4, height = 12, units = "cm", dpi = 1200)
 
 
+
+# check validation --------------------------------------------------------
+valid = get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criterion,"metacompa",screen.value="",".RData")))
+colnames(dat4)[2] = "detected"
+dat4$detected = as.Date(as.character(dat4$detected))
+a = left_join(dat4, valid, by = c("name", "detected"))
+
+

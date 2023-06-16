@@ -376,7 +376,9 @@ tot[which(is.na(five$tGE)==TRUE),c(paste0("std.err", name.t), paste0("jump", nam
 collo = list.name.test[c(1,5)]
 noncollo = list.name.test[-c(1,5)]
 
-param = "t"
+param = "jump"
+param.in.plot = "Jump"
+
 data.plot= tot[,paste0(param, noncollo)] %>%
   mutate(group = as.factor(sapply(c(1:494), function(x) ifelse(tot$distance[x]<50, "<50", ">50")))) %>%
   reshape2::melt(id = "group")  %>%
@@ -385,19 +387,61 @@ data.plot= tot[,paste0(param, noncollo)] %>%
                          value = unlist(tot[,paste0(param, collo)]))) %>%
   `rownames<-`( NULL ) %>% 
   mutate(variable = gsub(param, "", data.plot$variable))
-data.plot$variable = factor(data.plot$variable, levels = list.name.test)
+data.plot$variable = factor(data.plot$variable, levels = reoder.list.name1)
 
 p <- ggplot(data.plot, aes(x = variable, col = group, y = abs(value)))+ theme_bw()+ 
   geom_boxplot(lwd = 0.2, outlier.size = 0.1)+
-  labs(y = paste0("Absolute value of the ", param))+
+  labs(y = paste0(param.in.plot))+
   theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), legend.title=element_text(size=5),
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
-        legend.box.spacing = unit(0, "pt"), plot.margin = rep(unit(0,"null"),4)) +
+        legend.box.spacing = unit(0, "pt"), 
+        # plot.margin = rep(unit(0,"null"),4)
+        ) +
   guides(color = guide_legend(title = "Distance"))
 
 ggsave(paste0(path_results,"attribution/abs_", param, "_distance.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
 
+# FOR PAPER ---------------------------------------------------------------
 
+data.plot1 = tot[,paste0(param, list.name.test)] %>%
+  reshape2::melt()  %>%
+  `rownames<-`( NULL ) %>% 
+  mutate(variable = gsub(param, "", data.plot$variable)) %>% 
+  mutate(variable = factor(data.plot1$variable, levels = reoder.list.name1))
+
+p1 <- ggplot(data.plot1, aes(x = variable, y = abs(value)))+ theme_bw()+ 
+  geom_boxplot(lwd = 0.2, outlier.size = 0.1)+
+  labs(y = paste0(param.in.plot))+
+  theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), legend.title=element_text(size=5),
+        plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
+        legend.box.spacing = unit(0, "pt"), 
+        # plot.margin = rep(unit(0,"null"),4)
+  ) 
+
+param = "jump"
+param.in.plot = "Jump"
+
+data.plot2 = tot[,paste0(param, noncollo)] %>%
+  mutate(group = as.factor(sapply(c(1:494), function(x) ifelse(tot$distance[x]<50, "<50", ">50")))) %>%
+  reshape2::melt(id = "group")  %>%
+  rbind(dat = data.frame(group = as.factor(rep("<50", 494*2)),
+                         variable = rep(paste0(param, collo), each = 494),
+                         value = unlist(tot[,paste0(param, collo)]))) %>%
+  `rownames<-`( NULL ) %>% 
+  mutate(variable = gsub(param, "", data.plot1$variable))  %>%
+  mutate(variable = factor(data.plot2$variable, levels = reoder.list.name1))
+
+p2 <- ggplot2(data.plot2, aes(x = variable, col = group, y = abs(value)))+ theme_bw()+ 
+  geom_boxplot(lwd = 0.2, outlier.size = 0.1)+
+  labs(y = paste0(param.in.plot))+
+  theme(axis.text.x = element_text(size = 5), axis.text.y = element_text(size = 5),legend.text=element_text(size=4),
+        axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), legend.title=element_text(size=5),
+        plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
+        legend.box.spacing = unit(0, "pt"), 
+        # plot.margin = rep(unit(0,"null"),4)
+  ) +
+  guides(color = guide_legend(title = "Distance"))
 
 
