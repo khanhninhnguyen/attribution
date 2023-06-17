@@ -376,18 +376,19 @@ tot[which(is.na(five$tGE)==TRUE),c(paste0("std.err", name.t), paste0("jump", nam
 collo = list.name.test[c(1,5)]
 noncollo = list.name.test[-c(1,5)]
 
-param = "jump"
-param.in.plot = "Jump"
+param = "t"
+param.in.plot = "Absolute t-value"
 
-data.plot= tot[,paste0(param, noncollo)] %>%
+data.plot = tot[,paste0(param, noncollo)] %>%
   mutate(group = as.factor(sapply(c(1:494), function(x) ifelse(tot$distance[x]<50, "<50", ">50")))) %>%
   reshape2::melt(id = "group")  %>%
   rbind(dat = data.frame(group = as.factor(rep("<50", 494*2)),
                          variable = rep(paste0(param, collo), each = 494),
                          value = unlist(tot[,paste0(param, collo)]))) %>%
   `rownames<-`( NULL ) %>% 
-  mutate(variable = gsub(param, "", data.plot$variable))
-data.plot$variable = factor(data.plot$variable, levels = reoder.list.name1)
+  mutate(variable = gsub(param, "", variable)) %>% 
+  mutate(variable = factor(variable, levels = reoder.list.name1))
+
 
 p <- ggplot(data.plot, aes(x = variable, col = group, y = abs(value)))+ theme_bw()+ 
   geom_boxplot(lwd = 0.2, outlier.size = 0.1)+
@@ -396,7 +397,7 @@ p <- ggplot(data.plot, aes(x = variable, col = group, y = abs(value)))+ theme_bw
         axis.title = element_text(size = 5), legend.key.size = unit(0.3, "cm"), legend.title=element_text(size=5),
         plot.tag = element_text(size = 6),plot.subtitle = element_text(size = 6),
         legend.box.spacing = unit(0, "pt"), 
-        # plot.margin = rep(unit(0,"null"),4)
+        plot.margin = rep(unit(0,"null"),4)
         ) +
   guides(color = guide_legend(title = "Distance"))
 
