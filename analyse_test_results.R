@@ -446,3 +446,24 @@ p2 <- ggplot2(data.plot2, aes(x = variable, col = group, y = abs(value)))+ theme
   guides(color = guide_legend(title = "Distance"))
 
 
+# compute statistics of the 6 series  -------------------------------------
+
+coef = read.table( file = paste0(path_results, "attribution0/FGLS_on_real_data_autocorrelation.txt"), header = TRUE, check.names = FALSE)
+five = get(load(file = "/home/knguyen/Documents/PhD/paper/attribution/result/attribution/Final.Table.RData"))
+
+model.recons = as.data.frame(lapply(c(2:6), function(x){
+  sapply(c(1:494), function(y) {
+    coef.xy = coef[y,c((2*x-1): (2*x))]
+    if(coef.xy[1] ==0 & coef.xy[2] ==0){ r = "White"}
+    else if (coef.xy[1] !=0 & coef.xy[2] ==0){ r = "ar"}
+    else if (coef.xy[1] ==0 & coef.xy[2] !=0){ r = "ma"}
+    else if (coef.xy[1] !=0 & coef.xy[2] !=0){ r = "arma"}
+    return(r)
+  })
+}))
+colnames(model.recons) = list.name.test[-1]
+
+ind = which(model.recons$`G'-E'` == "ar" & five$distance < 50)
+summary(coef$`phi.G'-E'`[ind])
+
+

@@ -10,7 +10,7 @@ nb.sim = 1000
 burn.in = 1000
 hetero = 0
 sigma.sim = 1
-selected.ind = c(2:7)
+
 
 # SIMULATION ---------------------------------------------------------------
 ## AR(1) model -------------------------------------------------------------
@@ -354,8 +354,9 @@ save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1a
 
 
 # PLOT ---------------------------------------------------------------
-arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1.RData")))
-armab = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1b.RData")))
+# arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1.RData")))
+sum.param = 0.3
+arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1",sum.param,".RData")))
 
 ar = get(load(file = paste0(path_results, "attribution0/performance_autoarima_AR1.RData")))
 ma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_MA1.RData")))
@@ -470,7 +471,6 @@ ggsave(paste0(path_results,"attribution0/auto.arima.TPR.N.", model.plot, ".jpg" 
 model.plot = "ARMA(1,1)"
 model.data = arma
 param.name = "phi"
-sum.param = 0.3
 arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1",sum.param,".RData")))
 selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) )[-c(1,2,3)]
 # selected.ind = c(10:17)[-3]
@@ -523,9 +523,9 @@ ggsave(paste0(path_results,"attribution0/auto.arima.TPR.N.", model.plot,sum.para
 
 ## Fig 2: TPR as a fc of coefs for different length---------------------
 
-model.plot = "MA(1)"
-model.data = ma
-param.name = "N"
+model.plot = "AR(1)"
+model.data = ar
+param.name = "phi"
 coef.list = seq(0, 0.6, 0.1)
 selected.ind = c(2:7)
 df = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = 0)[selected.ind,] %>% 
@@ -545,6 +545,7 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
                      limits = c(0.1, 0.61))+ 
   scale_y_continuous(breaks = seq(0,1,0.1), 
                      limits = c(0,1))+
+  xlab(param.name) + 
   theme(axis.text.x = element_text(size = 6),
         axis.text.y = element_text(size = 5),
         legend.text = element_text(size = 5),
@@ -554,8 +555,8 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
         legend.box.spacing = unit(3, "pt"),
         legend.key.size = unit(6, 'pt'),
         legend.title.align=0.5,
-        plot.subtitle = element_text(size = 5))+
-  guides(color=guide_legend(title = param.name, byrow = TRUE))
+        plot.subtitle = element_text(size = 5))
+  # guides(color=guide_legend(title = param.name, byrow = TRUE))
  
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 ### For ARMA(1,1)
@@ -588,6 +589,7 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
                      labels= unique(df$lab)) + 
   scale_y_continuous(breaks = seq(0,1,0.1), 
                      limits = c(0,1)) +
+  xlab(param.name) + 
   theme(axis.text.x = element_text(size = 6),
         axis.text.y = element_text(size = 5),
         legend.text = element_text(size = 5),
@@ -597,27 +599,34 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
         legend.box.spacing = unit(3, "pt"),
         legend.key.size = unit(6, 'pt'),
         legend.title.align=0.5,
-        plot.subtitle = element_text(size = 5))+
-  guides(color=guide_legend(title = param.name, byrow = TRUE))
+        plot.subtitle = element_text(size = 5))
+  # guides(color=guide_legend(title = param.name, byrow = TRUE))
 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot,sum.param, "all.jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
 
 ## Fig 3 detail of the model identification --------------------------
-model.plot = "ARMA(1,1)"
+model.plot = "MA(1)"
 model.data = ma
 param.name = "theta"
-selected.ind = c(2:7)
 details = 5
+# AR, MA
+selected.ind = c(2:7)
 all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
+# ARMA
+selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) )[-c(1,2,3)]
+all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
+
+
 ar.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "AR(1)")))
 ma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "MA(1)")))
 arma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "ARMA(1,1)")))
 white.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "White")))
 
-df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list1[selected.ind]) %>%
+df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list[selected.ind]) %>%
+  # df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list1[selected.ind]) %>% uncomment for AR, MA
   reshape2::melt(id = "phi") %>%
-  mutate(predict = as.factor(rep(c( "White", "AR(1)", "MA(1)", "ARMA(1,1)"), each = 6))) %>%
+  mutate(predict = as.factor(rep(c( "White", "AR(1)", "MA(1)", "ARMA(1,1)"), each = length(selected.ind)))) %>%
   mutate(phi = as.factor(phi))
 
 p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
@@ -632,6 +641,7 @@ p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
   ggrepel::geom_text_repel(aes(label = paste0(value*100/nb.sim,"%")), 
                            position = position_stack(vjust = 0.5), size = 1.5, direction = "y", 
                            box.padding = unit(0.01, "lines")) +
+  xlab(param.name) + 
   theme(axis.text.x = element_text(size = 6),
         # axis.text.y = element_text(size = 5),
         legend.text = element_text(size = 5),
@@ -643,11 +653,13 @@ p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
         legend.title.align=0.5,
         plot.subtitle = element_text(size = 5),
         axis.text.y = element_blank(),
-        axis.ticks.y = element_blank()) +
-  guides(color = guide_legend(title = param.name)) 
+        axis.ticks.y = element_blank()) 
+  # guides(color = guide_legend(title = param.name)) 
 
-
+# AR, MA
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+# ARMA 
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot,sum.param, ".jpg" ), plot = p, width = 12, height = 5, units = "cm", dpi = 600)
 
 ## Fig 4: accuracy of param estimates
 arma = get(load(file = paste0(path_results, "attribution0/performance_arima_MA1_wrong.RData")))
