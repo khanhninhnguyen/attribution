@@ -477,6 +477,10 @@ plot_FGLS_details <- function(name.case, name.series, lab.y){
   n1GE = length(na.omit(datai[(1:brp.ind),"signal"]))
   n2GE = length(na.omit(datai[-(1:brp.ind),"signal"]))
   
+  datai$fit = NA
+  datai$fit[which(is.na(datai$signal) == FALSE)] = station[[name.series]]$fit
+  datai <- datai[c((brp.ind-1000):(brp.ind+1000)),]
+  
   begin.date = datai$date[1]
   end.date = datai$date[length(datai$date)]
   
@@ -485,8 +489,6 @@ plot_FGLS_details <- function(name.case, name.series, lab.y){
   # datai$fit[(brp.ind+1):nrow(datai)] = station[[name.series]]$t.table$Estimate[10] + station[[name.series]]$t.table$Estimate[9]
   # datai$fourier = as.matrix(datai[,c(2:9)]) %*% as.matrix(station[[name.series]]$t.table$Estimate[1:8])
   
-  datai$fit = NA
-  datai$fit[which(is.na(datai$signal) == FALSE)] = station[[name.series]]$fit
   # add infor of test 
   text1 = paste0(toupper(name.case), ", Jump = ", round(station[[name.series]]$t.table$Estimate[9], digits = 2), 
                  ", t = ", round(station[[name.series]]$t.table$`t value`[9], digits = 2), 
@@ -604,7 +606,7 @@ plot_FGLS_details <- function(name.case, name.series, lab.y){
 # plot_FGLS_details(name.case = "pots.2016-06-05.d020", name.series = "gps.era", lab.y = "G-E")
 
 plot_six_details <- function(name.case){
-  for (name.s in c(1:6)) {
+  for (name.s in c(2:6)) {
     name.series = list.test[name.s]
     lab.y = list.name.test[name.s]
     plot_FGLS_details(name.case, name.series, lab.y)
