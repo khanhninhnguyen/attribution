@@ -700,7 +700,7 @@ get_data_acc_mean <- function(list.ini, phi, theta){
   return(tot.df)
 }
 
-model.plot = "ARMA1a"
+model.plot = "ARMA1"
 model.true = "ARMA(1,1)"
 model.est = "ARMA(1,1)"
 
@@ -708,40 +708,49 @@ if(model.true == model.est){
   est.true = "true"
 }else{est.true = "wrong"}
 
-arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true,".RData")))
-# arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true, "_", model.est,".RData")))
+# AR1, MA1
+# coef.list = seq(0, 0.6, 0.1)
+# selected.ind = c(2:7)
+# arma.acc = get(load(file = paste0(path_results, "attribution0/performance_arima_", model.plot, "_", est.true,".RData")))
+# ARMA 
+arma.acc = get(load(file = paste0(path_results, "attribution0/truemodel_autoarima_ARMA1", sum.param = 0.3 ,".RData")))
+selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) )[-c(1,2,3)]
 
 df.all = get_data_acc(list.ini = arma.acc, phi = 1, theta =1)
 ### plot for the true model -------------------------------------------------
-param.name = "phi"
+param.name = "theta"
+leg.title = "phi, theta"
 df = df.all[[param.name ]][selected.ind,]  %>% 
   t() %>% 
   as.data.frame() %>% 
   mutate(N = length.list) %>% 
   reshape2::melt(id = "N") %>% 
-  mutate(phi = as.factor(rep(coef.list[selected.ind], each = 10))) 
-
-p = ggplot(data = df, aes(x = N, y = value, col = phi))+
+  mutate(phi = rep(coef.list[selected.ind], each = 10)) %>%  
+  mutate(theta = round((sum.param-phi), digits = 2)) %>% 
+  mutate(lab = paste(phi, theta, sep = ", ")) %>%
+  mutate(phi = as.factor(phi))
+    
+p = ggplot(data = df, aes(x = N, y = value, col = lab))+
   theme_bw()+
   geom_point(size = 0.3) +
   geom_line(lwd = 0.25)+
   scale_x_continuous(breaks = length.list, 
-                     limits = c(200, 2000))+ 
-  scale_y_continuous(breaks = seq(0, max(df$value)+0.02,0.02),
-                     limits = c(0, max(df$value)))+ 
-  ylab(paste0("Standard error of ", param.name))+
+                     limits = c(200, 2000)) + 
+  scale_y_continuous(breaks = seq(0, max(df$value)+0.02,0.03),
+                     limits = c(0, max(df$value))) + 
+  ylab(paste0("Standard error of ", param.name)) +
   labs(subtitle = paste0("Simulated model: " , model.true, ", Estimate model:", model.est))+
   theme(axis.text.x = element_text(size = 5),
         axis.text.y = element_text(size = 5),
-        legend.text = element_text(size=4),
-        legend.title = element_text(size = 4.5),
-        axis.title = element_text(size = 5),
-        legend.key.size = unit(0.3, "cm"),
+        legend.text = element_text(size=5),
+        legend.title = element_text(size = 5),
+        axis.title = element_text(size = 5.5),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
         plot.tag = element_text(size = 5),
         legend.title.align = 0.5,
         plot.subtitle = element_text(size = 5)) +
-  guides(color = guide_legend(title = param.name)) 
-
+  guides(color = guide_legend(title = leg.title)) 
 
 ggsave(paste0(path_results,"attribution0/auto.arima.sdcoef.", model.plot, "_", est.true, param.name, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 
