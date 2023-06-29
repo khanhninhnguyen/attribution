@@ -398,5 +398,13 @@ valid = get(load(file = paste0(path_results,"validation/",nb_test.ref,"-",criter
 colnames(dat4)[2] = "detected"
 dat4$detected = as.Date(as.character(dat4$detected))
 a = left_join(dat4, valid, by = c("name", "detected"))
+a = left_join(dat1, dat2, dat3, dat4, by = c("name", "brp"))
+a = dat1
+colnames(a)[3] = "a"
+a$b = dat2$last.pre
+a$c = dat3$last.pre
+a$d = dat4$last.pre
+
+
 
 
