@@ -405,6 +405,5 @@ a$b = dat2$last.pre
 a$c = dat3$last.pre
 a$d = dat4$last.pre
 
-
-
+write.table(a, file = paste0(path_results, "attribution/aggregation.txt"), col.names = TRUE, row.names = FALSE, quote = FALSE)
 

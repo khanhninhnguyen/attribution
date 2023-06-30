@@ -2,6 +2,8 @@
 source(paste0(path_code_att,"FGLS.R"))
 source(paste0(path_code_att,"simulate_time_series.R"))
 source(paste0(path_code_att,"support_characterization.R"))
+path_arima = paste0(path_results, "attribution0/performance_autoarima/")
+
 length.list = seq(200, 2000, 200)
 coef.list = seq(-0.8, 0.8, 0.1)
 coef.list1 = seq(0, 0.6, 0.1)
@@ -355,11 +357,11 @@ save(tot.res, file = paste0(path_results, "attribution0/performance_arima_ARMA1a
 
 # PLOT ---------------------------------------------------------------
 # arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1.RData")))
-sum.param = 0.3
-arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1",sum.param,".RData")))
+sum.param = 0.1
+arma = get(load(file = paste0(path_arima, "performance_autoarima_ARMA1",sum.param,".RData")))
 
-ar = get(load(file = paste0(path_results, "attribution0/performance_autoarima_AR1.RData")))
-ma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_MA1.RData")))
+ar = get(load(file = paste0(path_arima, "performance_autoarima_AR1.RData")))
+ma = get(load(file = paste0(path_arima, "performance_autoarima_MA1.RData")))
 
 get_data <- function(list.ini, param.val, true.model, details){
   nb.sim = length(list.ini[[1]][[1]])
