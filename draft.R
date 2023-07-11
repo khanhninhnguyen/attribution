@@ -610,5 +610,16 @@ R = 100
 
 
 Thresh <- significance.level
+a = read.table(file = "/home/knguyen/Documents/PhD/Results/attribution0/performance_autoarima/FGLS_on_real_data_jump.txt", header = TRUE, check.names = FALSE)
+win.thres = 10
+dat = get(load( file = paste0(path_results,"attribution0/unlist/data.all_", win.thres, "years_", nearby_ver,"screened.RData")))
+order.arma.l = get(load(file = paste0(path_results,"attribution0/unlist/order.model.arma", win.thres,".RData")))
+coef.arma.l = get(load(file = paste0(path_results,"attribution0/unlist/coef.model.arma", win.thres,".RData")))
+full.list = get(load( file = paste0(path_results, "attribution0/unlist/list.segments.selected", win.thres,".RData")))
+b = as.data.frame(lapply(c(2:6), function(x) {sapply(c(1:494), function(y) model.iden(unlist(c(order.arma.l1[[x]][[1]][y],order.arma.l1[[x]][[2]][y], order.arma.l1[[x]][[3]][y]))))}))
+colnames(b) = list.name.test[2:6]
+d = sapply(c(1:494), function(y) model.iden(as.numeric(order.arma.l1[[1]][y,])))
+b$'G-E' = d
+b$n = a$n1 + a$n2
 
 

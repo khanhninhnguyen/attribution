@@ -12,6 +12,42 @@ nb.sim = 1000
 burn.in = 1000
 hetero = 0
 sigma.sim = 1
+get_data <- function(list.ini, param.val, true.model, details){
+  nb.sim = length(list.ini[[1]][[1]])
+  # choose details case at specific length 
+  if(details!=0){
+    tot.df = data.frame(matrix(NA, ncol = length(list.ini[[1]]), nrow = nb.sim))
+    for (j in c(1:length(list.ini[[1]]))) {
+      model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[details]][[j]][[x]]$pq))
+      tot.df[,j] = model.est
+    }
+  }else{
+    
+    if(param.val == 0){
+      tot.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
+      for (i in c(1:length(list.ini))) {
+        print(i)
+        for (j in c(1:length(list.ini[[1]]))) {
+          print(j)
+          model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[i]][[j]][[x]]$pq))
+          y = length(which(model.est == true.model))
+          tot.df[j,i] = y
+        }
+      }
+    }else{ # could be filtered the case of true model 
+      tot.df = data.frame(matrix(NA, ncol = 2*length(list.ini), nrow = length(list.ini[[1]])))
+      for (i in c(1:length(list.ini))) {
+        for (j in c(1:length(list.ini[[1]]))) {
+          phi = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$coef[1])
+          theta = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$coef[3])
+          tot.df[j,(2*i-1)] = mean(phi, na.rm = TRUE)
+          tot.df[j,(2*i)] = mean(theta, na.rm = TRUE)
+        }
+      }
+    }
+  }
+  return(tot.df)
+}
 
 
 # SIMULATION ---------------------------------------------------------------
@@ -363,42 +399,6 @@ arma = get(load(file = paste0(path_arima, "performance_autoarima_ARMA1",sum.para
 ar = get(load(file = paste0(path_arima, "performance_autoarima_AR1.RData")))
 ma = get(load(file = paste0(path_arima, "performance_autoarima_MA1.RData")))
 
-get_data <- function(list.ini, param.val, true.model, details){
-  nb.sim = length(list.ini[[1]][[1]])
-  # choose details case at specific length 
-  if(details!=0){
-    tot.df = data.frame(matrix(NA, ncol = length(list.ini[[1]]), nrow = nb.sim))
-    for (j in c(1:length(list.ini[[1]]))) {
-      model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[details]][[j]][[x]]$pq))
-      tot.df[,j] = model.est
-    }
-  }else{
-    
-    if(param.val == 0){
-      tot.df = data.frame(matrix(NA, ncol = length(list.ini), nrow = length(list.ini[[1]])))
-      for (i in c(1:length(list.ini))) {
-        print(i)
-        for (j in c(1:length(list.ini[[1]]))) {
-          print(j)
-          model.est = sapply(c(1:nb.sim), function(x) model.iden(list.ini[[i]][[j]][[x]]$pq))
-          y = length(which(model.est == true.model))
-          tot.df[j,i] = y
-        }
-      }
-    }else{ # could be filtered the case of true model 
-      tot.df = data.frame(matrix(NA, ncol = 2*length(list.ini), nrow = length(list.ini[[1]])))
-      for (i in c(1:length(list.ini))) {
-        for (j in c(1:length(list.ini[[1]]))) {
-          phi = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$coef[1])
-          theta = sapply(c(1:nb.sim), function(x) list.ini[[i]][[j]][[x]]$coef[3])
-          tot.df[j,(2*i-1)] = mean(phi, na.rm = TRUE)
-          tot.df[j,(2*i)] = mean(theta, na.rm = TRUE)
-        }
-      }
-    }
-  }
-  return(tot.df)
-}
 get_data1 <- function(list.ini, param.val, true.model, details){
   nb.sim = length(list.ini[[1]][[1]])
   # choose details case at specific length 
@@ -470,11 +470,16 @@ p = ggplot(data = df, aes(x = N, y = TPR, col = phi)) +
 # 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.N.", model.plot, ".jpg" ), plot = p, width = 8, height = 4.8, units = "cm", dpi = 600)
 ## Fig 1: TPR as a fc of length for different coefs for ARMA(1,1)-------------------
+sum.param = 0.1
+arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1",sum.param,".RData")))
+
 model.plot = "ARMA(1,1)"
 model.data = arma
 param.name = "phi"
-arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1",sum.param,".RData")))
-selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) )[-c(1,2,3)]
+theta = sum.param - coef.list
+selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) & !(abs(theta)>0.9) )
+
+# selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) )[-c(1,2,3)]
 # selected.ind = c(10:17)[-3]
 # selected.ind = c(2:8)[-5]
 # selected.ind = c(2:17)[c(-5, -11)]
@@ -562,13 +567,14 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
  
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 ### For ARMA(1,1)
+sum.param = 0.6
+arma = get(load(file = paste0(path_arima, "performance_autoarima_ARMA1",sum.param,".RData")))
 
 model.plot = "ARMA(1,1)"
 model.data = arma
 param.name = "phi, theta"
-sum.param = 0.3
-arma = get(load(file = paste0(path_results, "attribution0/performance_autoarima_ARMA1",sum.param,".RData")))
-selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) )[-c(1,2,3)]
+theta = sum.param - coef.list
+selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) & !(abs(theta)>0.9) )
 
 df = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = 0)[selected.ind,] %>% 
   t() %>% 
@@ -587,7 +593,7 @@ p = ggplot(data = df, aes(x = phi, y = TPR, col = N)) +
   geom_point(size = 0.3) +
   geom_line(lwd = 0.25) +
   scale_x_continuous(breaks = coef.list[selected.ind], 
-                     limits = c(-0.51, 0.81),
+                     limits = c((min(df$phi)-0.01), max((df$phi)+0.01)),
                      labels= unique(df$lab)) + 
   scale_y_continuous(breaks = seq(0,1,0.1), 
                      limits = c(0,1)) +
@@ -608,15 +614,19 @@ ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot,sum.p
 
 
 ## Fig 3 detail of the model identification --------------------------
-model.plot = "MA(1)"
-model.data = ma
-param.name = "theta"
+sum.param = 0.6
+arma = get(load(file = paste0(path_arima, "performance_autoarima_ARMA1",sum.param,".RData")))
+
+model.plot = "ARMA(1,1)"
+model.data = arma
+param.name = "phi,theta"
 details = 5
 # AR, MA
-selected.ind = c(2:7)
-all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
+# selected.ind = c(2:7)
+# all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
 # ARMA
-selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) )[-c(1,2,3)]
+theta = sum.param - coef.list
+selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) & !(abs(theta)>0.9) )
 all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
 
 
@@ -629,13 +639,18 @@ df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, p
   # df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list1[selected.ind]) %>% uncomment for AR, MA
   reshape2::melt(id = "phi") %>%
   mutate(predict = as.factor(rep(c( "White", "AR(1)", "MA(1)", "ARMA(1,1)"), each = length(selected.ind)))) %>%
+  mutate(theta = round((sum.param-phi), digits = 2)) %>% 
+  mutate(lab = paste(phi, theta, sep = "\n ")) %>% 
   mutate(phi = as.factor(phi))
-
+  
 p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
   theme_bw()+
   geom_bar(position="stack", stat="identity", width = 0.5)+
   ylab("Percentage")+
   labs(subtitle = paste0("Model: " , model.plot, ", N = ", length.list[details]))+
+  scale_x_discrete(breaks = coef.list[selected.ind], 
+                     # limits = c((min(df$phi)-0.01), max((df$phi)+0.01)),
+                     labels= unique(df$lab)) + 
   scale_y_continuous(labels = scales::percent,
                      limits = c(-0.05,1)) +
   # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
@@ -655,11 +670,11 @@ p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
         legend.title.align=0.5,
         plot.subtitle = element_text(size = 5),
         axis.text.y = element_blank(),
-        axis.ticks.y = element_blank()) 
-  # guides(color = guide_legend(title = param.name)) 
+        axis.ticks.y = element_blank()) +
+  guides(color = guide_legend(title = param.name))
 
 # AR, MA
-ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+# ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 # ARMA 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot,sum.param, ".jpg" ), plot = p, width = 12, height = 5, units = "cm", dpi = 600)
 

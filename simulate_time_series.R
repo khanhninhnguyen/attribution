@@ -95,6 +95,11 @@ simulate.general1 <- function(N, arma.model, burn.in = 0,
   }
   
   sim.series = x.ini*sigma
+  
+  if(gaps!=0){
+    pos = sample.int(N, (N*gaps), replace = FALSE)
+    sim.series[pos] = NA
+  }
   return(sim.series)
 }
 

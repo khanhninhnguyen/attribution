@@ -675,3 +675,31 @@ hist(phi)
 hist(theta)
 
 
+
+
+# GAPs --------------------------------------------------------------------
+
+gap.list = seq(0, 0.5, 0.1)
+set.seed(1)
+TPR.ar <- rep(NA, nb.sim)
+tot.res <- list()
+tot.fit = list()
+
+for (i in c(1:length(gap.list))) {
+  n = 1000
+  TPR = data.frame(matrix(NA, ncol = 3, nrow = nb.sim)) 
+  fit.i = list()
+  for (j in c(1:nb.sim)) {
+    y.ar = simulate.general1(N = n, arma.model = c(ar=0.3,ma=0), burn.in = burn.in, hetero = 0, sigma = sqrt(sigma.sim), gaps = gap.list[i])
+    # fit 
+    fit.ar = fit.arima(y.ar)
+    TPR.ar[j] = model.iden(fit.ar$pq)
+    fit.i[[j]] = fit.ar
+  }
+  tot.res[[i]] = TPR.ar
+  tot.fit[[i]] = fit.i
+}
+
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_ar.RData"))
+save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_coef_ar_all.RData"))

@@ -35,11 +35,11 @@ file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 name.version ="FGLS_on_real_data_t.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
 NbSim = 37865
-significance.level = 0.01
+significance.level = 0.05
 B = 20
 offset=0
 GE=0
-number.pop = 3
+number.pop = 1
 # make the truth table and probability ------------------------------------
 
 G=c(rep(1,9), rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9))
