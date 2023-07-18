@@ -9,7 +9,7 @@
 # load package and paths --------------------------------------------------
 
 if (!require(devtools)) install.packages("devtools")
-devtools::install_github("yanlinlin82/ggvenn")
+# devtools::install_github("yanlinlin82/ggvenn")
 library(ggrepel)
 library(mclust)
 library(forecast)
@@ -35,11 +35,11 @@ file_path_Results=paste0(path_results,'attribution/predictive_rule/')
 name.version ="FGLS_on_real_data_t.txt"
 name.results <- paste0(path_restest, name.version) # name of test result file
 NbSim = 37865
-significance.level = 0.05
+significance.level = 0.01
 B = 20
 offset=0
 GE=0
-number.pop = 1
+number.pop = 3
 # make the truth table and probability ------------------------------------
 
 G=c(rep(1,9), rep(0,9),rep(-1,9),rep(0,9),rep(1,9),rep(-1,9))
@@ -113,7 +113,8 @@ saveRDS(Z.trunc.final.code , file = paste0(file_path_Results,"List_config.rds"))
 
 # 
 Data.Res.Test <- read.table(name.results,header = TRUE, stringsAsFactors = FALSE)
-colnames(Data.Res.Test)[4:9] <- paste0("t", List.names.tot)
+# colnames(Data.Res.Test)[4:9] <- paste0("t", list.name.test)
+colnames(Data.Res.Test)[4:9] <- paste0("t", list.name) 
 
 # Separate into learning and test dataset --------------------------------------------------------
 
@@ -212,6 +213,7 @@ print(colMeans(error.test.4.methods))
 print(apply(error.test.4.methods,2,sd))
 print(apply(error.test.4.methods,2,which.min))
 
+FinalPred <- readRDS(paste0(file_path_Results,"modrf_b",b = 4,significance.level, offset, GE, number.pop,".rds"))
 
 # diff prob data  --------------------------------------------------------
 Nbconfig <- nrow(Z.trunc.final)

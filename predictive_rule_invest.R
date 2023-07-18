@@ -1,8 +1,8 @@
 # to investigate result of predictive rule
-significance.level = 0.05
+significance.level = 0.01
 offset = 0
 GE = 0
-number.pop = 1
+number.pop = 3
 final.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Final.Table", significance.level, offset, GE, number.pop, ".RData")))
 prob.t = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.List", significance.level, offset, GE, number.pop, ".RData")))
 # prob.tn = get(load(file = paste0(path_results, "attribution/predictive_rule/Post.Prob.Listn", significance.level, offset, GE, number.pop, ".RData")))
@@ -181,17 +181,18 @@ count.config = data.frame(table(final.t$pred.y))
 count.config.test = data.frame(table(final.t$Z.truth))
 count.configs = full_join(count.config, count.config.test, by = "Var1") %>% 
   replace(is.na(.), 0) %>% 
-  mutate(truth = Freq.y) %>% 
-  mutate(pred = Freq.x - Freq.y) %>% 
+  mutate(Yes = Freq.y) %>% 
+  mutate(No = Freq.x - Freq.y) %>% 
   dplyr::select(-c(Freq.x,Freq.y)) %>% 
   mutate_at(vars(Var1), list(factor)) %>% 
   rename("config" = "Var1") %>% 
   reshape2::melt(id="config") %>% 
-  arrange(factor(variable, levels= c("pred", "truth"))) %>% 
+  arrange(factor(variable, levels= c("No", "Yes"))) %>% 
   group_by(config) %>%
-  mutate(lab_ypos = cumsum(value) - 0.5 * value)  %>% 
-  mutate_all(~na_if(., 0))
- 
+  mutate(lab_ypos = cumsum(value) - 0.5 * value)  
+  # mutate_all(~na_if(., 0))
+count.configs[count.configs == 0] <- NA
+
   
 
 dat.p = data.frame(count.config)
@@ -203,11 +204,27 @@ ggplot(final.t, aes( y = pred.y))+ theme_bw()+
   geom_text(aes( label = scales::percent(..prop..),
                  x = ..prop..), stat= "count", hjust = -5.5) 
 
-ggplot(data = count.configs, aes(x = config, y = value)) + theme_bw()+
-  geom_col(aes(fill = variable), width = 0.7)+
-  geom_text(aes(y = lab_ypos, label = value, group =variable), color = "black") +
-  scale_color_manual(values = c("#0073C2FF", "#EFC000FF"))+
-  scale_fill_manual(values = c("#0073C2FF", "#EFC000FF"))
+p = ggplot(data = count.configs, aes(x = config, y = value)) + theme_bw()+
+  geom_col(aes(fill = variable), width = 0.3)+
+  geom_text(aes(y = lab_ypos, label = value, group =variable), color = "black", size = 2) +
+  scale_color_manual(values = c("#EF9B20", "#87BC45"))+
+  scale_fill_manual(values = c("#EF9B20", "#87BC45"))+
+  ylab("Count")+
+  xlab("Configuration")+
+  theme(axis.text = element_text(size = 5),
+        # axis.text.y = element_text(size = 5),
+        legend.text = element_text(size = 5),
+        legend.title = element_text(size = 5),
+        axis.title = element_text(size = 5.5),
+        plot.tag = element_text(size = 5),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
+        legend.title.align=0.5,
+        plot.subtitle = element_text(size = 5)) +
+  guides(fill = guide_legend(title = "In the table"))
+
+ggsave(paste0(path_results,"attribution0/equal.sample.0.01ver2",".jpg" ), plot = p, width = 14, height = 5, units = "cm", dpi = 600)
+
 # PLOT SUSPICIOUS CASES ---------------------------------------------------
 source(paste0(path_code_att,"plot_sic_diff_series.R"))
 

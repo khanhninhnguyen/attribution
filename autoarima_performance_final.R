@@ -905,3 +905,128 @@ t = phi/phi.se
 
 
 
+
+# GAPs --------------------------------------------------------------------
+
+gap.list = seq(0, 0.5, 0.1)
+set.seed(1)
+TPR.ar <- rep(NA, nb.sim)
+model.plot = "AR(1)"
+tot.res <- list()
+tot.fit = list()
+
+for (i in c(1:length(gap.list))) {
+  n = 1000
+  TPR = data.frame(matrix(NA, ncol = 3, nrow = nb.sim)) 
+  fit.i = list()
+  for (j in c(1:nb.sim)) {
+    y.ar = simulate.general1(N = n, arma.model = c(ar=0.6,ma=-0.3), burn.in = burn.in, hetero = 0, sigma = sqrt(sigma.sim), gaps = gap.list[i])
+    # fit 
+    fit.ar = fit.arima(y.ar)
+    TPR.ar[j] = model.iden(fit.ar$pq)
+    fit.i[[j]] = fit.ar
+  }
+  tot.res[[i]] = TPR.ar
+  tot.fit[[i]] = fit.i
+}
+
+
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_gap_arma.RData"))
+save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_gap_arma_all.RData"))
+
+# plot the impact of gaps 
+tot.res = get(load(file = paste0(path_results, "attribution0/performance_autoarima_gap_ar.RData")))
+tot.fit = get(load(file = paste0(path_results, "attribution0/performance_autoarima_gap_ar_all.RData")))
+
+# TPR ---------------------------------------------------------------------
+all.model = as.data.frame(tot.res) 
+colnames(all.model) <- NULL
+
+ar.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "AR(1)")))
+ma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "MA(1)")))
+arma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "ARMA(1,1)")))
+white.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "White")))
+
+df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, gap.per = gap.list) %>%
+  # df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list1[selected.ind]) %>% uncomment for AR, MA
+  reshape2::melt(id = "gap.per") %>%
+  mutate(predict = as.factor(rep(c( "White", "AR(1)", "MA(1)", "ARMA(1,1)"), each = length(gap.list)))) %>%
+  # mutate(lab = )
+  mutate(gap.per = as.factor(gap.per*100))
+nb.sim = 10000
+param.name = "Percentage of gap"
+p = ggplot(data = df, aes(x = gap.per, y = value/nb.sim, fill = predict))+
+  theme_bw()+
+  geom_bar(position="stack", stat="identity", width = 0.5)+
+  ylab("Percentage")+
+  labs(subtitle = paste0("Model: " , model.plot, ", N = 1000"))+
+  scale_x_discrete(breaks = c(gap.list*100)) + 
+  scale_y_continuous(labels = scales::percent,
+                     limits = c(-0.05,1)) +
+  # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
+  #           position = position_stack(vjust = 0.5), size = 1)+
+  ggrepel::geom_text_repel(aes(label = paste0(value*100/nb.sim,"%")), 
+                           position = position_stack(vjust = 0.5), size = 1.5, direction = "y", 
+                           box.padding = unit(0.01, "lines")) +
+  xlab(param.name) + 
+  theme(axis.text.x = element_text(size = 6),
+        # axis.text.y = element_text(size = 5),
+        legend.text = element_text(size = 5),
+        legend.title = element_text(size = 5),
+        axis.title = element_text(size = 5.5),
+        plot.tag = element_text(size = 5),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
+        legend.title.align=0.5,
+        plot.subtitle = element_text(size = 5),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  guides(color = guide_legend(title = param.name))
+
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.gap.", model.plot, ".jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
+
+# parameter ---------------------------------------------------------------
+
+coef.dat = data.frame(matrix(NA, ncol = 6, nrow = nb.sim))
+for (x in c(1:6)) {
+  for (y in c(1:nb.sim)) {
+    z = NA
+    if(as.character(all.model[y,x]) == "AR(1)"){
+      z = tot.fit[[x]][[y]]$coef[1]
+    } else if(as.character(all.model[y,x]) == "MA(1)"){
+      z = tot.fit[[x]][[y]]$coef[3]
+    }
+    coef.dat[y,x] = z
+  }
+}
+
+colnames(all.model) = paste0("c", gap.list)
+colnames(coef.dat) = paste0("c", gap.list)
+
+df = data.frame(matrix(NA, ncol = 3, nrow = nb.sim*6))
+for (i in c(1:6)) {
+  df[c((10000*i-9999):(10000*i)), 1] = gap.list[i] 
+  df[c((10000*i-9999):(10000*i)), 2] = all.model[,i]
+  df[c((10000*i-9999):(10000*i)), 3] = coef.dat[,i] 
+}
+colnames(df) = c("gap", "model", "coef")
+df$gap = as.factor(df$gap)
+
+p = ggplot(data = df, aes(x = gap, y = coef, fill = model))+
+  theme_bw()+
+  geom_boxplot(size = 0.3, outlier.size = 0.3)+
+  ylab("Coefficient")+
+  xlab("Percentage of gap")+
+  theme(axis.text.x = element_text(size = 6),
+        # axis.text.y = element_text(size = 5),
+        legend.text = element_text(size = 5),
+        legend.title = element_text(size = 5),
+        axis.title = element_text(size = 5.5),
+        plot.tag = element_text(size = 5),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
+        legend.title.align=0.5,
+        plot.subtitle = element_text(size = 5)) 
+
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.gap.coef.", model.plot, ".jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
+

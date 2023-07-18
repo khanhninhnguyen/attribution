@@ -701,5 +701,14 @@ for (i in c(1:length(gap.list))) {
 }
 
 
-save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_coef_ar.RData"))
-save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_coef_ar_all.RData"))
+save(tot.res, file = paste0(path_results, "attribution0/performance_autoarima_gap_ar.RData"))
+save(tot.fit, file = paste0(path_results, "attribution0/performance_autoarima_gap_ar_all.RData"))
+
+# plot the impact of gaps 
+tot.res = get(load(file = paste0(path_results, "attribution0/performance_autoarima_gap_ar.RData")))
+tot.fit = get(load(file = paste0(path_results, "attribution0/performance_autoarima_gap_ar_all.RData")))
+
+
+
+
+

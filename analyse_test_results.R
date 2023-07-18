@@ -298,19 +298,32 @@ write.table(format(Out.res, digits=2), file = paste0(path_results, "attribution/
 # check the length of data old and new 
 # plot the noise vs distance 
 
-cor.dis = get(load(file = paste0(path_results, "attribution0/stats_test_real_data_corrected_dist.RData")))
-variance = read.table(file = paste0(path_results, "attribution0/FGLS_on_real_data_var.txt"),
+cor.dis = get(load(file = paste0(path_results, "attribution0/unlist/stats_test_real_data_corrected_dist.RData")))
+variance = read.table(file = paste0(path_results, "attribution0/unlist/FGLS_on_real_data_var.txt"),
                       header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
-name.test = "G'-E'"
+name.test = "G'-E"
 dat.p = data.frame(mean.var = variance[,paste0("mean.", name.test)], 
                    distance = cor.dis$distance,
                    group = as.factor(sapply(c(1:nrow(variance)), function(x) ifelse(cor.dis$distance[x] >50, "far", "close"))))
-ggplot(data = dat.p, aes(x = distance, y = mean.var))+
+p = ggplot(data = dat.p, aes(x = distance, y = mean.var))+
   theme_bw()+
-  geom_point()+
+  geom_point(size = 0.3)+
   labs(title = name.test)+
-  ylim(c(0,12))+
-  xlab("Distance (km)") + ylab("Mean of MW variance")
+  ylim(c(0,12.5))+
+  xlab("Distance (km)") + ylab("Mean of MW variance")+
+  theme(axis.text.x = element_text(size = 6),
+      axis.text.y = element_text(size = 6),
+      legend.text = element_text(size = 5),
+      legend.title = element_text(size = 5),
+      plot.title = element_text(size = 6),
+      axis.title = element_text(size = 6),
+      plot.tag = element_text(size = 6),
+      legend.box.spacing = unit(3, "pt"),
+      legend.key.size = unit(6, 'pt'),
+      legend.title.align=0.5,
+      plot.subtitle = element_text(size = 6)) 
+
+ggsave(paste0(path_results,"attribution0/mean.MW.var",name.test,".jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 600)
 
 # distribution of noise 
 
@@ -465,5 +478,52 @@ colnames(model.recons) = list.name.test[-1]
 
 ind = which(model.recons$`G'-E'` == "ar" & five$distance < 50)
 summary(coef$`phi.G'-E'`[ind])
+
+
+
+
+# For Thesis: plot the dependence of result on the distance ---------------
+tot = get(load(file = paste0(path_results,"attribution0/unlist/stats_test_real_data.RData")))
+five = get(load(file = "/home/knguyen/Documents/PhD/paper/attribution/result/attribution/Final.Table.RData"))
+for (i in c(1:6)) {
+  name.t = list.name.test[i]
+  tot[paste0("std.err", name.t)] <- tot[paste0("jump", name.t)]/ tot[paste0("t", name.t)]
+}
+cor.dis = get(load(file = paste0(path_results, "attribution0/unlist/stats_test_real_data_corrected_dist.RData")))
+variance = read.table(file = paste0(path_results, "attribution0/unlist/FGLS_on_real_data_var.txt"),
+                      header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
+name.test = "G'-E"
+dat.p = data.frame(std.err = tot[,paste0("std.err", name.test)], 
+                   t = abs(tot[,paste0("t", name.test)]),
+                   mean.var = sqrt(variance[,paste0("mean.", name.test)]),
+                   range.var = variance[,paste0("range", name.test)],
+                   dist = tot$distance,
+                   group = sapply(c(1:nrow(variance)), function(x) ifelse(cor.dis$distance[x] <250, "<50", ">50")))
+p = ggplot(data = dat.p, aes(x = dist, y = t))+
+  # p = ggplot(data = dat.p, aes(x = mean.var, y = std.err))+
+  theme_bw()+
+  # geom_point(size = 0.3, aes(color = group))+
+  geom_point(size = 0.3)+
+  labs(title = name.test)+
+  # ylim(c(0,0.5))+
+  xlab("Distance(km)") + ylab("Absolute T-value")+
+  # xlab("Mean of moving variance") + ylab("Standard error of the jump estimate")+
+  # scale_colour_manual(values = c('<50' = 'red','>50' = 'blue'),labels = expression(d<50,d>=50))+
+  theme(axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        legend.text = element_text(size = 5),
+        legend.title = element_text(size = 5),
+        plot.title = element_text(size = 6),
+        axis.title = element_text(size = 6),
+        plot.tag = element_text(size = 6),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
+        legend.title.align=0.5,
+        plot.subtitle = element_text(size = 6))
+  # theme(legend.position = "none")
+  # guides(color = guide_legend(title = "Distance(km)"))
+
+ggsave(paste0(path_results,"attribution/t", name.test, "_dist.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
+# ggsave(paste0(path_results,"attribution/std.err", name.test, "_mean.sd.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
