@@ -406,4 +406,5 @@ a$c = dat3$last.pre
 a$d = dat4$last.pre
 
 write.table(a, file = paste0(path_results, "attribution/aggregation.txt"), col.names = TRUE, row.names = FALSE, quote = FALSE)
+all = read.table(file = paste0(path_results, "attribution/aggregation.txt"), header = TRUE, check.names = FALSE)
 

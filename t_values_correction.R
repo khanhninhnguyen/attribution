@@ -13,7 +13,7 @@ check_contradict <- function(y, table.selected){
 
 # Correct the horizontal distance based on E-E' ---------------------------
 
-Total.res = get(load(paste0(path_results,"attribution0/stats_test_real_data.RData")))
+Total.res = get(load(paste0(path_results,"attribution0/unlist/stats_test_real_data.RData")))
 
 ## Only consider the non-collocated pairs
 list.non.collocated = list.name.test[c(-1,-5)]
@@ -41,7 +41,7 @@ dat.p %>%
   geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity', bins = 100) +
   scale_fill_manual(values=c("#69b3a2", "#404080")) 
 ## check the contradicted cases 
-trunc.table = get(load(file = paste0(path_results, "attribution0/truncated.table.RData")))
+trunc.table = get(load(file = paste0(path_results, "attribution0/unlist/truncated.table.RData")))
 
 Total.coded.old = as.data.frame(sapply(c(1:6), function(x) convert_coded(Total.res[,paste0("t", list.name.test[x])], cri = 1.96)))
 colnames(Total.coded.old) = paste0("old", list.name.test)
@@ -55,14 +55,32 @@ Total.res1[,list.name.test] = Total.coded.new
 all.t = cbind(Total.coded.old, Total.coded.new) %>% dplyr:: mutate(con1 = contra.old, new = contra.new)
 
 dat.p = data.frame(table(contra.old)) %>% rename("config" = "contra.old") %>%
-  mutate(name = rep("old",length(table(contra.old)))) %>%
+  mutate(name = rep("with E-E'",length(table(contra.old)))) %>%
   rbind( data.frame(table(contra.new)) %>% rename("config" = "contra.new") %>%
-           mutate(name = rep("new",length(table(contra.new)))))
+           mutate(name = rep("without E-E'",length(table(contra.new)))))
 
-ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
-  theme_bw()+
-  geom_bar(stat="identity", position=position_dodge(), width = 0.5)
- 
+p = ggplot(data = dat.p, aes(x = config, y = Freq, fill = name)) +
+  theme_bw() +
+  geom_bar(stat="identity", position=position_dodge(), width = 0.5) +
+  xlab("Configuration") + ylab("Count") +
+  theme(axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        legend.text = element_text(size = 5),
+        # legend.title = element_text(size = 5),
+        plot.title = element_text(size = 6),
+        axis.title = element_text(size = 6),
+        plot.tag = element_text(size = 6),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
+        legend.title.align=0.5,
+        legend.title=element_blank(),
+        plot.subtitle = element_text(size = 6))+
+  # theme(legend.position = "none")
+  guides(color = guide_legend(title = ""))
+
+ggsave(paste0(path_results,"attribution/Bias_correction.jpg" ), plot = p, width = 14, height = 5, units = "cm", dpi = 1200)
+
+  # guides(color = guide_legend(title = "Distance(km)"))
 table(all.t$con1)
 table(all.t$new)
 
@@ -78,13 +96,33 @@ signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Total.res[paste0("t", list.name.
 contra.1 = sapply(c(1:nrow(signif)), function(x) check_contradict(unlist(signif [x,c(1:6)]), trunc.table))
 ### bar plot of configuration
 dat.p = data.frame(table(contra.old)) %>% rename("config" = "contra.old") %>%
-  mutate(name = rep("raw",length(table(contra.old)))) %>%
+  mutate(name = rep("Origin",length(table(contra.old)))) %>%
   rbind( data.frame(table(contra.1)) %>% rename("config" = "contra.1") %>%
-           mutate(name = rep("fdr",length(table(contra.1)))))
+           mutate(name = rep("FDR",length(table(contra.1)))))
 
-ggplot(data = dat.p, aes(x = config, y = Freq, fill = name))+
+p = ggplot(data = dat.p, aes(x = config, y = Freq, fill = name)) +
   theme_bw()+
-  geom_bar(stat="identity", position=position_dodge(), width = 0.5)
+  geom_bar(stat="identity", position=position_dodge(), width = 0.5) + 
+  xlab("Configuration") + ylab("Count") +
+  theme(axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        legend.text = element_text(size = 5),
+        # legend.title = element_text(size = 5),
+        plot.title = element_text(size = 6),
+        axis.title = element_text(size = 6),
+        plot.tag = element_text(size = 6),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
+        legend.title.align=0.5,
+        legend.title=element_blank(),
+        plot.subtitle = element_text(size = 6))+
+  # theme(legend.position = "none")
+  guides(color = guide_legend(title = ""))
+
+ggsave(paste0(path_results,"attribution/FDR_correction.jpg" ), plot = p, width = 14, height = 5, units = "cm", dpi = 1200)
+
+
+
 ### investigate why different 
 two.config = data.frame(raw = contra.old, fdr = contra.1, name = Total.res$station)
 
