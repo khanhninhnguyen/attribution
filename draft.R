@@ -621,10 +621,11 @@ colnames(b) = list.name.test[2:6]
 d = sapply(c(1:494), function(y) model.iden(as.numeric(order.arma.l1[[1]][y,])))
 b$'G-E' = d
 b$n = a$n1 + a$n2
+ 
+ggplot(d) + 
+  aes(x = factor(r), fill = factor(value)) +
+  geom_bar(position = "dodge") + 
+  xlab("ID")+
+  facet_wrap(~ name, nrow = 1L)
 
-
-d[,-1] %>% 
-  pivot_longer(-name) %>% 
-  ggplot(aes(x=name, y=value, fill=r)) + 
-  geom_col()
 

@@ -14,6 +14,7 @@ check_contradict <- function(y, table.selected){
 # Correct the horizontal distance based on E-E' ---------------------------
 
 Total.res = get(load(paste0(path_results,"attribution0/unlist/stats_test_real_data.RData")))
+trunc.table = get(load(file = paste0(path_results, "attribution0/unlist/truncated.table.RData")))
 
 ## Only consider the non-collocated pairs
 list.non.collocated = list.name.test[c(-1,-5)]
@@ -193,17 +194,21 @@ contra.1 = sapply(c(1:nrow(signif)), function(x) check_contradict(unlist(signif 
 
 
 
-# deeper on the test result 
+# # deeper on the test result  -----------------------------------------------------------------------
+# FDR:
+Total.coded.new = signif
+
 d = rbind(reshape2::melt(Total.coded.old), reshape2::melt(Total.coded.new))
 d$name = rep(rep(list.name.test, each = 494), 2)
 d$r = rep(c("Original", "Corrected"), each = 2964)
 # d = d[which(d$name %in% list.name.test[c(3,4,6)]),]
+d$name = factor(d$name,  levels = list.name.test)
 
 p = ggplot(d) + theme_bw()+
   aes(x = factor(r), fill = factor(value)) +
   geom_bar(position = position_dodge2(width = 0.9, preserve = "single")) + 
   xlab("")+
-  theme(axis.text.x = element_text(size = 6),
+  theme(axis.text.x = element_text(size = 5.5),
       axis.text.y = element_text(size = 6),
       legend.text = element_text(size = 5),
       legend.title = element_blank(),
@@ -217,7 +222,7 @@ p = ggplot(d) + theme_bw()+
   guides(color = guide_legend(title = "code"))+
   facet_wrap(~ name, nrow = 1L) 
 
-ggsave(paste0(path_results,"attribution/cor_dist.jpg" ), plot = p, width = 14, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/cor_FDR.jpg" ), plot = p, width = 16, height = 5, units = "cm", dpi = 1200)
 # ggsave(paste0(path_results,"attribution/std.err", name.test, "_mean.sd.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
