@@ -191,3 +191,33 @@ signif <- ifelse(pvalA<0.05,1,0)*sign(as.matrix(Total.res[paste0("t", list.name.
 contra.1 = sapply(c(1:nrow(signif)), function(x) check_contradict(unlist(signif [x,c(1:6)]), trunc.table))
 
 
+
+
+# deeper on the test result 
+d = rbind(reshape2::melt(Total.coded.old), reshape2::melt(Total.coded.new))
+d$name = rep(rep(list.name.test, each = 494), 2)
+d$r = rep(c("Original", "Corrected"), each = 2964)
+# d = d[which(d$name %in% list.name.test[c(3,4,6)]),]
+
+p = ggplot(d) + theme_bw()+
+  aes(x = factor(r), fill = factor(value)) +
+  geom_bar(position = position_dodge2(width = 0.9, preserve = "single")) + 
+  xlab("")+
+  theme(axis.text.x = element_text(size = 6),
+      axis.text.y = element_text(size = 6),
+      legend.text = element_text(size = 5),
+      legend.title = element_blank(),
+      plot.title = element_text(size = 6),
+      axis.title = element_text(size = 6),
+      plot.tag = element_text(size = 6),
+      legend.box.spacing = unit(3, "pt"),
+      legend.key.size = unit(6, 'pt'),
+      legend.title.align=0.5,
+      plot.subtitle = element_text(size = 6))+
+  guides(color = guide_legend(title = "code"))+
+  facet_wrap(~ name, nrow = 1L) 
+
+ggsave(paste0(path_results,"attribution/cor_dist.jpg" ), plot = p, width = 14, height = 5, units = "cm", dpi = 1200)
+# ggsave(paste0(path_results,"attribution/std.err", name.test, "_mean.sd.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
+
+

@@ -623,3 +623,8 @@ b$'G-E' = d
 b$n = a$n1 + a$n2
 
 
+d[,-1] %>% 
+  pivot_longer(-name) %>% 
+  ggplot(aes(x=name, y=value, fill=r)) + 
+  geom_col()
+
