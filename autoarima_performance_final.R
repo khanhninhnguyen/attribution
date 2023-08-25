@@ -83,9 +83,9 @@ tot.res = list()
 for (l in c(1:length(length.list))) {
   n = length.list[l]
   tot.fit = list()
-  for (i in c(1:length(coef.list))) {
+  for (i in c(1:length(coef.list1))) {
     fit.i = list()
-    ar0 = coef.list[i]
+    ar0 = coef.list1[i]
     for (j in c(1:nb.sim)) {
       y.ar = simulate.general1(N = n, arma.model = c(ar=0,ma=ar0), burn.in = burn.in, hetero = hetero, sigma = sqrt(sigma.sim))
       # fit
@@ -434,9 +434,9 @@ get_data1 <- function(list.ini, param.val, true.model, details){
   return(tot.df)
 }
 ## Fig 1: TPR as a fc of length for different coefs for AR(1) and MA(1) -------------------
-model.plot = "AR(1)"
-model.data = ar
-param.name = "phi"
+model.plot = "MA(1)"
+model.data = ma
+param.name = "theta"
 coef.list = seq(0, 0.6, 0.1)
 selected.ind = c(2:7)
 df = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = 0)[selected.ind,] %>% 
@@ -617,16 +617,16 @@ ggsave(paste0(path_results,"attribution0/auto.arima.TPR.coef.", model.plot,sum.p
 sum.param = 0.6
 arma = get(load(file = paste0(path_arima, "performance_autoarima_ARMA1",sum.param,".RData")))
 
-model.plot = "ARMA(1,1)"
-model.data = arma
-param.name = "phi,theta"
+model.plot = "MA(1)"
+model.data = ma
+param.name = "theta"
 details = 5
 # AR, MA
-# selected.ind = c(2:7)
-# all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
+selected.ind = c(2:7)
+all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
 # ARMA
-theta = sum.param - coef.list
-selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) & !(abs(theta)>0.9) )
+theta = coef.list1
+# selected.ind = which(!near(coef.list, sum.param, tol = 0.01) & !near(abs(coef.list), 0, tol = 0.01) & !(abs(theta)>0.9) )
 all.model = get_data(list.ini = model.data, param.val = 0, true.model = model.plot, details = details)[,selected.ind]
 
 
@@ -635,29 +635,31 @@ ma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == 
 arma.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "ARMA(1,1)")))
 white.est = sapply(c(1:ncol(all.model)), function(x) length(which(all.model[,x] == "White")))
 
-df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list[selected.ind]) %>%
-  # df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list1[selected.ind]) %>% uncomment for AR, MA
+# df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list[selected.ind]) %>%
+  df <- data.frame(white = white.est, ar = ar.est, ma = ma.est, arma = arma.est, phi = coef.list1[selected.ind]) %>% #uncomment for AR, MA
   reshape2::melt(id = "phi") %>%
   mutate(predict = as.factor(rep(c( "White", "AR(1)", "MA(1)", "ARMA(1,1)"), each = length(selected.ind)))) %>%
-  mutate(theta = round((sum.param-phi), digits = 2)) %>% 
-  mutate(lab = paste(phi, theta, sep = "\n ")) %>% 
-  mutate(phi = as.factor(phi))
+  # mutate(theta = round(phi, digits = 2)) %>% 
+  # mutate(lab = paste(phi, theta, sep = "\n ")) %>% 
+  mutate(phi = as.factor(phi))%>% 
+  mutate(lab = phi) 
   
-p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
+p <- ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
   theme_bw()+
   geom_bar(position="stack", stat="identity", width = 0.5)+
   ylab("Percentage")+
   labs(subtitle = paste0("Model: " , model.plot, ", N = ", length.list[details]))+
-  scale_x_discrete(breaks = coef.list[selected.ind], 
+  scale_x_discrete(breaks = coef.list1[selected.ind], 
                      # limits = c((min(df$phi)-0.01), max((df$phi)+0.01)),
                      labels= unique(df$lab)) + 
   scale_y_continuous(labels = scales::percent,
                      limits = c(-0.05,1)) +
-  # geom_text(aes(label = paste0(value*100/nb.sim,"%")), 
-  #           position = position_stack(vjust = 0.5), size = 1)+
-  ggrepel::geom_text_repel(aes(label = paste0(value*100/nb.sim,"%")), 
-                           position = position_stack(vjust = 0.5), size = 1.5, direction = "y", 
-                           box.padding = unit(0.01, "lines")) +
+  # geom_text(aes(label = paste0(value*100/nb.sim,"%")),
+  #           position = position_stack(vjust = 0.5), size = 1.5)+
+  ggrepel::geom_text_repel(aes(label = paste0(value*100/nb.sim,"%")),
+                           position = position_stack(vjust = 0.5), size = 1.5, direction = "y",
+                           box.padding = unit(0.01, "lines"),
+                           family = "Arial") +
   xlab(param.name) + 
   theme(axis.text.x = element_text(size = 6),
         # axis.text.y = element_text(size = 5),
@@ -670,11 +672,13 @@ p = ggplot(data = df, aes(x = phi, y = value/nb.sim, fill = predict))+
         legend.title.align=0.5,
         plot.subtitle = element_text(size = 5),
         axis.text.y = element_blank(),
-        axis.ticks.y = element_blank()) +
+        axis.ticks.y = element_blank())+
+  theme(text = element_text(family = "Helvetica"))+
   guides(color = guide_legend(title = param.name))
 
 # AR, MA
-# ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
+ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot, ".jpg" ), 
+       plot = p, width = 8.8, height = 5, units = "cm", dpi = 600)
 # ARMA 
 ggsave(paste0(path_results,"attribution0/auto.arima.TPR.detail.",details, model.plot,sum.param, ".jpg" ), plot = p, width = 12, height = 5, units = "cm", dpi = 600)
 
