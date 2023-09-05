@@ -48,3 +48,56 @@ p <- ggplot(df.plot, aes(x = Lag, y = value)) +
         legend.title.align=0.5,
         plot.subtitle = element_text(size = 6))
 ggsave(paste0(path_results,"attribution/ACF_PACF_theretical.jpg" ), plot = p, width = 16, height = 8, units = "cm", dpi = 1200)
+
+
+
+
+# theoretical plot of power spectrum --------------------------------------
+
+phi = 0.3
+theta = 0.3
+phi1 = 0.6
+theta1 = -0.3
+phi2 = 0.3
+theta2 = 0.2
+
+spec.thry.ar <- ARMAspec(model = list(ar=phi), plot = TRUE)
+spec.thry.ma <- ARMAspec(model = list(ma=theta), plot = TRUE)
+spec.thry.arma1a <- ARMAspec(model = list(ar=phi1, ma = theta1), plot = TRUE)
+spec.thry.arma1b <- ARMAspec(model = list(ar=phi2, ma = theta2), plot = TRUE)
+
+# Plot
+plot(f, S_f, type = "l", xlab = "Frequency", ylab = "Spectrum",
+     main = paste("Theoretical Spectrum of AR(1) with phi =", phi))
+
+df.plot = data.frame(Fre = spec.thry.ar$freq,
+                     ar.sp = spec.thry.ar$spec,
+                     ma.sp = spec.thry.ma$spec, 
+                     arma1a = spec.thry.arma1a$spec, 
+                     arma1b = spec.thry.arma1b$spec) %>% 
+  reshape2::melt(id = "Fre") %>% 
+  mutate(model = rep(c("AR(1)", "MA(1)", "ARMA(1,1)a",  "ARMA(1,1)b"), each = 501)) %>%
+  mutate(model = factor(model, levels = c("AR(1)", "MA(1)", "ARMA(1,1)a",  "ARMA(1,1)b")))
+
+p <- ggplot(df.plot, aes(x = Fre, y = value)) + 
+  theme_bw() +
+  geom_line(color = "steelblue", width = 0.2) + 
+  facet_grid(. ~ model) +
+  xlab("Frequency")+
+  ylab("Spectral density")+
+  theme(axis.text.x = element_text(size = 7),
+        axis.text.y = element_text(size = 7),
+        legend.text = element_text(size = 5),
+        legend.title = element_text(size = 5),
+        plot.title = element_text(size = 6),
+        axis.title = element_text(size = 6),
+        strip.text = element_text(size = 6),
+        strip.background = element_rect(fill="white"),
+        plot.tag = element_text(size = 6),
+        legend.box.spacing = unit(3, "pt"),
+        legend.key.size = unit(6, 'pt'),
+        legend.title.align=0.5,
+        plot.subtitle = element_text(size = 6))
+ggsave(paste0(path_results,"attribution/spectrum.jpg" ), plot = p, width = 16, height = 5, units = "cm", dpi = 1200)
+
+
