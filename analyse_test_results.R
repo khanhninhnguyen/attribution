@@ -492,7 +492,7 @@ for (i in c(1:6)) {
 cor.dis = get(load(file = paste0(path_results, "attribution0/unlist/stats_test_real_data_corrected_dist.RData")))
 variance = read.table(file = paste0(path_results, "attribution0/unlist/FGLS_on_real_data_var.txt"),
                       header = TRUE, stringsAsFactors = FALSE, check.names = FALSE)
-name.test = "G'-E"
+name.test = "E-E'"
 ind.GE = which(!is.na(five$tGE))
 dat.p = data.frame(std.err = tot[,paste0("std.err", name.test)], 
                    t = abs(tot[,paste0("t", name.test)]),
@@ -503,18 +503,18 @@ dat.p = data.frame(std.err = tot[,paste0("std.err", name.test)],
 # dat.p = dat.p[ind.GE,]
 # r = round(cor(dat.p$std.err, dat.p$mean.var), digits = 2)
 
-p = ggplot(data = dat.p, aes(x = dist, y = t))+
+p = ggplot(data = dat.p, aes(x = dist, y = std.err))+
 # p = ggplot(data = dat.p, aes(x = mean.var, y = std.err))+
   theme_bw()+
   # geom_point(size = 0.3, aes(color = group))+
   geom_point(size = 0.3)+
   labs(title = name.test)+
-  # ylim(c(0,0.5))+
+  ylim(c(0,0.5))+
   # xlim(c(0,3.5))+
   # annotate("text", x=3, y=0.5, label= paste0("r = ",r ), size = 2) + 
-  ylim(c(0,40))+
-  xlab("Distance (km)") + ylab("Absolute T-value")+
-  # xlab("Distance between associated non-collocated series (km)") + ylab("Absolute T-value")+
+  # ylim(c(0,40))+
+  xlab("Distance (km)") + ylab("Standard error of the jump")+
+  # xlab("Distance between associated non-collocated series (km)") + ylab("Standard error of the jump")+
   # xlab("Mean of standard deviation") + ylab("Standard error of the jump")+
   # scale_colour_manual(values = c('<50' = 'red','>50' = 'blue'),labels = expression(d<50,d>=50))+
   theme(axis.text.x = element_text(size = 6),
@@ -531,7 +531,7 @@ p = ggplot(data = dat.p, aes(x = dist, y = t))+
   theme(legend.position = "none")
   # guides(color = guide_legend(title = "Distance(km)"))
 
-ggsave(paste0(path_results,"attribution/t", name.test, "_dist.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
+ggsave(paste0(path_results,"attribution/std.err", name.test, "_dist.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
 # ggsave(paste0(path_results,"attribution/std.err", name.test, "_mean.sd.jpg" ), plot = p, width = 8, height = 5, units = "cm", dpi = 1200)
 
 
